@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Thai", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --bg: #fbf7f0;
+  --surface: #ffffff;
+  --text: #2a2233;
+  --muted: #6b6475;
+  --accent: #8a3ffc;
+  --gold: #b7791f;
+  --border: #e9e2d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15121c;
+    --surface: #211c2b;
+    --text: #f1ecf7;
+    --muted: #a59eb3;
+    --accent: #b98cff;
+    --gold: #e6b450;
+    --border: #352e42;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
