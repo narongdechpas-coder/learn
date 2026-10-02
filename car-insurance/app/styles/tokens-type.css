@@ -1,0 +1,62 @@
+/* ============================================================
+   Aioi Bangkok Insurance — Typography Tokens
+   Display: Kanit · Body: Sarabun · Mono: IBM Plex Mono
+   ============================================================ */
+:root {
+  /* Families */
+  --font-display: 'Kanit', 'Noto Sans Thai', system-ui, sans-serif;
+  --font-body:    'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Sarabun', ui-monospace, monospace;
+
+  /* Weights */
+  --fw-light:    300; /* @kind font */
+  --fw-regular:  400; /* @kind font */
+  --fw-medium:   500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+  --fw-extra:    800; /* @kind font */
+
+  /* Type scale (px) — Thai needs generous sizing & line-height */
+  --fs-display:  56px;  /* hero headlines */
+  --fs-h1:       40px;
+  --fs-h2:       32px;
+  --fs-h3:       26px;
+  --fs-h4:       21px;
+  --fs-lg:       19px;
+  --fs-body:     17px;  /* default Thai body */
+  --fs-sm:       15px;
+  --fs-xs:       13px;
+  --fs-2xs:      11px;
+
+  /* Line heights — looser for Thai ascenders/descenders & tone marks */
+  --lh-tight:   1.18; /* @kind other */
+  --lh-snug:    1.35; /* @kind other */
+  --lh-normal:  1.55; /* @kind other */
+  --lh-relaxed: 1.75; /* @kind other */
+
+  /* Letter spacing (Latin only; keep ~0 for Thai) */
+  --ls-tight:   -0.01em; /* @kind other */
+  --ls-normal:  0; /* @kind other */
+  --ls-wide:    0.04em; /* @kind other */
+  --ls-caps:    0.08em; /* @kind other */
+
+  /* Semantic roles */
+  --text-hero-font:    var(--font-display);
+  --text-hero-weight:  var(--fw-extra);
+  --text-head-font:    var(--font-display);
+  --text-head-weight:  var(--fw-semibold);
+  --text-body-font:    var(--font-body);
+  --text-body-weight:  var(--fw-regular);
+}
+
+/* ---- Optional helper classes (used by specimen cards & kits) ---- */
+.t-display { font-family: var(--font-display); font-weight: var(--fw-extra); font-size: var(--fs-display); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); color: var(--text-strong); }
+.t-h1 { font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--fs-h1); line-height: var(--lh-tight); color: var(--text-strong); }
+.t-h2 { font-family: var(--font-display); font-weight: var(--fw-semibold); font-size: var(--fs-h2); line-height: var(--lh-snug); color: var(--text-strong); }
+.t-h3 { font-family: var(--font-display); font-weight: var(--fw-semibold); font-size: var(--fs-h3); line-height: var(--lh-snug); color: var(--text-strong); }
+.t-h4 { font-family: var(--font-display); font-weight: var(--fw-medium); font-size: var(--fs-h4); line-height: var(--lh-snug); color: var(--text-strong); }
+.t-lead { font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-lg); line-height: var(--lh-relaxed); color: var(--text-body); }
+.t-body { font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-body); line-height: var(--lh-normal); color: var(--text-body); }
+.t-sm { font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-sm); line-height: var(--lh-normal); color: var(--text-muted); }
+.t-overline { font-family: var(--font-display); font-weight: var(--fw-semibold); font-size: var(--fs-xs); line-height: var(--lh-normal); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--brand-red); }
+.t-mono { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--ls-normal); }

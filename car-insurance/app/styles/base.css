@@ -1,0 +1,96 @@
+/* ============================================================
+   Aioi Bangkok Insurance — Base / reset + brand utilities
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--text-body);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  line-height: var(--lh-tight);
+  margin: 0 0 0.5em;
+  font-weight: var(--fw-semibold);
+}
+
+p { margin: 0 0 1em; text-wrap: pretty; }
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+a:hover { color: var(--text-link-hover); }
+
+strong, b { font-weight: var(--fw-semibold); }
+
+::selection { background: var(--red-100); color: var(--navy-900); }
+
+:focus-visible {
+  outline: var(--ring-width) solid var(--ring-color);
+  outline-offset: 2px;
+}
+
+img { max-width: 100%; display: block; }
+
+hr { border: 0; border-top: 1px solid var(--divider); margin: var(--space-8) 0; }
+
+/* ---------- Layout helpers ---------- */
+.aioi-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- Geometric shard motif ----------
+   The brand's signature: skewed parallelogram shards in
+   red / navy / grey, echoing the banner artwork. */
+.aioi-shard {
+  --_skew: var(--shard-skew);
+  display: inline-block;
+  transform: skewX(var(--_skew));
+}
+.aioi-shard-bar {
+  height: 6px;
+  border-radius: 1px;
+  transform: skewX(var(--shard-skew));
+}
+
+/* Diagonal accent strip used along section edges / banner feet */
+.aioi-edge-stripe {
+  height: 8px;
+  background: linear-gradient(
+    100deg,
+    var(--navy-700) 0 32%,
+    var(--ink-300) 32% 40%,
+    var(--red-500) 40% 100%
+  );
+}
+
+/* Energetic angled corner clip for hero / feature blocks */
+.aioi-clip-corner { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0); }
+.aioi-clip-slash  { clip-path: polygon(0 0, 100% 0, 100% 82%, 0 100%); }
+
+/* Brand gradient washes (used sparingly) */
+.aioi-wash-navy { background: linear-gradient(135deg, var(--navy-700), var(--navy-900)); }
+.aioi-wash-red  { background: linear-gradient(120deg, var(--red-500), var(--red-700)); }
+.aioi-wash-sky  { background: linear-gradient(180deg, var(--sky-100), var(--white)); }
+
+/* Visually-hidden (a11y) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}

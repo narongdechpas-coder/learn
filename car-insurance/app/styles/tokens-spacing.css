@@ -1,0 +1,33 @@
+/* ============================================================
+   Aioi Bangkok Insurance — Spacing & Layout Tokens
+   4px base grid.
+   ============================================================ */
+:root {
+  --space-0:   0;
+  --space-1:   2px;
+  --space-2:   4px;
+  --space-3:   8px;
+  --space-4:   12px;
+  --space-5:   16px;
+  --space-6:   20px;
+  --space-7:   24px;
+  --space-8:   32px;
+  --space-9:   40px;
+  --space-10:  48px;
+  --space-11:  64px;
+  --space-12:  80px;
+  --space-13:  96px;
+  --space-14:  128px;
+
+  /* Layout */
+  --container-max: 1200px;
+  --container-wide: 1320px;
+  --gutter:       24px;
+  --section-y:    80px;   /* vertical rhythm between page sections */
+  --section-y-sm: 48px;
+
+  /* Component sizing */
+  --control-h-sm: 36px;
+  --control-h-md: 44px;   /* default — meets 44px touch target */
+  --control-h-lg: 52px;
+}

@@ -1,0 +1,13 @@
+/* ส่วนเสริมของแอป (ต่อจาก design system) */
+
+/* โลโก้ตัวอักษร (ใช้แทนไฟล์โลโก้ที่ไม่มีมาในไฟล์ดีไซน์) */
+.abi-wordmark { font-family: var(--font-display); font-weight: 800; color: var(--red-500); letter-spacing: -.02em; }
+
+/* บนมือถือจริง: แสดงเต็มจอ ไม่มีกรอบโทรศัพท์ */
+@media (max-width: 520px) {
+  html, body { height: 100%; }
+  body { padding: 0 !important; display: block !important; background: var(--ink-50) !important; min-height: 0 !important; }
+}
+
+/* โทเคนที่ดีไซน์อ้างถึงแต่ไม่ได้ประกาศไว้ (หน้าสำเร็จ / ชิป PHYD) */
+:root { --green-700: #1B6634; }
