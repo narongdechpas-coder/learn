@@ -1,226 +1,171 @@
-// คำนวณเบี้ยประกันรถยนต์
-// อัตราและตัวคูณทั้งหมดเป็น "ตัวอย่าง" สำหรับเดโม ไม่ใช่พิกัดอัตราเบี้ยจริงของ คปภ.
-// คำนวณเป็นหน่วยสตางค์ (จำนวนเต็ม) เพื่อเลี่ยงปัญหาทศนิยมของ float
-const { findModel } = require('./catalog');
+// คำนวณเบี้ยประกันรถยนต์ ตามโมเดลผลิตภัณฑ์ของดีไซน์ ABI (QUOTE_CONFIG / calcPremium)
+// อัตราเป็น "ตัวอย่าง" ไม่ใช่พิกัดอัตราเบี้ยจริง ราคาเบี้ยที่แสดงเป็นราคารวมภาษีอากรแล้ว
+// ไฟล์นี้ใช้ได้ทั้งฝั่งเซิร์ฟเวอร์และเบราว์เซอร์ (หน้าแอปใช้แสดงราคาประเมินแบบทันที
+// ส่วนราคาที่ใช้ตัดเงินจริง เซิร์ฟเวอร์คำนวณใหม่เสมอ)
+const { findModel, yearsFor } = require('./catalog');
 
-const VEHICLE_TYPES = {
-  sedan: { label: 'รถเก๋ง', factor: 1.0, cmiNet: 600 },
-  suv: { label: 'รถ SUV / PPV (ไม่เกิน 7 ที่นั่ง)', factor: 1.05, cmiNet: 600 },
-  pickup: { label: 'รถกระบะ (ส่วนบุคคล)', factor: 1.1, cmiNet: 900 },
-  ev: { label: 'รถยนต์ไฟฟ้า (EV)', factor: 1.15, cmiNet: 600 },
-};
+const BODY_TYPES = [
+  { id: 'eco', label: 'อีโคคาร์', sub: 'รถเล็กประหยัด', factor: 0.9 },
+  { id: 'sedan', label: 'รถเก๋ง', sub: 'ซีดาน/แฮทช์แบ็ก', factor: 1.0 },
+  { id: 'suv', label: 'รถ SUV', sub: 'อเนกประสงค์', factor: 1.1 },
+  { id: 'pickup', label: 'รถกระบะ', sub: 'ปิกอัพ/ส่วนบุคคล', factor: 1.16 },
+];
 
-const REGIONS = {
-  bangkok: { label: 'กรุงเทพฯ และปริมณฑล', factor: 1.1 },
-  central: { label: 'ภาคกลาง / ตะวันออก', factor: 1.0 },
-  north: { label: 'ภาคเหนือ', factor: 0.95 },
-  northeast: { label: 'ภาคตะวันออกเฉียงเหนือ', factor: 0.95 },
-  south: { label: 'ภาคใต้', factor: 1.0 },
-};
+// ทุนประกันบุคคลภายนอก/อุบัติเหตุ ตามตารางกรมธรรม์ของดีไซน์
+const THIRD_PARTY = [
+  ['บุคคลภายนอก / ชีวิต (ต่อคน)', 1_000_000],
+  ['ทรัพย์สินบุคคลภายนอก', 5_000_000],
+  ['อุบัติเหตุส่วนบุคคล (ต่อคน)', 200_000],
+  ['ค่ารักษาพยาบาล (ต่อคน)', 200_000],
+  ['ประกันตัวผู้ขับขี่', 300_000],
+];
 
-const GARAGES = {
-  garage: { label: 'ซ่อมอู่', factor: 1.0 },
-  dealer: { label: 'ซ่อมห้าง', factor: 1.15 },
-};
-
-const DEDUCTIBLES = { 0: 1.0, 3000: 0.95, 5000: 0.92 };
-
-const PLANS = {
-  type1: {
-    name: 'ประกันชั้น 1',
-    maxCarAge: 12,
-    rate: 0.02,
-    fixed: 0,
-    minNet: 9000,
-    usesGarage: true,
-    usesDeductible: true,
-    sumInsured: (carValue) => carValue,
-    coverage: (si) => [
-      ['ความเสียหายต่อตัวรถ (ทุกกรณี)', si],
-      ['รถสูญหาย / ไฟไหม้', si],
-      ['น้ำท่วม / ภัยธรรมชาติ', si],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อคน)', 1_000_000],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อครั้ง)', 10_000_000],
-      ['ความรับผิดต่อทรัพย์สินบุคคลภายนอก', 1_000_000],
-      ['อุบัติเหตุส่วนบุคคล (ต่อคน)', 100_000],
-      ['ค่ารักษาพยาบาล (ต่อคน)', 100_000],
-      ['ประกันตัวผู้ขับขี่', 300_000],
-    ],
+const CLASSES = [
+  {
+    id: '1', label: 'ชั้น 1', tagline: 'คุ้มครองครบ ทุกความเสี่ยง', rate: 0.0375, ownDamage: true, theft: true, popular: true,
+    perks: ['ชน/คว่ำ มีคู่กรณีและไม่มีคู่กรณี', 'ไฟไหม้ น้ำท่วม รถหาย', 'คู่กรณี + รถของคุณ'],
+    coverage: (si) => [['ความเสียหายต่อรถยนต์ (ทุกกรณี)', si], ['รถสูญหาย / ไฟไหม้', si], ['น้ำท่วม / ภัยธรรมชาติ', si], ...THIRD_PARTY],
   },
-  type2plus: {
-    name: 'ประกันชั้น 2+',
-    maxCarAge: 20,
-    rate: 0.01,
-    fixed: 5500,
-    minNet: 0,
-    usesGarage: false,
-    usesDeductible: true,
-    sumInsured: (carValue) => Math.min(carValue, 300_000),
-    coverage: (si) => [
-      ['ความเสียหายต่อตัวรถ (ชนกับยานพาหนะทางบก)', si],
-      ['รถสูญหาย / ไฟไหม้', si],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อคน)', 500_000],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อครั้ง)', 10_000_000],
-      ['ความรับผิดต่อทรัพย์สินบุคคลภายนอก', 1_000_000],
-      ['อุบัติเหตุส่วนบุคคล (ต่อคน)', 50_000],
-      ['ค่ารักษาพยาบาล (ต่อคน)', 50_000],
-      ['ประกันตัวผู้ขับขี่', 200_000],
-    ],
+  {
+    id: '2plus', label: 'ชั้น 2+', tagline: 'คุ้มครองชน มีคู่กรณี + รถหาย', rate: 0.0205, ownDamage: true, theft: true, popular: false,
+    perks: ['ชนมีคู่กรณี (รถยนต์)', 'ไฟไหม้ น้ำท่วม รถหาย', 'คู่กรณี + รถของคุณ'],
+    coverage: (si) => [['ความเสียหายต่อรถยนต์ (ชนมีคู่กรณี)', si], ['รถสูญหาย / ไฟไหม้', si], ...THIRD_PARTY],
   },
-  type3plus: {
-    name: 'ประกันชั้น 3+',
-    maxCarAge: 20,
-    rate: 0.01,
-    fixed: 4200,
-    minNet: 0,
-    usesGarage: false,
-    usesDeductible: true,
-    sumInsured: (carValue) => Math.min(carValue, 150_000),
-    coverage: (si) => [
-      ['ความเสียหายต่อตัวรถ (ชนกับยานพาหนะทางบก)', si],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อคน)', 500_000],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อครั้ง)', 10_000_000],
-      ['ความรับผิดต่อทรัพย์สินบุคคลภายนอก', 1_000_000],
-      ['อุบัติเหตุส่วนบุคคล (ต่อคน)', 50_000],
-      ['ค่ารักษาพยาบาล (ต่อคน)', 50_000],
-      ['ประกันตัวผู้ขับขี่', 200_000],
-    ],
+  {
+    id: '3plus', label: 'ชั้น 3+', tagline: 'คุ้มครองชน มีคู่กรณี', rate: 0.0165, ownDamage: true, theft: false, popular: false,
+    perks: ['ชนมีคู่กรณี (รถยนต์)', 'คู่กรณี + รถของคุณ', 'ไม่คุ้มครองรถหาย/ไฟไหม้'],
+    coverage: (si) => [['ความเสียหายต่อรถยนต์ (ชนมีคู่กรณี)', si], ...THIRD_PARTY],
   },
-  type3: {
-    name: 'ประกันชั้น 3',
-    maxCarAge: Infinity,
-    rate: 0,
-    fixed: 2200,
-    minNet: 0,
-    usesGarage: false,
-    usesDeductible: false,
-    sumInsured: () => 0,
-    coverage: () => [
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อคน)', 300_000],
-      ['ความรับผิดต่อชีวิตบุคคลภายนอก (ต่อครั้ง)', 10_000_000],
-      ['ความรับผิดต่อทรัพย์สินบุคคลภายนอก', 600_000],
-      ['อุบัติเหตุส่วนบุคคล (ต่อคน)', 50_000],
-      ['ค่ารักษาพยาบาล (ต่อคน)', 50_000],
-      ['ประกันตัวผู้ขับขี่', 200_000],
-    ],
+  {
+    id: '3', label: 'ชั้น 3', tagline: 'คุ้มครองเฉพาะคู่กรณี', rate: 0.0095, ownDamage: false, theft: false, popular: false,
+    perks: ['ความรับผิดต่อคู่กรณี', 'ประหยัดที่สุด', 'ไม่คุ้มครองรถของคุณ'],
+    coverage: () => THIRD_PARTY,
   },
-};
+];
 
-function carAgeFactor(carAge) {
-  if (carAge <= 1) return 1.0;
-  if (carAge <= 3) return 1.05;
-  if (carAge <= 6) return 1.12;
-  if (carAge <= 10) return 1.25;
-  return 1.35;
-}
+const REPAIR = [
+  { id: 'garage', label: 'ซ่อมอู่', sub: 'อู่ในเครือมาตรฐาน', factor: 1.0 },
+  { id: 'dealer', label: 'ซ่อมห้าง', sub: 'ศูนย์บริการยี่ห้อรถ', factor: 1.18 },
+];
 
-function driverAgeFactor(driverAge) {
-  if (driverAge == null) return 1.15; // ไม่ระบุผู้ขับขี่
-  if (driverAge < 25) return 1.35;
-  if (driverAge <= 35) return 1.1;
-  if (driverAge <= 50) return 1.0;
-  if (driverAge <= 65) return 1.05;
-  return 1.2;
-}
+const ADDONS = [
+  { id: 'phyd', label: 'PHYD ขับดี ลดให้', sub: 'ติด T Connect ลดเบี้ยสูงสุด 30%', discountPct: 0.12, icon: 'gauge' },
+  { id: 'flood', label: 'คุ้มครองน้ำท่วมเพิ่ม', sub: 'วงเงินภัยธรรมชาติ +30,000', price: 900, icon: 'cloud-rain', coverage: ['วงเงินภัยธรรมชาติเพิ่ม', 30_000] },
+  { id: 'driver', label: 'อุบัติเหตุผู้ขับขี่เพิ่ม', sub: 'ทุน +300,000 ต่อคน', price: 700, icon: 'user-round', coverage: ['อุบัติเหตุผู้ขับขี่เพิ่ม (ต่อคน)', 300_000] },
+  { id: 'roadside', label: 'ช่วยเหลือฉุกเฉิน 24 ชม.', sub: 'รถยก/แบตเตอรี่/ยางอะไหล่', price: 600, icon: 'life-buoy' },
+];
 
-// อากรแสตมป์: 1 บาท ต่อทุก 250 บาท หรือเศษของ 250 บาท
-// ภาษีมูลค่าเพิ่ม 7% คิดจาก (เบี้ยสุทธิ + อากร)
-function withTaxes(netSatang) {
-  const stampSatang = Math.ceil(netSatang / 25_000) * 100;
-  const vatSatang = Math.round(((netSatang + stampSatang) * 7) / 100);
-  return {
-    net: netSatang,
-    stamp: stampSatang,
-    vat: vatSatang,
-    total: netSatang + stampSatang + vatSatang,
-  };
-}
+const CMI_SATANG = 64521; // พ.ร.บ. รถยนต์นั่งส่วนบุคคล รวมภาษีอากร 645.21 บาท
+const CMI_COVERAGE = [
+  ['เสียชีวิต / ทุพพลภาพถาวร', 500_000],
+  ['ค่ารักษาพยาบาล (ตามจริง)', 80_000],
+];
+const INSTALLMENTS = 10; // ผ่อน 0% 10 เดือน
+const SUM_INSURED_MIN = 100_000;
+const SUM_INSURED_MAX = 10_000_000;
 
-// พ.ร.บ. (ประกันภัยรถยนต์ภาคบังคับ) — เบี้ยสุทธิตามประเภทรถ เช่น รถเก๋ง 600 บาท → รวม 645.21 บาท
-function cmiPremium(vehicleType) {
-  return withTaxes(VEHICLE_TYPES[vehicleType].cmiNet * 100);
-}
+const ageFactor = (carAge) => 1 + Math.max(0, carAge - 4) * 0.025;
+const driverFactor = (age) => (age < 25 ? 1.15 : age >= 55 ? 1.05 : age < 30 ? 1.05 : 0.97);
 
 class QuoteError extends Error {}
 
-function validateInput(input, now = new Date()) {
+function validateInput(raw, now = new Date()) {
   const errors = [];
-  const year = Number(input.carYear);
   const thisYear = now.getFullYear();
-  if (!Number.isInteger(year) || year < thisYear - 40 || year > thisYear + 1) {
-    errors.push('ปีรถไม่ถูกต้อง');
+  const model = findModel(raw.brand, raw.model);
+  if (!model) errors.push('กรุณาเลือกยี่ห้อและรุ่นรถจากรายการ');
+  const year = Number(raw.year);
+  if (model && !yearsFor(model, thisYear).includes(year)) {
+    errors.push(`ปีรถไม่ถูกต้อง ${raw.brand} ${raw.model} เริ่มขายในไทยปี ${model.since}`);
   }
-  const carValue = Number(input.carValue);
-  if (!Number.isFinite(carValue) || carValue < 50_000 || carValue > 10_000_000) {
-    errors.push('ราคารถต้องอยู่ระหว่าง 50,000 – 10,000,000 บาท');
+  const sumInsured = Math.round(Number(raw.sumInsured));
+  if (!(sumInsured >= SUM_INSURED_MIN && sumInsured <= SUM_INSURED_MAX)) {
+    errors.push('ทุนประกันต้องอยู่ระหว่าง 100,000 – 10,000,000 บาท');
   }
-  if (!VEHICLE_TYPES[input.vehicleType]) errors.push('ประเภทรถไม่ถูกต้อง');
-  if (!REGIONS[input.region]) errors.push('พื้นที่ใช้รถไม่ถูกต้อง');
-  const garage = input.garage ?? 'garage';
-  if (!GARAGES[garage]) errors.push('ประเภทการซ่อมไม่ถูกต้อง');
-  const deductible = Number(input.deductible ?? 0);
-  if (!(deductible in DEDUCTIBLES)) errors.push('ค่าเสียหายส่วนแรกไม่ถูกต้อง');
-  let driverAge = null;
-  if (input.driverAge !== undefined && input.driverAge !== null && input.driverAge !== '') {
-    driverAge = Number(input.driverAge);
-    if (!Number.isInteger(driverAge) || driverAge < 18 || driverAge > 90) {
-      errors.push('อายุผู้ขับขี่ต้องอยู่ระหว่าง 18 – 90 ปี');
-    }
-  }
-  if (!findModel(input.carBrand, input.carModel)) errors.push('กรุณาเลือกยี่ห้อและรุ่นรถจากรายการ');
+  const cls = CLASSES.find((c) => c.id === raw.coverageClass);
+  if (!cls) errors.push('กรุณาเลือกระดับความคุ้มครอง');
+  const repair = REPAIR.find((r) => r.id === (raw.repair ?? 'garage'));
+  if (!repair) errors.push('ประเภทการซ่อมไม่ถูกต้อง');
+  const driverAge = Number(raw.driverAge);
+  if (!Number.isInteger(driverAge) || driverAge < 18 || driverAge > 80) errors.push('อายุผู้ขับขี่ต้องอยู่ระหว่าง 18 – 80 ปี');
+  const addons = Array.isArray(raw.addons) ? [...new Set(raw.addons)] : [];
+  if (addons.some((id) => !ADDONS.some((a) => a.id === id))) errors.push('ความคุ้มครองเสริมไม่ถูกต้อง');
   if (errors.length) throw new QuoteError(errors.join(', '));
   return {
-    carBrand: input.carBrand,
-    carModel: input.carModel,
-    carYear: year,
+    brand: raw.brand,
+    model: raw.model,
+    body: model.body,
+    year,
     carAge: Math.max(0, thisYear - year),
-    carValue: Math.round(carValue),
-    vehicleType: input.vehicleType,
-    region: input.region,
-    garage,
-    deductible,
+    sumInsured,
+    coverageClass: cls.id,
+    repair: repair.id,
     driverAge,
+    addons: ADDONS.filter((a) => addons.includes(a.id)).map((a) => a.id), // เรียงตามลำดับในรายการ
+    withCmi: Boolean(raw.withCmi),
   };
 }
 
-function calculatePlans(rawInput, now = new Date()) {
-  const input = validateInput(rawInput, now);
-  const common =
-    VEHICLE_TYPES[input.vehicleType].factor *
-    REGIONS[input.region].factor *
-    driverAgeFactor(input.driverAge) *
-    carAgeFactor(input.carAge);
+// คำนวณเบี้ยจากข้อมูลที่ตรวจแล้ว — คืนค่าเป็นสตางค์
+function priceOf(input) {
+  const cls = CLASSES.find((c) => c.id === input.coverageClass);
+  const body = BODY_TYPES.find((b) => b.id === input.body);
+  const repair = REPAIR.find((r) => r.id === input.repair);
 
-  const plans = [];
-  for (const [code, plan] of Object.entries(PLANS)) {
-    if (input.carAge > plan.maxCarAge) continue;
-    const sumInsured = plan.sumInsured(input.carValue);
-    let net = (plan.fixed + sumInsured * plan.rate) * common;
-    if (plan.usesGarage) net *= GARAGES[input.garage].factor;
-    if (plan.usesDeductible) net *= DEDUCTIBLES[input.deductible];
-    net = Math.max(net, plan.minNet);
-    const netSatang = Math.round(net) * 100; // ปัดเบี้ยสุทธิเป็นบาทเต็ม
-    plans.push({
-      code,
-      name: plan.name,
-      sumInsured,
-      garage: plan.usesGarage ? input.garage : 'garage',
-      deductible: plan.usesDeductible ? input.deductible : 0,
-      coverage: plan.coverage(sumInsured).map(([label, amount]) => ({ label, amount })),
-      premium: withTaxes(netSatang),
-    });
+  const base = Math.round(
+    input.sumInsured * cls.rate * body.factor * ageFactor(input.carAge) * repair.factor * driverFactor(input.driverAge),
+  );
+  const flat = ADDONS.filter((a) => a.price && input.addons.includes(a.id));
+  const addonTotal = flat.reduce((t, a) => t + a.price, 0);
+  const phyd = input.addons.includes('phyd') ? ADDONS.find((a) => a.id === 'phyd').discountPct : 0;
+  const phydDiscount = Math.round((base + addonTotal) * phyd);
+  const voluntary = base + addonTotal - phydDiscount;
+  const cmi = input.withCmi ? CMI_SATANG : 0;
+  const total = voluntary * 100 + cmi;
+
+  return {
+    classLabel: cls.label,
+    base: base * 100,
+    addons: flat.map((a) => ({ id: a.id, label: a.label, price: a.price * 100 })),
+    addonTotal: addonTotal * 100,
+    phydPct: phyd,
+    phydDiscount: phydDiscount * 100,
+    voluntary: voluntary * 100,
+    cmi,
+    total,
+    monthly: Math.round(total / INSTALLMENTS),
+  };
+}
+
+function calculateQuote(raw, now = new Date()) {
+  const input = validateInput(raw, now);
+  const cls = CLASSES.find((c) => c.id === input.coverageClass);
+  const coverage = cls.coverage(input.sumInsured).map(([label, amount]) => ({ label, amount }));
+  for (const a of ADDONS) {
+    if (a.coverage && input.addons.includes(a.id)) coverage.push({ label: a.coverage[0], amount: a.coverage[1] });
   }
-  return { input, plans, cmi: cmiPremium(input.vehicleType) };
+  return { input, price: priceOf(input), coverage };
+}
+
+// ราคาประเมินของทุกชั้น (ใช้แสดงในหน้าเลือกความคุ้มครอง: ซ่อมอู่ ไม่มีความคุ้มครองเสริม ไม่รวม พ.ร.บ.)
+function estimateClasses(raw, now = new Date()) {
+  const input = validateInput({ ...raw, coverageClass: '1', repair: 'garage', addons: [], withCmi: false }, now);
+  return CLASSES.map((c) => ({ id: c.id, total: priceOf({ ...input, coverageClass: c.id }).total }));
 }
 
 module.exports = {
-  VEHICLE_TYPES,
-  REGIONS,
-  GARAGES,
-  DEDUCTIBLES,
-  PLANS,
+  BODY_TYPES,
+  CLASSES,
+  REPAIR,
+  ADDONS,
+  CMI_SATANG,
+  CMI_COVERAGE,
+  INSTALLMENTS,
+  SUM_INSURED_MIN,
+  SUM_INSURED_MAX,
   QuoteError,
-  calculatePlans,
-  cmiPremium,
-  withTaxes,
+  validateInput,
+  priceOf,
+  calculateQuote,
+  estimateClasses,
 };

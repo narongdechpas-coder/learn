@@ -6,7 +6,7 @@ const QRCode = require('qrcode');
 const { MockGateway } = require('./payment');
 const { validateOrderDetails } = require('./validation');
 const premium = require('./premium');
-const { CATALOG } = require('./catalog');
+const { CATALOG, yearsFor } = require('./catalog');
 
 const QUOTE_TTL_MS = 30 * 60_000;
 
@@ -23,12 +23,16 @@ function publicOrder(order) {
     id: order.id,
     status: order.status,
     amount: order.amount,
-    planName: order.plan.name,
-    includeCmi: Boolean(order.cmi),
+    classLabel: order.quote.price.classLabel,
+    paymentPlan: order.paymentPlan,
+    monthly: order.quote.price.monthly,
     payment: order.payment
       ? { method: order.payment.method, card: order.payment.card, paidAt: order.payment.paidAt }
       : null,
     policyNumber: order.policy?.number ?? null,
+    startDate: order.startDate,
+    plate: order.vehicle.plate,
+    plateProvince: order.vehicle.plateProvince,
     lastError: order.lastError ?? null,
   };
 }
@@ -74,26 +78,30 @@ function createService(store) {
 
   return {
     options() {
-      const pick = (obj) => Object.entries(obj).map(([value, o]) => ({ value, label: o.label }));
       return ok({
-        vehicleTypes: pick(premium.VEHICLE_TYPES),
-        regions: pick(premium.REGIONS),
-        garages: pick(premium.GARAGES),
-        catalog: CATALOG,
-        deductibles: Object.keys(premium.DEDUCTIBLES).map(Number),
+        catalog: CATALOG.map((b) => ({
+          brand: b.brand,
+          models: b.models.map((m) => ({ ...m, years: yearsFor(m) })),
+        })),
+        bodyTypes: premium.BODY_TYPES,
+        classes: premium.CLASSES.map(({ coverage, ...c }) => c),
+        repair: premium.REPAIR,
+        addons: premium.ADDONS.map(({ coverage, ...a }) => a),
+        cmi: premium.CMI_SATANG,
+        installments: premium.INSTALLMENTS,
+        sumInsured: { min: premium.SUM_INSURED_MIN, max: premium.SUM_INSURED_MAX },
       });
     },
 
-    // 1) เช็คเบี้ย
+    // 1) เช็คเบี้ย — ล็อกราคาไว้ฝั่งเซิร์ฟเวอร์ 30 นาที
     createQuote(body = {}) {
       let result;
       try {
-        result = premium.calculatePlans(body);
+        result = premium.calculateQuote(body);
       } catch (err) {
         if (err instanceof premium.QuoteError) return fail(400, err.message);
         throw err;
       }
-      if (!result.plans.length) return fail(400, 'ไม่มีแผนประกันที่รองรับรถคันนี้');
       const quote = {
         id: newId('qt'),
         createdAt: new Date().toISOString(),
@@ -101,7 +109,7 @@ function createService(store) {
         ...result,
       };
       store.put('quotes', quote.id, quote);
-      return ok({ quoteId: quote.id, expiresAt: quote.expiresAt, plans: quote.plans, cmi: quote.cmi }, 201);
+      return ok({ quoteId: quote.id, expiresAt: quote.expiresAt, input: quote.input, price: quote.price, coverage: quote.coverage }, 201);
     },
 
     // 2) สร้างคำสั่งซื้อ — ราคาดึงจาก quote ที่เก็บฝั่งเซิร์ฟเวอร์ ไม่เชื่อราคาจาก client
@@ -109,23 +117,20 @@ function createService(store) {
       const quote = store.get('quotes', String(body.quoteId || ''));
       if (!quote) return fail(400, 'ไม่พบใบเสนอราคา กรุณาเช็คเบี้ยใหม่');
       if (new Date(quote.expiresAt) < new Date()) return fail(400, 'ใบเสนอราคาหมดอายุ กรุณาเช็คเบี้ยใหม่');
-      const plan = quote.plans.find((p) => p.code === body.planCode);
-      if (!plan) return fail(400, 'กรุณาเลือกแผนประกัน');
 
       const { errors, holder, vehicle, startDate } = validateOrderDetails(body);
       if (errors.length) return fail(400, errors.join(', '));
+      const paymentPlan = body.paymentPlan === 'instal' ? 'instal' : 'full';
 
-      const cmi = body.includeCmi ? quote.cmi : null;
       const order = {
         id: newId('ord'),
         accessToken: crypto.randomBytes(24).toString('hex'),
         status: 'pending_payment',
         createdAt: new Date().toISOString(),
         quoteId: quote.id,
-        quoteInput: quote.input,
-        plan,
-        cmi,
-        amount: plan.premium.total + (cmi ? cmi.total : 0),
+        quote: { input: quote.input, price: quote.price, coverage: quote.coverage },
+        amount: quote.price.total,
+        paymentPlan,
         holder,
         vehicle,
         startDate,
@@ -146,6 +151,9 @@ function createService(store) {
       if (order.status === 'paid') return fail(409, 'คำสั่งซื้อนี้ชำระเงินแล้ว');
 
       const { method, cardToken } = body;
+      if (order.paymentPlan === 'instal' && method !== 'card') {
+        return fail(400, 'ผ่อน 0% ชำระได้ด้วยบัตรเครดิตเท่านั้น');
+      }
       const { charge, error } = gateway.createCharge({
         orderId: order.id,
         amountSatang: order.amount,

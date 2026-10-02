@@ -1,6 +1,6 @@
 // สร้างกรมธรรม์ประกันภัยรถยนต์เป็น PDF (ภาษาไทย ฟอนต์ Sarabun)
 const PDFDocument = require('pdfkit');
-const { VEHICLE_TYPES, REGIONS, GARAGES } = require('./premium');
+const { BODY_TYPES, REPAIR, CMI_COVERAGE, INSTALLMENTS } = require('./premium');
 
 // ค่าเริ่มต้นฝั่งเซิร์ฟเวอร์: อ่านฟอนต์จากโฟลเดอร์ fonts/
 // (เวอร์ชันเบราว์เซอร์ใน demo/ ส่งข้อมูลฟอนต์เข้ามาเองเป็น ArrayBuffer)
@@ -41,7 +41,7 @@ function renderPolicyPdf(order, fonts = defaultFonts()) {
 
   const L = doc.page.margins.left;
   const W = doc.page.width - L - doc.page.margins.right;
-  const primary = '#0b5cab';
+  const primary = '#15357D';
 
   // หัวกระดาษ
   doc.rect(0, 0, doc.page.width, 90).fill(primary);
@@ -52,7 +52,7 @@ function renderPolicyPdf(order, fonts = defaultFonts()) {
     width: W,
     align: 'center',
   });
-  doc.font('th').fontSize(11).text(`(${order.plan.name})`, { width: W, align: 'center' });
+  doc.font('th').fontSize(11).text(`(${order.quote.price.classLabel})`, { width: W, align: 'center' });
 
   let y = doc.y + 10;
   const row = (label, value, x, width, labelWidth = 110) => {
@@ -88,54 +88,54 @@ function renderPolicyPdf(order, fonts = defaultFonts()) {
   row('ที่อยู่', h.address, L, W);
   y = doc.y + 4;
 
-  const q = order.quoteInput;
+  const q = order.quote.input;
+  const price = order.quote.price;
   const v = order.vehicle;
   section('รายการรถยนต์ที่เอาประกันภัย');
-  row('ยี่ห้อ / รุ่น', `${q.carBrand} ${q.carModel}`, L, half);
-  row('ปีจดทะเบียน', `${q.carYear}`, L + half, half);
+  row('ยี่ห้อ / รุ่น', `${q.brand} ${q.model}`, L, half);
+  row('ปีรถ', `${q.year + 543} (ค.ศ. ${q.year})`, L + half, half);
   y += 16;
   row('ทะเบียนรถ', `${v.plate} ${v.plateProvince}`, L, half);
   row('เลขตัวถัง', v.chassisNo, L + half, half);
   y += 16;
-  row('ประเภทรถ', VEHICLE_TYPES[q.vehicleType].label, L, half);
-  row('พื้นที่ใช้รถ', REGIONS[q.region].label, L + half, half);
+  row('ประเภทรถ', BODY_TYPES.find((b) => b.id === q.body).label, L, half);
+  row('การซ่อม', REPAIR.find((r) => r.id === q.repair).label, L + half, half);
   y += 16;
-  row('ผู้ขับขี่', q.driverAge ? `ระบุผู้ขับขี่ (อายุ ${q.driverAge} ปี)` : 'ไม่ระบุผู้ขับขี่', L, half);
-  row('การซ่อม', GARAGES[order.plan.garage].label, L + half, half);
+  row('ผู้ขับขี่หลัก', `อายุ ${q.driverAge} ปี`, L, half);
+  row('ทุนประกัน', q.sumInsured ? `${baht(q.sumInsured)} บาท` : '-', L + half, half);
   y += 16;
 
-  section('ความคุ้มครอง (จำนวนเงินเอาประกันภัย)');
-  doc.font('th').fontSize(10);
-  for (const [i, c] of order.plan.coverage.entries()) {
-    if (i % 2 === 0) doc.rect(L, y - 1, W, 15).fill('#f7f9fc');
-    doc.fillColor('#000').font('th').text(c.label, L + 8, y, { width: W - 160, lineBreak: false });
-    doc.font('th-bold').text(`${baht(c.amount)} บาท`, L + W - 160, y, { width: 152, align: 'right' });
+  const coverage = order.quote.coverage.map((c) => [c.label, `${baht(c.amount)} บาท`]);
+  if (q.addons.includes('roadside')) coverage.push(['ช่วยเหลือฉุกเฉิน 24 ชม.', 'รวมในแผน']);
+  if (q.withCmi) for (const [label, amount] of CMI_COVERAGE) coverage.push([`พ.ร.บ. · ${label}`, `${baht(amount)} บาท`]);
+  section(`ความคุ้มครอง ${price.classLabel} (จำนวนเงินเอาประกันภัย)`);
+  for (const [i, [label, value]] of coverage.entries()) {
+    if (i % 2 === 0) doc.rect(L, y - 1, W, 15).fill('#f4f6fb');
+    doc.fillColor('#000').font('th').fontSize(10).text(label, L + 8, y, { width: W - 160, lineBreak: false });
+    doc.font('th-bold').text(value, L + W - 160, y, { width: 152, align: 'right' });
     y += 15;
   }
-  if (order.plan.deductible) {
-    doc.font('th').fillColor('#555').text(`ค่าเสียหายส่วนแรก ${baht(order.plan.deductible)} บาท ต่อครั้ง`, L + 8, y + 2);
-    y += 16;
-  }
 
-  section('เบี้ยประกันภัย');
-  const p = order.plan.premium;
-  const lines = [
-    ['เบี้ยประกันภัยสุทธิ', p.net],
-    ['อากรแสตมป์', p.stamp],
-    ['ภาษีมูลค่าเพิ่ม 7%', p.vat],
-    [`เบี้ยประกันภัย${order.plan.name}รวม`, p.total],
-  ];
-  if (order.cmi) lines.push(['พ.ร.บ. (รวมภาษีอากร)', order.cmi.total]);
+  section('เบี้ยประกันภัย (รวมภาษีและอากรแสตมป์แล้ว)');
+  const lines = [[`เบี้ยประกันภาคสมัครใจ ${price.classLabel}`, price.base]];
+  for (const a of price.addons) lines.push([a.label, a.price]);
+  if (price.phydDiscount) lines.push([`ส่วนลด PHYD ขับดี ลดให้ (−${Math.round(price.phydPct * 100)}%)`, -price.phydDiscount]);
+  if (price.cmi) lines.push(['พ.ร.บ. (ภาคบังคับ)', price.cmi]);
   for (const [label, amt] of lines) {
-    doc.font('th').fontSize(10).fillColor('#000').text(label, L + 8, y, { width: W - 160, lineBreak: false });
-    doc.text(`${satang(amt)} บาท`, L + W - 160, y, { width: 152, align: 'right' });
+    doc.font('th').fontSize(10).fillColor(amt < 0 ? '#248040' : '#000').text(label, L + 8, y, { width: W - 160, lineBreak: false });
+    doc.text(`${amt < 0 ? '−' : ''}${satang(Math.abs(amt))} บาท`, L + W - 160, y, { width: 152, align: 'right' });
     y += 14;
   }
   doc.moveTo(L + W - 260, y).lineTo(L + W, y).strokeColor('#999').stroke();
   y += 4;
-  doc.font('th-bold').fontSize(12).text('ยอดชำระทั้งสิ้น', L + 8, y, { width: W - 160, lineBreak: false });
+  doc.font('th-bold').fontSize(12).fillColor('#000').text('ยอดชำระทั้งสิ้น', L + 8, y, { width: W - 160, lineBreak: false });
   doc.text(`${satang(order.amount)} บาท`, L + W - 200, y, { width: 192, align: 'right' });
-  y += 22;
+  y += 20;
+  if (order.paymentPlan === 'instal') {
+    doc.font('th').fontSize(10).fillColor('#000')
+      .text(`ผ่อนชำระ 0% ${INSTALLMENTS} เดือน ผ่านบัตรเครดิต เดือนละประมาณ ${satang(price.monthly)} บาท`, L + 8, y, { width: W - 16 });
+    y += 16;
+  }
 
   const pay = order.payment;
   const payLabel = pay.method === 'card' ? `บัตร ${pay.card.brand} **** ${pay.card.last4}` : 'Thai QR / พร้อมเพย์';

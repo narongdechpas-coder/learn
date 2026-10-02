@@ -1,14 +1,17 @@
 {
   "name": "car-insurance",
   "version": "1.0.0",
-  "description": "ระบบเช็คเบี้ยประกันรถยนต์ > ชำระเงิน > รับกรมธรรม์ PDF (เดโม)",
+  "description": "ABI Mobile App: เช็คเบี้ยประกันรถยนต์ > ชำระเงิน > รับกรมธรรม์ PDF (ต้นแบบ)",
   "main": "src/server.js",
   "private": true,
   "scripts": {
+    "build": "node scripts/build.js",
+    "build:offline": "node scripts/build.js --offline",
+    "prestart": "node scripts/build.js",
     "start": "node src/server.js",
+    "predev": "node scripts/build.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test",
-    "build:demo": "node demo/build.js"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
@@ -17,9 +20,9 @@
   "dependencies": {
     "express": "^5.2.1",
     "pdfkit": "^0.20.2",
-    "qrcode": "^1.5.4"
-  },
-  "devDependencies": {
+    "qrcode": "^1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "esbuild": "^0.28.2"
   }
 }

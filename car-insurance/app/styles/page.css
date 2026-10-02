@@ -1,0 +1,13 @@
+html, body { margin: 0; height: 100%; }
+  body {
+    background: #E9ECF2;
+    background-image: radial-gradient(circle at 50% 0%, #F2F4F8, #DEE3EC 70%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 28px 0;
+    font-family: var(--font-body);
+  }
+  #app { transform-origin: center; }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* hide horizontal scrollbars on filter rows */
+  ::-webkit-scrollbar { height: 0; width: 0; }

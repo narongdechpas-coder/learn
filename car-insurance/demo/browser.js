@@ -1,6 +1,6 @@
-// เวอร์ชันเดโมที่รันทั้งหมดในเบราว์เซอร์ — ไม่ต้องติดตั้ง Node.js
-// ใช้ตรรกะชุดเดียวกับเซิร์ฟเวอร์จริง (src/service.js) โดยดัก fetch ของหน้าเว็บ
-// แล้วตอบแทนเซิร์ฟเวอร์ ข้อมูลอยู่ในหน่วยความจำ ปิดหน้าแล้วหายไป
+// แบ็กเอนด์จำลองในเบราว์เซอร์ สำหรับเวอร์ชันไฟล์เดียว (offline) — ไม่ต้องมีเซิร์ฟเวอร์
+// ใช้ตรรกะชุดเดียวกับเซิร์ฟเวอร์จริง (src/service.js) โดยดัก fetch ของหน้าแอปแล้วตอบแทน
+// ข้อมูลอยู่ในหน่วยความจำ ปิดหน้าแล้วหายไป
 const { Store } = require('../src/store');
 const { createService } = require('../src/service');
 const { renderPolicyPdf } = require('../src/policyPdf');
@@ -49,40 +49,18 @@ function buildPdf(order) {
   });
 }
 
-async function saveFile(filename, blob) {
+// ดาวน์โหลดกรมธรรม์: สร้าง PDF ในเบราว์เซอร์ แล้วบันทึก
+// (บน claude.ai ใช้ความสามารถ downloads ของหน้า, ที่อื่นใช้ลิงก์ดาวน์โหลดธรรมดา)
+window.ABI_downloadPolicy = async (ref) => {
+  const result = service.paidOrder(ref.id, ref.accessToken);
+  if (result.status !== 200) throw new Error(result.body.error);
+  const blob = await buildPdf(result.body);
+  const filename = `${result.body.policy.number}.pdf`;
   const downloads = window.claude?.use ? await window.claude.use('downloads') : null;
   if (downloads) return downloads.save({ filename, data: blob });
-  // นอก claude.ai (เช่นเปิดไฟล์ในเครื่อง) ใช้ลิงก์ดาวน์โหลดธรรมดา
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-}
-
-const errorBox = document.getElementById('error');
-function showError(msg) {
-  errorBox.textContent = msg;
-  errorBox.hidden = false;
-}
-
-// หน้าเดโมเปิด PDF ในแท็บใหม่ไม่ได้ จึงเหลือปุ่มดาวน์โหลดอย่างเดียว
-document.getElementById('viewPdf').hidden = true;
-document.getElementById('downloadPdf').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const btn = e.currentTarget;
-  const url = new URL(btn.href, location.href);
-  const id = url.pathname.split('/')[3];
-  const result = service.paidOrder(id, url.searchParams.get('token'));
-  if (result.status !== 200) return showError(result.body.error);
-  btn.setAttribute('aria-busy', 'true');
-  try {
-    const blob = await buildPdf(result.body);
-    await saveFile(`${result.body.policy.number}.pdf`, blob);
-  } catch (err) {
-    if (err?.code !== 'declined') showError('ดาวน์โหลดไม่สำเร็จ ลองกดอีกครั้ง');
-  } finally {
-    btn.removeAttribute('aria-busy');
-  }
-});
-
-// โหลดหน้าเว็บหลักหลังจากดัก fetch แล้ว
-require('../public/app.js');
+};
