@@ -46,8 +46,8 @@ export const SYSTEMS: SystemInfo[] = [
     id: "bazi",
     name: "ปาจื้อ (Bazi)",
     origin: "chinese",
-    description: "สี่เสาดวงชะตาจากปีเดือนวันเวลาเกิด และธาตุทั้งห้า",
-    available: false,
-    href: "#",
+    description: "สี่เสาดวงชะตาจากปีเดือนวันเวลาเกิด ธาตุทั้งห้า และวัยจรทุก 10 ปี",
+    available: true,
+    href: "/bazi",
   },
 ];

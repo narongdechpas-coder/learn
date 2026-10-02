@@ -14,14 +14,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th">
       <body className="min-h-screen font-sans antialiased">
         <header className="border-b border-[var(--border)]">
-          <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-            <Link href="/" className="text-lg font-semibold text-[var(--accent)]">
+          <nav className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
+            <Link href="/" className="whitespace-nowrap text-lg font-semibold text-[var(--accent)]">
               ✦ Horoscope Hub
             </Link>
-            <div className="flex gap-4 text-sm text-[var(--muted)]">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 whitespace-nowrap text-sm text-[var(--muted)]">
               <Link href="/thai-seven" className="hover:text-[var(--text)]">เลข 7 ตัว</Link>
               <Link href="/playing-cards" className="hover:text-[var(--text)]">ไพ่ป๊อก</Link>
               <Link href="/tarot" className="hover:text-[var(--text)]">ไพ่ยิปซี</Link>
+              <Link href="/bazi" className="hover:text-[var(--text)]">ปาจื้อ</Link>
             </div>
           </nav>
         </header>
