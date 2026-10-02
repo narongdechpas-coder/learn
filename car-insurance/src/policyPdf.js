@@ -1,9 +1,14 @@
 // สร้างกรมธรรม์ประกันภัยรถยนต์เป็น PDF (ภาษาไทย ฟอนต์ Sarabun)
-const path = require('node:path');
 const PDFDocument = require('pdfkit');
 const { VEHICLE_TYPES, REGIONS, GARAGES } = require('./premium');
 
-const FONT_DIR = path.join(__dirname, '..', 'fonts');
+// ค่าเริ่มต้นฝั่งเซิร์ฟเวอร์: อ่านฟอนต์จากโฟลเดอร์ fonts/
+// (เวอร์ชันเบราว์เซอร์ใน demo/ ส่งข้อมูลฟอนต์เข้ามาเองเป็น ArrayBuffer)
+function defaultFonts() {
+  const path = require('node:path');
+  const dir = path.join(__dirname, '..', 'fonts');
+  return { regular: path.join(dir, 'Sarabun-Regular.ttf'), bold: path.join(dir, 'Sarabun-Bold.ttf') };
+}
 const COMPANY = {
   name: 'บริษัท เดโม ประกันภัย จำกัด (มหาชน)',
   nameEn: 'Demo Insurance Public Company Limited',
@@ -25,14 +30,14 @@ function addYear(isoDate) {
   return `${y + 1}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-function renderPolicyPdf(order) {
+function renderPolicyPdf(order, fonts = defaultFonts()) {
   const doc = new PDFDocument({
     size: 'A4',
     margins: { top: 40, left: 40, right: 40, bottom: 20 },
     info: { Title: `กรมธรรม์ ${order.policy.number}`, Author: COMPANY.nameEn },
   });
-  doc.registerFont('th', path.join(FONT_DIR, 'Sarabun-Regular.ttf'));
-  doc.registerFont('th-bold', path.join(FONT_DIR, 'Sarabun-Bold.ttf'));
+  doc.registerFont('th', fonts.regular);
+  doc.registerFont('th-bold', fonts.bold);
 
   const L = doc.page.margins.left;
   const W = doc.page.width - L - doc.page.margins.right;

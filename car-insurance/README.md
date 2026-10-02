@@ -13,6 +13,12 @@ npm start          # เปิด http://localhost:3000
 npm test           # รันชุดทดสอบ
 ```
 
+### ไม่สะดวกติดตั้ง Node.js? ใช้เวอร์ชันเบราว์เซอร์
+
+`npm run build:demo` จะได้ไฟล์ `dist/demo.html` ไฟล์เดียว ที่รันทุกอย่างในเบราว์เซอร์
+(ใช้โค้ดคำนวณเบี้ย/ชำระเงิน/สร้าง PDF ชุดเดียวกับเซิร์ฟเวอร์ แต่ข้อมูลอยู่ในหน่วยความจำ ปิดหน้าแล้วหาย)
+นำไฟล์นี้ไปเปิดในเบราว์เซอร์หรือวางบนเว็บโฮสติ้งแบบ static ได้เลย
+
 ตัวแปรแวดล้อม: `PORT` (ค่าเริ่มต้น 3000), `DATA_FILE` (ค่าเริ่มต้น `data/db.json`),
 `ENABLE_MOCK_GATEWAY=false` เพื่อปิด endpoint ของ gateway จำลอง
 
@@ -35,7 +41,9 @@ src/
   payment.js     payment gateway จำลอง (tokenize บัตร, charge, Thai QR EMVCo + CRC16)
   policyPdf.js   สร้าง PDF กรมธรรม์ด้วย pdfkit + ฟอนต์ Sarabun
   store.js       ที่เก็บข้อมูล (JSON file)
-  server.js      Express API
+  service.js     ตรรกะหลัก (เช็คเบี้ย/สั่งซื้อ/ชำระเงิน) ไม่ผูกกับ Express
+  server.js      Express API (ห่อ service.js)
+demo/            เวอร์ชันเบราว์เซอร์ล้วน (ดัก fetch แล้วเรียก service.js โดยตรง)
 public/          หน้าเว็บ (HTML/CSS/JS ล้วน)
 fonts/           ฟอนต์ Sarabun (SIL OFL 1.1)
 test/            unit test + ทดสอบ flow ครบวงจรผ่าน API

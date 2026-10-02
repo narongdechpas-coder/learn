@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:demo": "node demo/build.js"
   },
   "engines": {
     "node": ">=20"
@@ -17,5 +18,8 @@
     "express": "^5.2.1",
     "pdfkit": "^0.20.2",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

@@ -24,7 +24,7 @@ function cardBrand(number) {
 
 function crc16(payload) {
   let crc = 0xffff;
-  for (const byte of Buffer.from(payload, 'utf8')) {
+  for (const byte of new TextEncoder().encode(payload)) {
     crc ^= byte << 8;
     for (let i = 0; i < 8; i++) {
       crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
