@@ -84,6 +84,26 @@ button { font: inherit; color: inherit; }
 .status { display: flex; justify-content: space-between; padding: 10px 24px 4px; font-size: 12px; font-weight: 600; color: #fff; background: var(--navy); }
 .oa-head { display: flex; align-items: center; gap: 10px; padding: 6px 14px 10px; background: var(--navy); color: #fff; }
 .oa-head .back { font-size: 20px; opacity: .8; }
+/* ---------- Full-screen phone mode: narrow screens, or #phone on any screen ---------- */
+.oa-head .spacer { flex: 1; }
+.oa-more { display: none; border: 0; background: rgba(255, 255, 255, .12); color: #fff; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; }
+.oa-menu { position: absolute; right: 10px; top: calc(env(safe-area-inset-top, 0px) + 54px); z-index: 6; background: #FFFFFF; color: #0F2438; border-radius: 14px; box-shadow: 0 12px 30px -10px rgba(5, 15, 25, .45); padding: 6px; display: grid; min-width: 220px; }
+.oa-menu button { border: 0; background: none; text-align: left; padding: 10px 12px; border-radius: 10px; font-size: 14px; cursor: pointer; color: #0F2438; }
+.oa-menu button:hover { background: #EEF2F6; }
+.fs-enter { display: none; }
+@media (max-width: 600px) { .fs-enter { display: block; width: min(375px, 100%); } }
+html.fs { padding: 0; height: 100%; }
+html.fs body { height: 100%; overflow: hidden; }
+.fs .wrap { display: block; max-width: none; padding: 0; height: 100%; }
+.fs .spec, .fs .hint, .fs .state-switch, .fs .fs-enter, .fs .status { display: none; }
+.fs .phone-col { position: static; display: block; height: 100%; }
+.fs .phone { width: 100%; height: 100%; max-height: none; min-height: 0; border-radius: 0; padding: 0; box-shadow: none; background: none; }
+.fs .screen { border-radius: 0; padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--chat-bg); }
+.fs .oa-head { padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
+.fs .oa-more { display: grid; place-items: center; }
+.fs .tile .key { display: none; }
+.fs .field input, .fs .field select { font-size: 16px; }
+
 .oa-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--teal-fill); display: grid; place-items: center; flex: none; }
 .oa-avatar svg { width: 18px; height: 18px; }
 .oa-name { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.2; }
@@ -228,6 +248,7 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
       <button type="button" id="st-pre" aria-pressed="false">ก่อนยืนยันตัวตน</button>
       <button type="button" id="st-main" aria-pressed="true">หลังยืนยันตัวตน</button>
     </div>
+    <button type="button" class="btn fs-enter" id="fsEnter">เปิดแบบเต็มจอเหมือนใช้ LINE จริง</button>
     <div class="phone">
       <div class="screen" id="screen">
         <div class="status"><span id="clock">09:41</span><span>5G ▮▮▮</span></div>
@@ -235,6 +256,12 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
           <span class="back" aria-hidden="true">‹</span>
           <div class="oa-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
           <div><div class="oa-name">Partner Desk</div><div class="oa-sub">บริการคู่ค้าประกันภัย</div></div>
+          <span class="spacer"></span>
+          <button type="button" class="oa-more" id="oaMore" aria-label="ตัวเลือกการจำลอง" aria-expanded="false" aria-controls="oaMenu">⋯</button>
+        </div>
+        <div class="oa-menu" id="oaMenu" hidden>
+          <button type="button" id="fsState">จำลอง: ผู้ใช้ที่ยังไม่ยืนยันตัวตน</button>
+          <button type="button" id="fsSpec">ดูสเปกและผังเมนู</button>
         </div>
         <div class="chat" id="chat" aria-live="polite"></div>
         <div class="quick" id="quick"></div>
@@ -679,6 +706,28 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
   accAll.addEventListener('click', () => { const open = !accs.every(d => d.open); accs.forEach(d => { d.open = open; }); syncAll(); });
   accs.forEach(d => d.addEventListener('toggle', syncAll));
   syncAll();
+
+  /* ---------- Full-screen phone mode ---------- */
+  const narrowMq = window.matchMedia('(max-width: 600px)'), oaMenu = document.getElementById('oaMenu'), oaMore = document.getElementById('oaMore');
+  let specOpen = false;
+  function applyFs() {
+    const on = (narrowMq.matches || location.hash === '#phone') && !specOpen;
+    document.documentElement.classList.toggle('fs', on);
+    oaMenu.hidden = true; oaMore.setAttribute('aria-expanded', 'false');
+    document.getElementById('fsState').textContent = state === 'main' ? 'จำลอง: ผู้ใช้ที่ยังไม่ยืนยันตัวตน' : 'จำลอง: คู่ค้าที่ยืนยันตัวตนแล้ว';
+    scroll();
+  }
+  oaMore.addEventListener('click', () => { oaMenu.hidden = !oaMenu.hidden; oaMore.setAttribute('aria-expanded', String(!oaMenu.hidden)); });
+  document.addEventListener('click', e => { if (!oaMenu.hidden && !e.target.closest('#oaMenu, #oaMore')) { oaMenu.hidden = true; oaMore.setAttribute('aria-expanded', 'false'); } });
+  document.getElementById('fsState').addEventListener('click', () => {
+    if (state === 'main') { setState('pre'); greetPre(); } else { setState('main'); greetMain(); }
+    applyFs();
+  });
+  document.getElementById('fsSpec').addEventListener('click', () => { specOpen = true; if (location.hash === '#phone') history.replaceState(null, '', location.pathname); applyFs(); window.scrollTo(0, 0); });
+  document.getElementById('fsEnter').addEventListener('click', () => { specOpen = false; applyFs(); });
+  if (narrowMq.addEventListener) narrowMq.addEventListener('change', applyFs);
+  window.addEventListener('hashchange', () => { if (location.hash === '#phone') specOpen = false; applyFs(); });
+  applyFs();
 
   /* ---------- Page theme (LINE screen stays light) ---------- */
   const root = document.documentElement, thLight = document.getElementById('th-light'), thDark = document.getElementById('th-dark');
