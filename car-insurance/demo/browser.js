@@ -1,5 +1,5 @@
 // แบ็กเอนด์จำลองในเบราว์เซอร์ สำหรับเวอร์ชันไฟล์เดียว (offline) — ไม่ต้องมีเซิร์ฟเวอร์
-// ใช้ตรรกะชุดเดียวกับเซิร์ฟเวอร์จริง (src/service.js) โดยดัก fetch ของหน้าแอปแล้วตอบแทน
+// ใช้ตรรกะชุดเดียวกับเซิร์ฟเวอร์จริง (src/service.js) ตอบคำขอของหน้าแอปแทนเซิร์ฟเวอร์
 // ข้อมูลอยู่ในหน่วยความจำ ปิดหน้าแล้วหายไป
 const { Store } = require('../src/store');
 const { createService } = require('../src/service');
@@ -9,14 +9,8 @@ const bold = require('../fonts/Sarabun-Bold.ttf');
 
 const service = createService(new Store());
 
-const json = ({ status, body }) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-
-async function handle(url, init) {
-  const method = (init.method || 'GET').toUpperCase();
-  const body = init.body ? JSON.parse(init.body) : {};
-  const token = new Headers(init.headers).get('x-order-token');
-  const p = url.pathname;
+async function handle(path, { method = 'GET', body, token } = {}) {
+  const p = path.split('?')[0];
   let m;
   if (method === 'GET' && p === '/api/options') return service.options();
   if (method === 'POST' && p === '/api/quotes') return service.createQuote(body);
@@ -30,14 +24,9 @@ async function handle(url, init) {
   return { status: 404, body: { error: 'ไม่พบ endpoint' } };
 }
 
-const realFetch = window.fetch.bind(window);
-window.fetch = async (input, init = {}) => {
-  const url = new URL(typeof input === 'string' ? input : input.url, location.href);
-  if (url.origin === location.origin && /^\/(api|mock-gateway)\//.test(url.pathname)) {
-    return json(await handle(url, init));
-  }
-  return realFetch(input, init);
-};
+// app/api.js เรียกฟังก์ชันนี้โดยตรงแทน fetch — ไม่ต้องพึ่ง URL/origin ของหน้า
+// จึงทำงานได้ทุกที่ที่เปิดไฟล์ (file://, หน้าพรีวิวในแอป, iframe แบบ sandbox)
+window.ABI_LOCAL_BACKEND = handle;
 
 function buildPdf(order) {
   return new Promise((resolve, reject) => {

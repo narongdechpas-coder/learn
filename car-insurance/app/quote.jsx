@@ -429,7 +429,9 @@ function QuoteWizard({ data, onClose, toast, onPurchased }) {
   const [checkout, setCheckout] = React.useState(null);
   const [busy, setBusy] = React.useState(false);
 
-  React.useEffect(() => {
+  const [loadError, setLoadError] = React.useState('');
+  const load = () => {
+    setLoadError('');
     window.ABI_API.options().then((opts) => {
       const toyota = opts.catalog.find(b => b.brand === 'Toyota') || opts.catalog[0];
       const m = toyota.models.find(x => x.name === 'Corolla Cross') || toyota.models[0];
@@ -437,8 +439,9 @@ function QuoteWizard({ data, onClose, toast, onPurchased }) {
       setP(opts);
       setForm({ brand: toyota.brand, model: m.name, year: clampYear(m, thisYear - 2), sumInsured: m.value,
         coverageClass: '1', repair: 'garage', driverAge: u.age, addons: ['phyd'], withCmi: true });
-    }).catch((e) => toast(e.message));
-  }, []);
+    }).catch((e) => setLoadError(e.message || 'โหลดข้อมูลไม่สำเร็จ'));
+  };
+  React.useEffect(load, []);
 
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   let q = null;
@@ -464,7 +467,15 @@ function QuoteWizard({ data, onClose, toast, onPurchased }) {
     <div style={{ position: 'absolute', inset: 0, zIndex: 70, background: 'var(--ink-50)', display: 'flex', flexDirection: 'column' }}>
       <QuoteHeader title="เช็คเบี้ย · ซื้อประกัน" sub={titles[step]} step={step} total={4} onBack={back} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 110 }}>
-        {!P && <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--ink-500)' }}>กำลังโหลด…</div>}
+        {!P && !loadError && <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--ink-500)' }}>กำลังโหลด…</div>}
+        {!P && loadError && (
+          <div role="alert" style={{ padding: '40px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <QIcon name="wifi-off" size={32} stroke={2} color="var(--ink-400)" />
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy-900)' }}>โหลดข้อมูลรถไม่สำเร็จ</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink-500)' }}>ตรวจสอบการเชื่อมต่อแล้วลองใหม่ ({loadError})</div>
+            <QButton variant="outline" iconLeft="refresh-cw" onClick={load}>ลองใหม่</QButton>
+          </div>
+        )}
         {P && step === 0 && <StepCar form={form} set={set} P={P} />}
         {P && step === 1 && <StepClass form={form} set={set} P={P} />}
         {P && step === 2 && <StepOptions form={form} set={set} P={P} />}

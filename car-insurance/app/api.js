@@ -1,6 +1,12 @@
 /* ABI Mobile App — เชื่อมต่อ API ของระบบ (เช็คเบี้ย / สั่งซื้อ / ชำระเงิน / กรมธรรม์ PDF) */
 (function () {
   async function call(path, { method = 'GET', body, token } = {}) {
+    // เวอร์ชันไฟล์เดียว (offline): ใช้แบ็กเอนด์ในเบราว์เซอร์โดยตรง
+    if (window.ABI_LOCAL_BACKEND) {
+      const r = await window.ABI_LOCAL_BACKEND(path, { method, body: body && JSON.parse(JSON.stringify(body)), token });
+      if (r.status >= 400) throw Object.assign(new Error(r.body.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่'), { status: r.status, data: r.body });
+      return r.body;
+    }
     const res = await fetch(path, {
       method,
       headers: { 'Content-Type': 'application/json', ...(token ? { 'x-order-token': token } : {}) },
@@ -14,7 +20,7 @@
   let optionsPromise = null;
 
   window.ABI_API = {
-    options: () => (optionsPromise ||= call('/api/options')),
+    options: () => (optionsPromise ||= call('/api/options').catch((e) => { optionsPromise = null; throw e; })),
     createQuote: (form) => call('/api/quotes', { method: 'POST', body: form }),
     createOrder: (body) => call('/api/orders', { method: 'POST', body }),
     getOrder: (order) => call(`/api/orders/${order.id}`, { token: order.accessToken }),

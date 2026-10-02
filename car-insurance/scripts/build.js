@@ -88,13 +88,21 @@ if (!offline) {
   const photos = Object.fromEntries(
     ['mine', 'eco', 'sedan', 'suv', 'pickup'].map((k) => [k, dataUri(path.join(app, `assets/photos/car-${k}.jpg`), 'image/jpeg')]),
   );
+  // pdfkit สร้าง URL จาก document.baseURI ตอนโหลด ซึ่งพังเมื่อเปิดไฟล์ในหน้าพรีวิว (about:srcdoc / blob:)
+  // ค่านี้ใช้เฉพาะ PDF/A ที่เราไม่ได้ใช้ จึงแทนด้วยสตริงคงที่
+  const pdfkitSrc = read('node_modules/pdfkit/js/pdfkit.standalone.js');
+  const pdfkitPatched = pdfkitSrc.replace(/const ICC_PROFILE_PATH = new URL\([^;]*;/, "const ICC_PROFILE_PATH = './data/sRGB_IEC61966_2_1.icc';");
+  if (pdfkitPatched === pdfkitSrc) throw new Error('pdfkit patch ไม่พบบรรทัด ICC_PROFILE_PATH (pdfkit อาจเปลี่ยนเวอร์ชัน)');
+  const pdfkitFile = path.join(root, 'node_modules/.cache/pdfkit.standalone.patched.js');
+  fs.mkdirSync(path.dirname(pdfkitFile), { recursive: true });
+  fs.writeFileSync(pdfkitFile, pdfkitPatched);
   const backend = bundle(path.join(root, 'demo/browser.js'), {
     loader: { '.ttf': 'binary' },
     alias: {
       'node:crypto': path.join(root, 'demo/shims/crypto.js'),
       'node:fs': path.join(root, 'demo/shims/empty.js'),
       'node:path': path.join(root, 'demo/shims/empty.js'),
-      pdfkit: path.join(root, 'node_modules/pdfkit/js/pdfkit.standalone.js'),
+      pdfkit: pdfkitFile,
     },
   });
   const safe = (s) => s.replace(/<\/script/gi, '<\\/script');
