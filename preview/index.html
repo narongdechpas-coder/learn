@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Partner Desk Preview</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: one centered column with two link cards. */
+:root {
+  --page: #EEF2F6; --surface: #FFFFFF; --ink: #0F2438; --muted: #56677A; --line: #D5DDE6; --navy: #0E3A5B; --teal: #0A7C74;
+  --font-display: "Anuphan", "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --page: #0B141D; --surface: #13202C; --ink: #E4ECF3; --muted: #93A4B5; --line: #263646; --navy: #2C6A99; --teal: #3FB8AC; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: calc(env(safe-area-inset-top, 0px) + 40px) calc(env(safe-area-inset-bottom, 0px) + 40px); display: grid; gap: 20px; }
+h1 { font-family: var(--font-display); font-size: 28px; margin: 0; line-height: 1.25; }
+p { margin: 0; color: var(--muted); }
+.cards { display: grid; gap: 12px; }
+a.card { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; color: inherit; text-decoration: none; }
+a.card:hover { border-color: var(--teal); }
+a.card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+a.card b { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
+a.card span { color: var(--muted); font-size: 14px; }
+a.card em { font-style: normal; color: var(--teal); font-weight: 600; font-size: 14px; }
+.note { font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Partner Desk</h1>
+    <p>Mockup LINE OA สำหรับคู่ค้าประกันภัย และระบบหลังบ้าน ข้อมูลทั้งหมดเป็นตัวอย่างสมมติ</p>
+  </div>
+  <div class="cards">
+    <a class="card" href="line-oa.html">
+      <b>LINE OA · Rich Menu</b>
+      <span>หน้าแชทพร้อม Rich Menu 6 ช่อง ฟอร์มเช็คเบี้ย และการ์ดตอบกลับ บนมือถือจะเปิดเต็มจอเหมือนใช้ LINE จริง</span>
+      <em>เปิด LINE OA</em>
+    </a>
+    <a class="card" href="line-oa.html#phone">
+      <b>LINE OA · โหมดเต็มจอ</b>
+      <span>บังคับเปิดแบบเต็มจอ ใช้เดโมบนคอมพิวเตอร์หรือแท็บเล็ต</span>
+      <em>เปิดโหมดเต็มจอ</em>
+    </a>
+    <a class="card" href="backoffice.html">
+      <b>Backoffice</b>
+      <span>ภาพรวม, Action ของคู่ค้า, งานติดตามของ Marketing ตามขอบเขตคู่ค้า และการตั้งค่าสิทธิ์</span>
+      <em>เปิด Backoffice</em>
+    </a>
+  </div>
+  <p class="note">สร้างจาก <code>line-oa-mockup/</code> และ <code>backoffice-mockup/</code> ด้วย <code>python3 tools/build_preview.py</code></p>
+</div>
+</body>
+</html>
