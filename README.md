@@ -6,7 +6,7 @@
 | --- | --- |
 | 🇹🇭 เลข 7 ตัว (ทักษา 4 ฐาน) | ✅ ใช้งานได้ |
 | 🃏 ไพ่ป๊อก 52 ใบ (ไพ่ประจำวัน / อดีต-ปัจจุบัน-อนาคต) | ✅ ใช้งานได้ |
-| 🔮 ไพ่ยิปซี (Tarot) | เร็ว ๆ นี้ |
+| 🔮 ไพ่ยิปซี (Tarot) Rider-Waite 78 ใบ (1 / 3 / ความรัก 5 / Celtic Cross 10 ใบ) | ✅ ใช้งานได้ |
 | 🀄 ปาจื้อ (Bazi) | เร็ว ๆ นี้ |
 
 ## เริ่มใช้งาน
@@ -48,6 +48,10 @@ src/
     registry.ts              # รายชื่อศาสตร์ทั้งหมด
     thai-seven/              # thai-lunar.ts, calculate.ts, meanings.ts + tests
     playing-cards/           # deck.ts, draw.ts, spreads.ts + tests
+    tarot/                   # deck.ts (ความหมายไทย 78 ใบ), spreads.ts + tests
+  lib/random.ts              # PRNG แบบใส่ seed ใช้ร่วมกันทุกศาสตร์ไพ่
+public/tarot/                # ภาพไพ่ยิปซี (WebP)
+scripts/prepare-tarot-images.mjs
 ```
 
 **เพิ่มศาสตร์ใหม่:** สร้าง `lib/systems/<id>/` และ `app/<id>/` แล้วเปลี่ยนรายการใน `registry.ts` เป็น `available: true`
@@ -55,5 +59,7 @@ src/
 ## เครดิต
 
 `thai-lunar.ts` พอร์ตมาจาก [KranaxALT/thailunar](https://github.com/KranaxALT/thailunar) (MIT) ซึ่งพอร์ตมาจาก [pythaidate](https://github.com/hmmbug/pythaidate) โดย Mark Hollow (MIT) อีกต่อหนึ่ง ผลลัพธ์ตรงกับ pythaidate ทุกวันตั้งแต่ ค.ศ. 1900–2100
+
+ภาพไพ่ยิปซีเป็นสำรับ Rider-Waite ต้นฉบับปี 1909 (public domain) นำมาจากแพ็กเกจ [@cometpisces/tarot-kit-images](https://www.npmjs.com/package/@cometpisces/tarot-kit-images) แล้วแปลงเป็น WebP ด้วย `npm run tarot:images`
 
 > คำทำนายทั้งหมดเพื่อความบันเทิง

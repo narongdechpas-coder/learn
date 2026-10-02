@@ -38,9 +38,9 @@ export const SYSTEMS: SystemInfo[] = [
     id: "tarot",
     name: "ไพ่ยิปซี (Tarot)",
     origin: "western",
-    description: "ไพ่ 78 ใบ Major และ Minor Arcana",
-    available: false,
-    href: "#",
+    description: "สำรับ Rider-Waite 78 ใบ มีไพ่ประจำวัน ความรัก และ Celtic Cross",
+    available: true,
+    href: "/tarot",
   },
   {
     id: "bazi",

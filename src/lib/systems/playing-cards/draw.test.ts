@@ -41,3 +41,11 @@ describe("readSpread", () => {
     expect(readSpread("nope", 1).cards).toHaveLength(1);
   });
 });
+
+describe("seed compatibility", () => {
+  it("keeps the draws of links shared before the shared random module", () => {
+    expect([1, 42, 12345, 4294967295].map((s) => drawCards(s, 3).map((c) => c.id))).toEqual([
+      [32, 1, 28], [31, 23, 44], [50, 16, 26], [46, 10, 37],
+    ]);
+  });
+});

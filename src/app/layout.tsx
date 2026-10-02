@@ -21,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex gap-4 text-sm text-[var(--muted)]">
               <Link href="/thai-seven" className="hover:text-[var(--text)]">เลข 7 ตัว</Link>
               <Link href="/playing-cards" className="hover:text-[var(--text)]">ไพ่ป๊อก</Link>
+              <Link href="/tarot" className="hover:text-[var(--text)]">ไพ่ยิปซี</Link>
             </div>
           </nav>
         </header>
