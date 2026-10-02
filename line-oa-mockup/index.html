@@ -255,15 +255,18 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
             <div class="grab"></div>
             <div class="liff"><span>LIFF · เช็คเบี้ยประกัน</span><button type="button" data-close aria-label="ปิด">×</button></div>
             <h3>เช็คเบี้ยประกันรถยนต์</h3>
+            <label class="field">ประเภทประกัน<select id="q-class">
+              <option>ชั้น 1</option><option>ชั้น 2+</option><option>ชั้น 3+</option><option>ชั้น 2</option><option>ชั้น 3</option><option>พ.ร.บ.</option>
+            </select></label>
             <div class="two">
               <label class="field">ยี่ห้อ<select id="q-brand"><option>Toyota</option><option>Honda</option><option>Isuzu</option></select></label>
-              <label class="field">รุ่น<input id="q-model" value="Yaris Ativ 1.2"></label>
+              <label class="field">รุ่น<select id="q-model"></select></label>
             </div>
             <div class="two">
-              <label class="field">ปีรถ<select id="q-year"><option>2023</option><option>2022</option><option>2021</option></select></label>
-              <label class="field">ทุนประกัน (บาท)<input id="q-sum" inputmode="numeric" value="450,000"></label>
+              <label class="field">ปีรถ<select id="q-year"><option>2025</option><option>2024</option><option selected>2023</option><option>2022</option><option>2021</option></select></label>
+              <label class="field" id="q-sum-field">ทุนประกัน (บาท)<input id="q-sum" inputmode="numeric" value="450,000"></label>
             </div>
-            <div class="field">ประเภทการซ่อม
+            <div class="field" id="q-repair-field">ประเภทการซ่อม
               <div class="seg">
                 <label><input type="radio" name="q-repair" id="q-r1" value="ซ่อมห้าง" checked><span>ซ่อมห้าง</span></label>
                 <label><input type="radio" name="q-repair" id="q-r2" value="ซ่อมอู่"><span>ซ่อมอู่</span></label>
@@ -337,7 +340,7 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
         <table>
           <thead><tr><th>ช่อง</th><th>ปุ่ม</th><th>Action</th><th>ผลลัพธ์ในแชท</th></tr></thead>
           <tbody>
-            <tr><td class="key-cell">A</td><td>เช็คเบี้ยประกัน</td><td><code>uri</code> → LIFF <code>/quote</code></td><td>ฟอร์มกรอกรถ/ทุน แล้วส่ง Flex Carousel เทียบชั้น 1 / 2+ / 3+ พร้อมเบี้ยสุทธิและค่าคอมฯ</td></tr>
+            <tr><td class="key-cell">A</td><td>เช็คเบี้ยประกัน</td><td><code>uri</code> → LIFF <code>/quote</code></td><td>ฟอร์มเลือกประเภทประกัน (ชั้น 1 / 2+ / 3+ / 2 / 3 / พ.ร.บ.) ยี่ห้อ รุ่น ปี ทุน แล้วส่งการ์ดชั้นที่เลือก พร้อมการ์ดเทียบชั้นใกล้เคียง เบี้ยสุทธิและค่าคอมฯ</td></tr>
             <tr><td class="key-cell">B</td><td>งานต่ออายุ</td><td><code>postback</code> <code>action=renewal&amp;month=current</code></td><td>สรุปจำนวนงานเดือนนี้/เดือนหน้า + Carousel รายกรมธรรม์ใกล้หมดอายุ Quick Reply สลับเดือน</td></tr>
             <tr><td class="key-cell">C</td><td>ขอสำเนากรมธรรม์</td><td><code>postback</code> <code>action=policy_copy</code></td><td>ขอคำค้น (เลขกรมธรรม์ ทะเบียน ชื่อ) แล้วแสดงการ์ดกรมธรรม์ ส่ง PDF ในแชทหรืออีเมลลูกค้า</td></tr>
             <tr><td class="key-cell">D</td><td>รับชำระ / Credit</td><td><code>postback</code> <code>action=credit_status</code></td><td>วงเงิน ใช้ไป คงเหลือ บิลที่วางแล้วรอชำระ และรายการที่ตัดชำระล่าสุด</td></tr>
@@ -352,7 +355,7 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
       <h2>ลำดับการใช้งานแต่ละบริการ</h2>
       <div class="flows">
         <div class="flow"><span class="tag">A · LIFF</span><h3>เช็คเบี้ยประกัน</h3>
-          <ol><li>เปิด LIFF ฟอร์ม ระบบเติมรหัสคู่ค้าให้อัตโนมัติ</li><li>เลือกยี่ห้อ รุ่น ปี ทุน ซ่อมห้าง/อู่</li><li>ส่งผลเป็น Carousel แยกตามแผน</li><li>ปุ่ม “ออกใบเสนอราคา” ส่ง PDF ให้ลูกค้าต่อได้ทันที</li></ol></div>
+          <ol><li>เปิด LIFF ฟอร์ม ระบบเติมรหัสคู่ค้าให้อัตโนมัติ</li><li>เลือกประเภทประกัน ยี่ห้อ รุ่น (รายการตามยี่ห้อ) ปี และทุน ช่องซ่อมห้าง/อู่แสดงเฉพาะชั้น 1</li><li>การ์ดแรกเป็นชั้นที่เลือก ตามด้วยชั้นใกล้เคียงให้เทียบ</li><li>ปุ่ม “ออกใบเสนอราคา” ส่ง PDF ให้ลูกค้าต่อได้ทันที</li></ol></div>
         <div class="flow"><span class="tag">B · postback</span><h3>งานครบกำหนดต่ออายุ</h3>
           <ol><li>สรุปจำนวนงาน ต.ค. 69 และ พ.ย. 69</li><li>Carousel เรียงตามวันหมดอายุ ใกล้สุดก่อน</li><li>สถานะ: ยังไม่เสนอ / เสนอแล้ว / ลูกค้าตอบรับ</li><li>ส่งรายการทั้งหมดเป็น Excel ทางอีเมล</li></ol></div>
         <div class="flow"><span class="tag">C · postback + ข้อความ</span><h3>ขอสำเนากรมธรรม์</h3>
@@ -530,25 +533,57 @@ pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radi
   document.querySelectorAll('.sheet-veil').forEach(v => {
     v.addEventListener('click', e => { if (e.target === v || e.target.closest('[data-close]')) v.hidden = true; });
   });
+  /* Quote form: models follow brand; fields follow class. Premiums are sample figures. */
+  const models = {
+    Toyota: [['Yaris Ativ 1.2', 1, 645.21], ['Corolla Cross 1.8 HEV', 1.25, 645.21], ['Fortuner 2.4', 1.45, 645.21]],
+    Honda: [['City 1.0 Turbo', 1, 645.21], ['HR-V e:HEV', 1.3, 645.21], ['Civic 1.5 Turbo', 1.35, 645.21]],
+    Isuzu: [['D-Max 1.9 Cab4', 0.95, 967.28], ['MU-X 1.9', 1.3, 645.21]]
+  };
+  const classes = {
+    'ชั้น 1': { prem: { 'ซ่อมห้าง': 18900, 'ซ่อมอู่': 16400 }, sum: null, ded: 'ไม่มี', cover: 'รถเรา + คู่กรณี ทุกกรณี' },
+    'ชั้น 2+': { prem: 9200, sum: '300,000', ded: '2,000', cover: 'ชนกับยานพาหนะ สูญหาย ไฟไหม้' },
+    'ชั้น 3+': { prem: 7400, sum: '150,000', ded: '2,000', cover: 'ชนกับยานพาหนะ' },
+    'ชั้น 2': { prem: 4900, sum: '300,000', ded: 'ไม่มี', cover: 'สูญหาย ไฟไหม้ + คู่กรณี' },
+    'ชั้น 3': { prem: 2900, sum: '-', ded: 'ไม่มี', cover: 'คู่กรณีเท่านั้น' }
+  };
+  const compare = { 'ชั้น 1': ['ชั้น 2+', 'ชั้น 3+'], 'ชั้น 2+': ['ชั้น 1', 'ชั้น 3+'], 'ชั้น 3+': ['ชั้น 2+', 'ชั้น 3'], 'ชั้น 2': ['ชั้น 2+', 'ชั้น 3'], 'ชั้น 3': ['ชั้น 3+', 'ชั้น 2'], 'พ.ร.บ.': [] };
+  const qBrand = document.getElementById('q-brand'), qModel = document.getElementById('q-model'), qClass = document.getElementById('q-class');
+  function fillModels() { qModel.innerHTML = models[qBrand.value].map(m => '<option>' + m[0] + '</option>').join(''); }
+  function syncFields() {
+    const c = qClass.value;
+    document.getElementById('q-repair-field').hidden = c !== 'ชั้น 1';
+    document.getElementById('q-sum-field').hidden = c === 'ชั้น 3' || c === 'พ.ร.บ.';
+  }
+  qBrand.addEventListener('change', fillModels);
+  qClass.addEventListener('change', syncFields);
+  fillModels(); syncFields();
+
   document.getElementById('quoteForm').addEventListener('submit', e => {
     e.preventDefault();
     document.getElementById('sheetQuote').hidden = true;
-    const car = document.getElementById('q-brand').value + ' ' + document.getElementById('q-model').value + ' ' + document.getElementById('q-year').value;
+    const cls = qClass.value, model = models[qBrand.value].find(m => m[0] === qModel.value);
+    const car = qBrand.value + ' ' + qModel.value + ' ปี ' + document.getElementById('q-year').value;
     const sum = document.getElementById('q-sum').value;
     const repair = document.querySelector('input[name="q-repair"]:checked').value;
-    user('เช็คเบี้ย: ' + car + ' ทุน ' + sum);
-    const plans = [
-      ['ชั้น 1 · ' + repair, repair === 'ซ่อมห้าง' ? 18900 : 16400, sum, 'ไม่มี', 'แนะนำ'],
-      ['ชั้น 2+', 9200, '300,000', '2,000', ''],
-      ['ชั้น 3+', 7400, '150,000', '2,000', '']
-    ];
-    bot(text('ผลเช็คเบี้ยสำหรับ ' + car + ' (เบี้ยรวมภาษีและอากรแล้ว)'));
+    const withSum = !document.getElementById('q-sum-field').hidden;
+    user('เช็คเบี้ย ' + cls + (cls === 'ชั้น 1' ? ' ' + repair : '') + ': ' + car + (withSum ? ' ทุน ' + sum : ''));
+    const plan = (name, picked) => {
+      if (name === 'พ.ร.บ.') return { name, tag: 'ที่เลือก', prem: model[2], sum: 'ตามกฎหมาย', ded: 'ไม่มี', cover: 'ค่ารักษาพยาบาลผู้ประสบภัย', rate: 0.12, picked };
+      const c = classes[name];
+      const base = typeof c.prem === 'number' ? c.prem : c.prem[repair];
+      return { name: name + (name === 'ชั้น 1' ? ' · ' + repair : ''), tag: picked ? 'ที่เลือก' : 'เทียบแผน',
+        prem: Math.round(base * model[1] / 10) * 10, sum: picked && c.sum !== '-' ? sum : (c.sum || sum), ded: c.ded, cover: c.cover, rate: 0.18, picked };
+    };
+    const plans = [plan(cls, true)].concat(compare[cls].map(n => plan(n, false)));
+    const money = v => '฿' + v.toLocaleString('th-TH', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+    bot(text('ผลเช็คเบี้ย' + cls + ' สำหรับ ' + car + (plans.length > 1 ? ' พร้อมแผนเทียบ' : '') + ' (เบี้ยรวมภาษีและอากรแล้ว)'));
     bot('<div class="carousel">' + plans.map(p =>
-      '<div class="card"><div class="hd' + (p[4] ? ' teal' : '') + '"><small>' + (p[4] || 'แผนประกัน') + '</small><b>' + p[0] + '</b></div><div class="bd">' +
-      '<div class="kv"><span>เบี้ยสุทธิ</span><span class="big">฿' + baht(p[1]) + '</span></div>' +
-      '<div class="kv"><span>ทุนประกัน</span><span>฿' + p[2] + '</span></div>' +
-      '<div class="kv"><span>ค่าเสียหายส่วนแรก</span><span>' + p[3] + '</span></div>' +
-      '<div class="kv"><span>ค่าคอมฯ 18%</span><span>฿' + baht(Math.round(p[1] / 1.07 * .18)) + '</span></div></div>' +
+      '<div class="card"><div class="hd' + (p.picked ? ' teal' : '') + '"><small>' + p.tag + '</small><b>' + p.name + '</b></div><div class="bd">' +
+      '<div class="kv"><span>เบี้ยสุทธิ</span><span class="big">' + money(p.prem) + '</span></div>' +
+      '<div class="kv"><span>คุ้มครอง</span><span>' + p.cover + '</span></div>' +
+      '<div class="kv"><span>ทุนประกัน</span><span>' + (/^[\d,]+$/.test(p.sum) ? '฿' + p.sum : p.sum) + '</span></div>' +
+      '<div class="kv"><span>ค่าเสียหายส่วนแรก</span><span>' + p.ded + '</span></div>' +
+      '<div class="kv"><span>ค่าคอมฯ ' + Math.round(p.rate * 100) + '%</span><span>' + money(Math.round(p.prem / 1.07 * p.rate * 100) / 100) + '</span></div></div>' +
       '<div class="ft"><button type="button" class="btn" data-act="issueQuote">ออกใบเสนอราคา</button></div></div>').join('') + '</div>', { wide: true });
   });
   act.issueQuote = () => { user('ออกใบเสนอราคา'); sendPdf('Quotation_Q-2569-10-0381.pdf', '164 KB'); };
