@@ -1,0 +1,617 @@
+<title>Partner Desk Rich Menu</title>
+<meta name="description" content="Mockup LINE OA สำหรับคู่ค้าประกันภัย: Rich Menu 6 ช่อง พร้อมตัวอย่าง Flex Message และสเปกสำหรับทีมพัฒนา">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: interactive phone (left, sticky) beside a developer spec sheet (right); stacks on phones. */
+:root {
+  --page: #EEF2F6;
+  --surface: #FFFFFF;
+  --ink: #0F2438;
+  --muted: #56677A;
+  --line: #D5DDE6;
+  --navy: #0E3A5B;
+  --navy-2: #13507C;
+  --teal: #0A7C74;
+  --teal-soft: #DDF1EE;
+  --teal-fill: #0A7C74;
+  --amber: #C77A0A;
+  --amber-soft: #FBEBD2;
+  --red: #B9382F;
+  --red-soft: #F8DEDB;
+  --chat-bg: #8DA6C6;
+  --bubble-user: #9DE693;
+  --bubble-user-ink: #0F2A12;
+  --tile-ink: #FFFFFF;
+  --code-bg: #0F2438;
+  --code-ink: #D9E6F2;
+  --phone-frame: #16222E;
+  --font-display: "Anuphan", "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0B141D; --surface: #13202C; --ink: #E4ECF3; --muted: #93A4B5; --line: #263646;
+    --navy: #0F3D60; --navy-2: #175884; --teal: #3FB8AC; --teal-soft: #11332F; --teal-fill: #0D6A63;
+    --amber: #F0AA45; --amber-soft: #3A2A10; --red: #F07C72; --red-soft: #3A1A17;
+    --chat-bg: #22303F; --bubble-user: #3E7D3A; --bubble-user-ink: #EAF7E8;
+    --code-bg: #08111A; --code-ink: #CFE0EE; --phone-frame: #000000;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0B141D; --surface: #13202C; --ink: #E4ECF3; --muted: #93A4B5; --line: #263646;
+  --navy: #0F3D60; --navy-2: #175884; --teal: #3FB8AC; --teal-soft: #11332F; --teal-fill: #0D6A63;
+  --amber: #F0AA45; --amber-soft: #3A2A10; --red: #F07C72; --red-soft: #3A1A17;
+  --chat-bg: #22303F; --bubble-user: #3E7D3A; --bubble-user-ink: #EAF7E8;
+  --code-bg: #08111A; --code-ink: #CFE0EE; --phone-frame: #000000;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--page); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; display: grid; gap: 32px; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.25; }
+h1 { font-size: 30px; font-weight: 700; }
+h2 { font-size: 21px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+/* ---------- Phone column ---------- */
+.phone-col { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 12px; justify-items: center; }
+@media (max-width: 900px) { .phone-col { position: static; } }
+.state-switch { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.state-switch button { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.state-switch button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.phone { width: min(375px, 100%); height: 780px; max-height: calc(100vh - 110px); min-height: 640px; background: var(--phone-frame); border-radius: 42px; padding: 12px; box-shadow: 0 24px 60px -24px rgba(9, 30, 50, .45); }
+.screen { position: relative; height: 100%; border-radius: 31px; overflow: hidden; display: flex; flex-direction: column; background: var(--chat-bg); }
+.status { display: flex; justify-content: space-between; padding: 10px 24px 4px; font-size: 12px; font-weight: 600; color: #fff; background: var(--navy); }
+.oa-head { display: flex; align-items: center; gap: 10px; padding: 6px 14px 10px; background: var(--navy); color: #fff; }
+.oa-head .back { font-size: 20px; opacity: .8; }
+.oa-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--teal-fill); display: grid; place-items: center; flex: none; }
+.oa-avatar svg { width: 18px; height: 18px; }
+.oa-name { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.2; }
+.oa-sub { font-size: 11px; opacity: .75; }
+.chat { flex: 1; overflow-y: auto; padding: 12px 10px 8px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { .chat { scroll-behavior: auto; } }
+.day { align-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .22); padding: 1px 10px; border-radius: 999px; }
+.row { display: flex; gap: 6px; align-items: flex-end; max-width: 100%; }
+.row.me { justify-content: flex-end; }
+.row .av { width: 28px; height: 28px; border-radius: 50%; background: var(--teal-fill); flex: none; display: grid; place-items: center; align-self: flex-start; }
+.row .av svg { width: 15px; height: 15px; }
+.time { font-size: 10px; color: rgba(255, 255, 255, .85); white-space: nowrap; }
+.msg { min-width: 0; max-width: 78%; }
+.txt { background: var(--surface); color: var(--ink); padding: 8px 12px; border-radius: 16px; font-size: 13.5px; line-height: 1.5; }
+.row.me .txt { background: var(--bubble-user); color: var(--bubble-user-ink); }
+.typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+/* Flex-message look */
+.flex-wrap { max-width: calc(100% - 34px); min-width: 0; }
+.carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
+.carousel > .card { flex: 0 0 236px; scroll-snap-align: start; }
+.card { background: var(--surface); color: var(--ink); border-radius: 16px; overflow: hidden; width: 248px; max-width: 100%; font-size: 13px; }
+.card .hd { padding: 12px 14px 10px; background: var(--navy); color: #fff; }
+.card .hd.teal { background: var(--teal-fill); }
+.card .hd small { display: block; font-size: 11px; opacity: .8; }
+.card .hd b { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.card .bd { padding: 12px 14px; display: grid; gap: 6px; }
+.card .ft { padding: 0 10px 10px; display: grid; gap: 6px; }
+.kv { display: flex; justify-content: space-between; gap: 10px; }
+.kv span:first-child { color: var(--muted); }
+.kv span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.big { font-family: var(--font-display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sep { height: 1px; background: var(--line); margin: 2px 0; }
+.btn { border: 0; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--navy); color: #fff; }
+.btn.ghost { background: transparent; color: var(--navy-2); border: 1px solid var(--line); }
+:root[data-theme="dark"] .btn.ghost { color: var(--teal); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.ghost { color: var(--teal); } }
+.chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+.chip.ok { background: var(--teal-soft); color: var(--teal); }
+.chip.warn { background: var(--amber-soft); color: var(--amber); }
+.chip.bad { background: var(--red-soft); color: var(--red); }
+.meter { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; display: flex; }
+.meter i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; background: var(--c); }
+.file { display: flex; gap: 10px; align-items: center; background: var(--surface); color: var(--ink); padding: 10px 12px; border-radius: 14px; font-size: 12.5px; }
+.file .ic { width: 34px; height: 40px; border-radius: 4px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex: none; }
+
+/* Quick reply + chat bar + rich menu */
+.quick { display: flex; gap: 6px; overflow-x: auto; padding: 6px 10px; }
+.quick:empty { display: none; }
+.quick button { flex: none; border: 1px solid rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .92); color: #0E3A5B; border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
+.bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--surface); border-top: 1px solid var(--line); color: var(--muted); }
+.bar svg { width: 20px; height: 20px; flex: none; }
+.bar .menu-toggle { flex: 1; border: 0; background: none; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+.bar .menu-toggle .caret { transition: transform .2s; }
+.bar .menu-toggle[aria-expanded="false"] .caret { transform: rotate(180deg); }
+.rm { display: grid; gap: 2px; background: var(--navy); padding: 2px; }
+.rm.main { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); aspect-ratio: 2500 / 1686; }
+.rm.pre { grid-template-columns: 2fr 1fr; aspect-ratio: 2500 / 843; }
+.tile { border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; padding: 6px; color: var(--tile-ink); line-height: 1.2; position: relative; }
+.tile svg { width: 34px; height: 34px; }
+.tile b { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; }
+.tile small { font-size: 10.5px; opacity: .85; }
+.tile.t-sales { background: linear-gradient(160deg, var(--navy-2), var(--navy)); }
+.tile.t-renew { background: linear-gradient(160deg, #0E8F86, #08655F); }
+.tile.t-fin { background: #F4F7FA; color: #0E3A5B; }
+.tile.t-fin svg { color: var(--teal); }
+.tile:hover { filter: brightness(1.08); }
+.tile:active { filter: brightness(.92); }
+.tile .key { position: absolute; top: 6px; left: 8px; font-size: 10px; font-weight: 600; opacity: .6; font-family: var(--font-mono); }
+
+/* LIFF sheet */
+.sheet-veil { position: absolute; inset: 0; background: rgba(5, 15, 25, .45); display: flex; align-items: flex-end; z-index: 5; }
+.sheet { width: 100%; background: var(--surface); color: var(--ink); border-radius: 20px 20px 0 0; padding: 14px 16px 18px; display: grid; gap: 10px; max-height: 88%; overflow-y: auto; }
+.sheet .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); justify-self: center; }
+.sheet .liff { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); }
+.sheet .liff button { border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+.field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.field input, .field select { font: inherit; font-size: 14px; color: var(--ink); background: var(--page); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; width: 100%; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg label { flex: 1; min-width: 70px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: block; text-align: center; border: 1px solid var(--line); border-radius: 10px; padding: 7px 4px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.seg input:checked + span { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); font-weight: 600; }
+.seg input:focus-visible + span { outline: 2px solid var(--teal); outline-offset: 2px; }
+.sheet .btn { padding: 11px; font-size: 14px; }
+.hint { font-size: 12px; color: var(--muted); text-align: center; max-width: 360px; }
+
+/* ---------- Spec column ---------- */
+.spec { display: grid; gap: 28px; min-width: 0; }
+.intro { display: grid; gap: 10px; }
+.intro p { color: var(--muted); max-width: 64ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.panel > p { color: var(--muted); max-width: 68ch; }
+.diagram { overflow-x: auto; }
+.diagram svg { width: 100%; min-width: 420px; height: auto; display: block; }
+.diagram text { font-family: var(--font-display); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 620px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td code, p code, li code { font-family: var(--font-mono); font-size: 12px; background: var(--page); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
+.key-cell { font-family: var(--font-mono); font-weight: 600; color: var(--teal); }
+.flows { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.flow { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.flow ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 13.5px; display: grid; gap: 3px; }
+.flow .tag { font-family: var(--font-mono); font-size: 11px; color: var(--teal); }
+ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72ch; }
+.code-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.copy { border: 1px solid var(--line); background: var(--page); border-radius: 8px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
+pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radius: 12px; padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 12px; line-height: 1.55; }
+.sample-note { font-size: 12px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <!-- ===== Phone ===== -->
+  <section class="phone-col" aria-label="ตัวอย่างหน้าจอ LINE OA">
+    <div class="state-switch" role="group" aria-label="สถานะผู้ใช้">
+      <button type="button" id="st-pre" aria-pressed="false">ก่อนยืนยันตัวตน</button>
+      <button type="button" id="st-main" aria-pressed="true">หลังยืนยันตัวตน</button>
+    </div>
+    <div class="phone">
+      <div class="screen" id="screen">
+        <div class="status"><span id="clock">09:41</span><span>5G ▮▮▮</span></div>
+        <div class="oa-head">
+          <span class="back" aria-hidden="true">‹</span>
+          <div class="oa-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div><div class="oa-name">Partner Desk</div><div class="oa-sub">บริการคู่ค้าประกันภัย</div></div>
+        </div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="quick" id="quick"></div>
+        <div class="bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>
+          <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="true" aria-controls="rmMain rmPre"><span id="chatBarText">เมนูคู่ค้า</span><span class="caret" aria-hidden="true">▾</span></button>
+        </div>
+
+        <!-- Rich menu: after verification (2500x1686, 6 areas) -->
+        <div class="rm main" id="rmMain">
+          <button type="button" class="tile t-sales" data-act="quote"><span class="key">A</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2"/><rect x="8" y="5.5" width="8" height="4" rx="1"/><path d="M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01"/></svg>
+            <b>เช็คเบี้ยประกัน</b><small>คำนวณ/เทียบแผน</small></button>
+          <button type="button" class="tile t-renew" data-act="renewal"><span class="key">B</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M15 14.5a3 3 0 1 1-1-2.2M15 11.5v1.6h-1.6"/></svg>
+            <b>งานต่ออายุ</b><small>เดือนนี้ · เดือนหน้า</small></button>
+          <button type="button" class="tile t-sales" data-act="copy"><span class="key">C</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h7l4 4v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v4h4"/><path d="M5 7v13a1 1 0 0 0 1 1h10"/><path d="M10 12h6M10 15h4"/></svg>
+            <b>ขอสำเนากรมธรรม์</b><small>ส่ง PDF / อีเมล</small></button>
+          <button type="button" class="tile t-fin" data-act="credit"><span class="key">D</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M6 15h4"/><path d="M15 15h3"/></svg>
+            <b>รับชำระ / Credit</b><small>วงเงิน · บิลค้าง</small></button>
+          <button type="button" class="tile t-fin" data-act="profile"><span class="key">E</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17c.6-1.8 2-2.8 3.5-2.8s2.9 1 3.5 2.8M15 10h3M15 13.5h3"/></svg>
+            <b>ข้อมูลคู่ค้า</b><small>ผลงาน · ค่าคอมฯ</small></button>
+          <button type="button" class="tile t-fin" data-act="contact"><span class="key">F</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-2 2.5-5 2.5"/></svg>
+            <b>ติดต่อเจ้าหน้าที่</b><small>Partner Desk · คู่มือ</small></button>
+        </div>
+
+        <!-- Rich menu: before verification (2500x843, 2 areas) -->
+        <div class="rm pre" id="rmPre" hidden>
+          <button type="button" class="tile t-renew" data-act="verify">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            <b>ยืนยันตัวตนคู่ค้า</b><small>ใช้รหัสคู่ค้า + OTP</small></button>
+          <button type="button" class="tile t-fin" data-act="contact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/></svg>
+            <b>ติดต่อเรา</b><small>สมัครเป็นคู่ค้า</small></button>
+        </div>
+
+        <!-- LIFF: premium quote -->
+        <div class="sheet-veil" id="sheetQuote" hidden>
+          <form class="sheet" id="quoteForm" aria-label="เช็คเบี้ยประกัน (LIFF)">
+            <div class="grab"></div>
+            <div class="liff"><span>LIFF · เช็คเบี้ยประกัน</span><button type="button" data-close aria-label="ปิด">×</button></div>
+            <h3>เช็คเบี้ยประกันรถยนต์</h3>
+            <div class="two">
+              <label class="field">ยี่ห้อ<select id="q-brand"><option>Toyota</option><option>Honda</option><option>Isuzu</option></select></label>
+              <label class="field">รุ่น<input id="q-model" value="Yaris Ativ 1.2"></label>
+            </div>
+            <div class="two">
+              <label class="field">ปีรถ<select id="q-year"><option>2023</option><option>2022</option><option>2021</option></select></label>
+              <label class="field">ทุนประกัน (บาท)<input id="q-sum" inputmode="numeric" value="450,000"></label>
+            </div>
+            <div class="field">ประเภทการซ่อม
+              <div class="seg">
+                <label><input type="radio" name="q-repair" id="q-r1" value="ซ่อมห้าง" checked><span>ซ่อมห้าง</span></label>
+                <label><input type="radio" name="q-repair" id="q-r2" value="ซ่อมอู่"><span>ซ่อมอู่</span></label>
+              </div>
+            </div>
+            <button class="btn" type="submit">คำนวณเบี้ย</button>
+          </form>
+        </div>
+
+        <!-- LIFF: verify partner -->
+        <div class="sheet-veil" id="sheetVerify" hidden>
+          <form class="sheet" id="verifyForm" aria-label="ยืนยันตัวตนคู่ค้า (LIFF)">
+            <div class="grab"></div>
+            <div class="liff"><span>LIFF · ยืนยันตัวตน</span><button type="button" data-close aria-label="ปิด">×</button></div>
+            <h3>ยืนยันตัวตนคู่ค้า</h3>
+            <label class="field">รหัสคู่ค้า / เลขใบอนุญาตนายหน้า<input id="v-code" value="BK-10482"></label>
+            <label class="field">เบอร์มือถือที่ลงทะเบียน<input id="v-phone" inputmode="tel" value="081-xxx-4821"></label>
+            <label class="field">รหัส OTP (ส่งทาง SMS)<input id="v-otp" inputmode="numeric" value="482913"></label>
+            <button class="btn" type="submit">ยืนยันและเปิดเมนูคู่ค้า</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <p class="hint">กดเมนูด้านล่างเพื่อดูข้อความตอบกลับ ข้อมูลทั้งหมดเป็นตัวอย่างสมมติ</p>
+  </section>
+
+  <!-- ===== Spec ===== -->
+  <main class="spec">
+    <header class="intro">
+      <span class="eyebrow">LINE OA · Partner Service</span>
+      <h1>Rich Menu สำหรับคู่ค้าประกันภัย</h1>
+      <p>เมนูขนาดใหญ่ 6 ช่อง (2500 × 1686 px) สำหรับนายหน้า ตัวแทน และดีลเลอร์ แถวบนเป็นงานบริการลูกค้าที่ใช้ทุกวัน แถวล่างเป็นเรื่องบัญชีของคู่ค้าเอง ผู้ใช้ที่ยังไม่ยืนยันตัวตนจะเห็นเมนูขนาดเล็กที่มีแค่ปุ่มยืนยันตัวตน</p>
+    </header>
+
+    <section class="panel">
+      <h2>ผังภาพ Rich Menu</h2>
+      <p>สัดส่วนตามจริงของภาพที่อัปโหลด ตัวเลขในแต่ละช่องคือพิกัด bounds (x, y, width, height)</p>
+      <div class="diagram">
+        <svg viewBox="0 0 2500 1686" role="img" aria-label="ผังพื้นที่กด 6 ช่อง ขนาด 2500 คูณ 1686">
+          <g font-size="88" font-weight="600" text-anchor="middle">
+            <rect x="0" y="0" width="833" height="843" fill="#13507C"/>
+            <rect x="833" y="0" width="834" height="843" fill="#0A7C74"/>
+            <rect x="1667" y="0" width="833" height="843" fill="#13507C"/>
+            <rect x="0" y="843" width="833" height="843" fill="#F4F7FA"/>
+            <rect x="833" y="843" width="834" height="843" fill="#F4F7FA"/>
+            <rect x="1667" y="843" width="833" height="843" fill="#F4F7FA"/>
+            <path d="M833 0V1686M1667 0V1686M0 843H2500" stroke="#0E3A5B" stroke-width="10" fill="none"/>
+            <rect x="5" y="5" width="2490" height="1676" fill="none" stroke="#0E3A5B" stroke-width="10"/>
+            <text x="416" y="400" fill="#FFFFFF">A · เช็คเบี้ย</text>
+            <text x="1250" y="400" fill="#FFFFFF">B · ต่ออายุ</text>
+            <text x="2083" y="400" fill="#FFFFFF">C · สำเนา</text>
+            <text x="416" y="1243" fill="#0E3A5B">D · รับชำระ</text>
+            <text x="1250" y="1243" fill="#0E3A5B">E · คู่ค้า</text>
+            <text x="2083" y="1243" fill="#0E3A5B">F · ติดต่อ</text>
+            <g font-size="58" font-weight="500" font-family="IBM Plex Mono, monospace">
+              <text x="416" y="520" fill="#CFE0EE">0, 0, 833, 843</text>
+              <text x="1250" y="520" fill="#D7F0EC">833, 0, 834, 843</text>
+              <text x="2083" y="520" fill="#CFE0EE">1667, 0, 833, 843</text>
+              <text x="416" y="1363" fill="#56677A">0, 843, 833, 843</text>
+              <text x="1250" y="1363" fill="#56677A">833, 843, 834, 843</text>
+              <text x="2083" y="1363" fill="#56677A">1667, 843, 833, 843</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>ปุ่มและ Action</h2>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>ช่อง</th><th>ปุ่ม</th><th>Action</th><th>ผลลัพธ์ในแชท</th></tr></thead>
+          <tbody>
+            <tr><td class="key-cell">A</td><td>เช็คเบี้ยประกัน</td><td><code>uri</code> → LIFF <code>/quote</code></td><td>ฟอร์มกรอกรถ/ทุน แล้วส่ง Flex Carousel เทียบชั้น 1 / 2+ / 3+ พร้อมเบี้ยสุทธิและค่าคอมฯ</td></tr>
+            <tr><td class="key-cell">B</td><td>งานต่ออายุ</td><td><code>postback</code> <code>action=renewal&amp;month=current</code></td><td>สรุปจำนวนงานเดือนนี้/เดือนหน้า + Carousel รายกรมธรรม์ใกล้หมดอายุ Quick Reply สลับเดือน</td></tr>
+            <tr><td class="key-cell">C</td><td>ขอสำเนากรมธรรม์</td><td><code>postback</code> <code>action=policy_copy</code></td><td>ขอคำค้น (เลขกรมธรรม์ ทะเบียน ชื่อ) แล้วแสดงการ์ดกรมธรรม์ ส่ง PDF ในแชทหรืออีเมลลูกค้า</td></tr>
+            <tr><td class="key-cell">D</td><td>รับชำระ / Credit</td><td><code>postback</code> <code>action=credit_status</code></td><td>วงเงิน ใช้ไป คงเหลือ บิลที่วางแล้วรอชำระ และรายการที่ตัดชำระล่าสุด</td></tr>
+            <tr><td class="key-cell">E</td><td>ข้อมูลคู่ค้า</td><td><code>postback</code> <code>action=partner_profile</code></td><td>รหัสคู่ค้า ระดับ ยอดเบี้ยสะสมปีนี้ ค่าคอมฯ รอจ่าย</td></tr>
+            <tr><td class="key-cell">F</td><td>ติดต่อเจ้าหน้าที่</td><td><code>message</code> “ติดต่อเจ้าหน้าที่”</td><td>เบอร์ Partner Desk เวลาทำการ และตัวเลือกคุยกับเจ้าหน้าที่ (สลับเป็น chat mode)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>ลำดับการใช้งานแต่ละบริการ</h2>
+      <div class="flows">
+        <div class="flow"><span class="tag">A · LIFF</span><h3>เช็คเบี้ยประกัน</h3>
+          <ol><li>เปิด LIFF ฟอร์ม ระบบเติมรหัสคู่ค้าให้อัตโนมัติ</li><li>เลือกยี่ห้อ รุ่น ปี ทุน ซ่อมห้าง/อู่</li><li>ส่งผลเป็น Carousel แยกตามแผน</li><li>ปุ่ม “ออกใบเสนอราคา” ส่ง PDF ให้ลูกค้าต่อได้ทันที</li></ol></div>
+        <div class="flow"><span class="tag">B · postback</span><h3>งานครบกำหนดต่ออายุ</h3>
+          <ol><li>สรุปจำนวนงาน ต.ค. 69 และ พ.ย. 69</li><li>Carousel เรียงตามวันหมดอายุ ใกล้สุดก่อน</li><li>สถานะ: ยังไม่เสนอ / เสนอแล้ว / ลูกค้าตอบรับ</li><li>ส่งรายการทั้งหมดเป็น Excel ทางอีเมล</li></ol></div>
+        <div class="flow"><span class="tag">C · postback + ข้อความ</span><h3>ขอสำเนากรมธรรม์</h3>
+          <ol><li>บอทขอคำค้น หรือเลือกจาก Quick Reply งานล่าสุด</li><li>แสดงการ์ดกรมธรรม์ (ค้นได้เฉพาะลูกค้าของคู่ค้ารายนั้น)</li><li>ส่ง PDF ในแชท หรือส่งอีเมลลูกค้าที่อยู่ในระบบ</li></ol></div>
+        <div class="flow"><span class="tag">D · postback</span><h3>สถานะรับชำระ / Credit Limit</h3>
+          <ol><li>แถบวงเงิน: บิลรอชำระ + งานยังไม่วางบิล + คงเหลือ</li><li>รายการบิลพร้อมวันครบกำหนดและสถานะ</li><li>เตือนเมื่อใช้วงเงินเกิน 80% หรือบิลเกินกำหนด</li></ol></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>ข้อควรรู้ก่อนพัฒนา</h2>
+      <ul class="notes">
+        <li>ภาพ Rich Menu เป็นภาพนิ่ง ตัวเลขอย่างจำนวนงานต่ออายุจึงไม่ควรใส่บนปุ่ม ให้ส่งเป็น push message ต้นเดือนแทน (ตัวอย่างข้อความแรกในแชท)</li>
+        <li>ใช้ Rich Menu 2 ชุด: <code>partner-pre</code> เป็นค่าเริ่มต้นของ OA และ <code>partner-main</code> ผูกรายบุคคลด้วย <code>POST /v2/bot/user/{userId}/richmenu</code> หลังยืนยันตัวตนสำเร็จ</li>
+        <li>ข้อมูลกรมธรรม์และการเงินเป็นข้อมูลส่วนบุคคล ต้องผูก LINE userId กับรหัสคู่ค้าก่อน และตรวจสิทธิ์ทุกคำขอว่าเป็นลูกค้าของคู่ค้ารายนั้น</li>
+        <li>ไฟล์ภาพ JPEG หรือ PNG ไม่เกิน 1 MB ข้อความบนปุ่มควรสูงอย่างน้อย 60 px ในภาพจริงเพื่อให้อ่านได้บนมือถือ</li>
+        <li><code>chatBarText</code> ยาวได้ไม่เกิน 14 ตัวอักษร ใช้ “เมนูคู่ค้า”</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <div class="code-head"><h2>Rich Menu JSON</h2><button type="button" class="copy" id="copyJson">คัดลอก JSON</button></div>
+      <pre id="json"></pre>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  const chat = document.getElementById('chat');
+  const quick = document.getElementById('quick');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const avatar = '<div class="av" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/></svg></div>';
+  const baht = n => n.toLocaleString('th-TH');
+  const stamp = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  document.getElementById('clock').textContent = stamp();
+
+  function scroll() { chat.scrollTop = chat.scrollHeight; }
+  function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+  function user(text) {
+    chat.appendChild(el('<div class="row me"><span class="time">' + stamp() + '</span><div class="msg"><div class="txt"></div></div></div>'));
+    chat.lastChild.querySelector('.txt').textContent = text;
+    setQuick([]); scroll();
+  }
+  function botNow(html, wide) {
+    chat.appendChild(el('<div class="row">' + avatar + '<div class="' + (wide ? 'flex-wrap' : 'msg') + '">' + html + '</div><span class="time">' + stamp() + '</span></div>'));
+    scroll();
+  }
+  let queue = Promise.resolve();
+  function bot(html, opts) {
+    opts = opts || {};
+    queue = queue.then(() => new Promise(res => {
+      const t = el('<div class="row">' + avatar + '<div class="txt typing"><i></i><i></i><i></i></div></div>');
+      chat.appendChild(t); scroll();
+      setTimeout(() => { t.remove(); botNow(html, opts.wide); if (opts.quick) setQuick(opts.quick); res(); }, reduce ? 80 : 550);
+    }));
+  }
+  const text = s => '<div class="txt">' + s + '</div>';
+  function setQuick(items) {
+    quick.innerHTML = '';
+    items.forEach(([label, fn]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.addEventListener('click', () => { user(label); fn(); });
+      quick.appendChild(b);
+    });
+  }
+
+  /* ---------- Sample data ---------- */
+  const renewals = {
+    cur: { label: 'ต.ค. 2569', total: 12, offered: 5, accepted: 3, items: [
+      { name: 'คุณสมชาย ใจดี', pol: 'V-2568-004512', car: 'Toyota Yaris Ativ · กข 1234', exp: '08 ต.ค. 2569', prem: 18900, st: ['warn', 'ยังไม่เสนอราคา'] },
+      { name: 'คุณวิภา รุ่งเรือง', pol: 'V-2568-004877', car: 'Honda City · 3ขค 5521', exp: '14 ต.ค. 2569', prem: 16250, st: ['ok', 'เสนอราคาแล้ว'] },
+      { name: 'บจก. ไทยรุ่งขนส่ง', pol: 'V-2568-005103', car: 'Isuzu D-Max 4 คัน', exp: '21 ต.ค. 2569', prem: 58400, st: ['ok', 'ลูกค้าตอบรับ'] } ] },
+    next: { label: 'พ.ย. 2569', total: 18, offered: 0, accepted: 0, items: [
+      { name: 'คุณกมล ศรีสุข', pol: 'V-2568-006021', car: 'Mazda 2 · 7กษ 889', exp: '03 พ.ย. 2569', prem: 14700, st: ['warn', 'ยังไม่เสนอราคา'] },
+      { name: 'คุณอนันต์ พูลผล', pol: 'H-2568-000318', car: 'ประกันอัคคีภัยบ้าน', exp: '11 พ.ย. 2569', prem: 3850, st: ['warn', 'ยังไม่เสนอราคา'] },
+      { name: 'คุณปวีณา แก้วมณี', pol: 'V-2568-006254', car: 'Toyota Corolla Cross · 1ขพ 402', exp: '19 พ.ย. 2569', prem: 21300, st: ['warn', 'ยังไม่เสนอราคา'] } ] }
+  };
+
+  /* ---------- Handlers ---------- */
+  const act = {
+    quote() { open('sheetQuote'); },
+    renewal(month) {
+      month = typeof month === 'string' ? month : 'cur';
+      const r = renewals[month], other = month === 'cur' ? 'next' : 'cur';
+      if (month === 'cur' && !act._fromQuick) user('งานครบกำหนดต่ออายุ');
+      act._fromQuick = false;
+      bot('<div class="card"><div class="hd teal"><small>งานครบกำหนดต่ออายุ</small><b>' + r.label + '</b></div><div class="bd">' +
+        '<div class="kv"><span>ทั้งหมด</span><span class="big">' + r.total + ' ราย</span></div>' +
+        '<div class="kv"><span>ยังไม่เสนอราคา</span><span>' + (r.total - r.offered - r.accepted) + '</span></div>' +
+        '<div class="kv"><span>เสนอราคาแล้ว</span><span>' + r.offered + '</span></div>' +
+        '<div class="kv"><span>ลูกค้าตอบรับ</span><span>' + r.accepted + '</span></div></div></div>');
+      bot('<div class="carousel">' + r.items.map(i =>
+        '<div class="card"><div class="hd"><small>หมดอายุ ' + i.exp + '</small><b>' + i.name + '</b></div><div class="bd">' +
+        '<span class="chip ' + i.st[0] + '">' + i.st[1] + '</span>' +
+        '<div class="kv"><span>กรมธรรม์</span><span>' + i.pol + '</span></div>' +
+        '<div class="kv"><span>ทรัพย์สิน</span><span>' + i.car + '</span></div>' +
+        '<div class="kv"><span>เบี้ยปีที่แล้ว</span><span>฿' + baht(i.prem) + '</span></div></div>' +
+        '<div class="ft"><button type="button" class="btn" data-act="renewQuote" data-name="' + i.name + '">เสนอราคาต่ออายุ</button></div></div>').join('') +
+        '</div>', { wide: true, quick: [
+          [month === 'cur' ? 'ดูงานเดือนหน้า' : 'ดูงานเดือนนี้', () => { act._fromQuick = true; act.renewal(other); }],
+          ['ส่งรายการเป็น Excel', () => bot(text('ส่งไฟล์ Renewal_' + r.label.replace(' ', '_') + '.xlsx ไปที่อีเมลคู่ค้าแล้ว'))],
+          ['เตือนลูกค้าที่ยังไม่เสนอ', () => bot(text('ตั้งเวลาส่ง SMS เตือนลูกค้า ' + (r.total - r.offered - r.accepted) + ' ราย พรุ่งนี้ 09:00 น.'))] ] });
+    },
+    renewQuote(btn) {
+      user('เสนอราคาต่ออายุ: ' + btn.dataset.name);
+      bot(text('สร้างใบเสนอราคาต่ออายุให้ ' + btn.dataset.name + ' แล้ว เบี้ยปีใหม่ ฿17,950 (ลด 5% ไม่มีเคลมปีที่ผ่านมา)'), { quick: [['ส่ง PDF ให้ลูกค้า', () => sendPdf('Renewal_Quote_V-2568-004512.pdf', '186 KB')]] });
+    },
+    copy() {
+      user('ขอสำเนากรมธรรม์');
+      bot(text('พิมพ์เลขกรมธรรม์ ทะเบียนรถ หรือชื่อลูกค้า หรือเลือกจากรายการล่าสุดด้านล่าง'), { quick: [
+        ['กข 1234 กรุงเทพมหานคร', policyResult], ['V-2568-004877', policyResult], ['คุณอนันต์ พูลผล', policyResult] ] });
+    },
+    sendPdf() { sendPdf('Policy_V-2568-004512.pdf', '312 KB'); },
+    sendMail() { user('ส่งอีเมลให้ลูกค้า'); bot(text('ส่งสำเนากรมธรรม์ไปที่ s•••••@gmail.com ของลูกค้าแล้ว')); },
+    credit() {
+      user('สถานะรับชำระและวงเงิน');
+      const limit = 2000000, billed = 845200, unbilled = 520200, free = limit - billed - unbilled;
+      const pct = v => (v / limit * 100).toFixed(1) + '%';
+      bot('<div class="card"><div class="hd"><small>วงเงินเครดิต · ณ 2 ต.ค. 2569</small><b>คงเหลือ ฿' + baht(free) + '</b></div><div class="bd">' +
+        '<div class="meter" role="img" aria-label="ใช้วงเงินไปแล้ว ' + pct(billed + unbilled) + '"><i style="width:' + pct(billed) + ';background:var(--navy-2)"></i><i style="width:' + pct(unbilled) + ';background:var(--amber)"></i></div>' +
+        '<div class="legend"><span style="--c:var(--navy-2)">วางบิลรอชำระ</span><span style="--c:var(--amber)">ยังไม่วางบิล</span><span style="--c:var(--line)">คงเหลือ</span></div>' +
+        '<div class="kv"><span>วงเงินทั้งหมด</span><span>฿' + baht(limit) + '</span></div>' +
+        '<div class="kv"><span>ใช้ไป (' + pct(billed + unbilled) + ')</span><span>฿' + baht(billed + unbilled) + '</span></div>' +
+        '<div class="sep"></div>' +
+        '<div class="kv"><span>INV-2569-0912</span><span class="chip warn">รอชำระ</span></div>' +
+        '<div class="kv"><span>วางบิล 25 ก.ย. · ครบ 15 ต.ค.</span><span>฿' + baht(billed) + '</span></div>' +
+        '<div class="kv"><span>INV-2569-0815</span><span class="chip ok">ตัดชำระแล้ว</span></div>' +
+        '<div class="kv"><span>ตัดชำระ 28 ก.ย.</span><span>฿612,800</span></div>' +
+        '<div class="kv"><span>งานที่ยังไม่วางบิล</span><span>฿' + baht(unbilled) + '</span></div>' +
+        '<div class="kv"><span>ค้างชำระเกินกำหนด</span><span class="chip ok">ไม่มี</span></div></div>' +
+        '<div class="ft"><button type="button" class="btn" data-act="billDetail">ดูรายละเอียดบิล</button><button type="button" class="btn ghost" data-act="payInfo">ช่องทางชำระเงิน</button></div></div>', { wide: true });
+    },
+    billDetail() { user('ดูรายละเอียดบิล'); sendPdf('INV-2569-0912_Statement.pdf', '228 KB'); },
+    payInfo() { user('ช่องทางชำระเงิน'); bot(text('โอนเข้าบัญชีบริษัทหรือชำระผ่าน QR ในใบวางบิล ระบบตัดชำระภายใน 1 วันทำการหลังได้รับเงิน')); },
+    profile() {
+      user('ข้อมูลคู่ค้า');
+      bot('<div class="card"><div class="hd teal"><small>รหัสคู่ค้า BK-10482 · ระดับ Gold</small><b>บจก. ศรีสยาม โบรกเกอร์</b></div><div class="bd">' +
+        '<div class="kv"><span>เบี้ยสะสมปี 2569</span><span>฿8,425,600</span></div>' +
+        '<div class="kv"><span>กรมธรรม์มีผล</span><span>1,284 ฉบับ</span></div>' +
+        '<div class="kv"><span>อัตราต่ออายุ</span><span>86.4%</span></div>' +
+        '<div class="kv"><span>ค่าคอมฯ รอจ่าย</span><span>฿142,380</span></div>' +
+        '<div class="kv"><span>ใบอนุญาตหมดอายุ</span><span>30 มิ.ย. 2570</span></div></div></div>', { wide: true });
+    },
+    contact() {
+      user('ติดต่อเจ้าหน้าที่');
+      bot(text('Partner Desk โทร 02-000-0000 กด 3<br>จันทร์–ศุกร์ 08:30–17:30 น.<br>หรือเลือกคุยกับเจ้าหน้าที่ในแชทนี้'), { quick: [
+        ['คุยกับเจ้าหน้าที่', () => bot(text('ส่งต่อให้เจ้าหน้าที่แล้ว รอประมาณ 3 นาที'))],
+        ['คู่มือการใช้งาน', () => bot(text('คู่มือคู่ค้า: วิธีเช็คเบี้ย การต่ออายุ การวางบิล และการขอสำเนา (เปิดผ่าน LIFF)'))] ] });
+    },
+    verify() { open('sheetVerify'); }
+  };
+
+  function policyResult() {
+    bot('<div class="card"><div class="hd"><small>ประกันรถยนต์ชั้น 1 · ซ่อมห้าง</small><b>V-2568-004512</b></div><div class="bd">' +
+      '<div class="kv"><span>ผู้เอาประกัน</span><span>คุณสมชาย ใจดี</span></div>' +
+      '<div class="kv"><span>ทะเบียน</span><span>กข 1234 กรุงเทพฯ</span></div>' +
+      '<div class="kv"><span>ระยะเวลา</span><span>08/10/68 – 08/10/69</span></div>' +
+      '<div class="kv"><span>สถานะ</span><span class="chip ok">มีผลบังคับ</span></div></div>' +
+      '<div class="ft"><button type="button" class="btn" data-act="sendPdf">ส่ง PDF ในแชท</button><button type="button" class="btn ghost" data-act="sendMail">ส่งอีเมลให้ลูกค้า</button></div></div>', { wide: true });
+  }
+  function sendPdf(name, size) {
+    if (name.startsWith('Policy')) user('ส่ง PDF ในแชท');
+    bot('<div class="file"><div class="ic">PDF</div><div><b>' + name + '</b><br><span class="sample-note">' + size + ' · หมดอายุลิงก์ใน 7 วัน</span></div></div>');
+  }
+
+  chat.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    act[b.dataset.act](b);
+  });
+  document.querySelectorAll('.rm .tile').forEach(t => t.addEventListener('click', () => act[t.dataset.act]()));
+
+  /* ---------- LIFF sheets ---------- */
+  function open(id) { document.getElementById(id).hidden = false; }
+  document.querySelectorAll('.sheet-veil').forEach(v => {
+    v.addEventListener('click', e => { if (e.target === v || e.target.closest('[data-close]')) v.hidden = true; });
+  });
+  document.getElementById('quoteForm').addEventListener('submit', e => {
+    e.preventDefault();
+    document.getElementById('sheetQuote').hidden = true;
+    const car = document.getElementById('q-brand').value + ' ' + document.getElementById('q-model').value + ' ' + document.getElementById('q-year').value;
+    const sum = document.getElementById('q-sum').value;
+    const repair = document.querySelector('input[name="q-repair"]:checked').value;
+    user('เช็คเบี้ย: ' + car + ' ทุน ' + sum);
+    const plans = [
+      ['ชั้น 1 · ' + repair, repair === 'ซ่อมห้าง' ? 18900 : 16400, sum, 'ไม่มี', 'แนะนำ'],
+      ['ชั้น 2+', 9200, '300,000', '2,000', ''],
+      ['ชั้น 3+', 7400, '150,000', '2,000', '']
+    ];
+    bot(text('ผลเช็คเบี้ยสำหรับ ' + car + ' (เบี้ยรวมภาษีและอากรแล้ว)'));
+    bot('<div class="carousel">' + plans.map(p =>
+      '<div class="card"><div class="hd' + (p[4] ? ' teal' : '') + '"><small>' + (p[4] || 'แผนประกัน') + '</small><b>' + p[0] + '</b></div><div class="bd">' +
+      '<div class="kv"><span>เบี้ยสุทธิ</span><span class="big">฿' + baht(p[1]) + '</span></div>' +
+      '<div class="kv"><span>ทุนประกัน</span><span>฿' + p[2] + '</span></div>' +
+      '<div class="kv"><span>ค่าเสียหายส่วนแรก</span><span>' + p[3] + '</span></div>' +
+      '<div class="kv"><span>ค่าคอมฯ 18%</span><span>฿' + baht(Math.round(p[1] / 1.07 * .18)) + '</span></div></div>' +
+      '<div class="ft"><button type="button" class="btn" data-act="issueQuote">ออกใบเสนอราคา</button></div></div>').join('') + '</div>', { wide: true });
+  });
+  act.issueQuote = () => { user('ออกใบเสนอราคา'); sendPdf('Quotation_Q-2569-10-0381.pdf', '164 KB'); };
+  document.getElementById('verifyForm').addEventListener('submit', e => {
+    e.preventDefault();
+    document.getElementById('sheetVerify').hidden = true;
+    user('ยืนยันตัวตน BK-10482');
+    bot(text('ยืนยันตัวตนสำเร็จ ยินดีต้อนรับ บจก. ศรีสยาม โบรกเกอร์ เปิดเมนูคู่ค้าให้แล้ว'));
+    queue = queue.then(() => setState('main'));
+  });
+
+  /* ---------- Menu state ---------- */
+  const rmMain = document.getElementById('rmMain'), rmPre = document.getElementById('rmPre');
+  const toggle = document.getElementById('menuToggle');
+  let state = 'main', expanded = true;
+  function render() {
+    rmMain.hidden = !(state === 'main' && expanded);
+    rmPre.hidden = !(state === 'pre' && expanded);
+    toggle.setAttribute('aria-expanded', String(expanded));
+    document.getElementById('chatBarText').textContent = state === 'main' ? 'เมนูคู่ค้า' : 'เริ่มใช้งาน';
+    document.getElementById('st-main').setAttribute('aria-pressed', String(state === 'main'));
+    document.getElementById('st-pre').setAttribute('aria-pressed', String(state === 'pre'));
+    scroll();
+  }
+  function setState(s) { state = s; expanded = true; render(); }
+  toggle.addEventListener('click', () => { expanded = !expanded; render(); });
+  document.getElementById('st-main').addEventListener('click', () => { if (state !== 'main') { setState('main'); greetMain(); } });
+  document.getElementById('st-pre').addEventListener('click', () => { if (state !== 'pre') { setState('pre'); greetPre(); } });
+
+  function greetPre() {
+    chat.innerHTML = '<div class="day">วันนี้</div>'; setQuick([]);
+    botNow(text('สวัสดีครับ Partner Desk ให้บริการเฉพาะคู่ค้าที่ลงทะเบียนแล้ว กด “ยืนยันตัวตนคู่ค้า” ที่เมนูด้านล่างเพื่อเริ่มใช้งาน'));
+  }
+  function greetMain() {
+    chat.innerHTML = '<div class="day">พฤ. 1 ต.ค. 2569</div>'; setQuick([]);
+    botNow('<div class="card"><div class="hd teal"><small>แจ้งเตือนประจำเดือน</small><b>งานต่ออายุ ต.ค. 2569</b></div><div class="bd">' +
+      '<p>มีกรมธรรม์ลูกค้าครบกำหนด <b>12 ราย</b> ยังไม่เสนอราคา 4 ราย ใกล้สุดหมดอายุ 8 ต.ค.</p></div>' +
+      '<div class="ft"><button type="button" class="btn" data-act="renewal">ดูรายการ</button></div></div>', true);
+    chat.appendChild(el('<div class="day">วันนี้</div>'));
+    botNow(text('สวัสดีครับ บจก. ศรีสยาม โบรกเกอร์ เลือกบริการจากเมนูด้านล่างได้เลย'));
+  }
+  greetMain(); render();
+
+  /* ---------- Spec JSON ---------- */
+  const area = (x, y, w, action) => ({ bounds: { x, y, width: w, height: 843 }, action });
+  const richMenu = {
+    size: { width: 2500, height: 1686 }, selected: true, name: 'partner-main', chatBarText: 'เมนูคู่ค้า',
+    areas: [
+      area(0, 0, 833, { type: 'uri', label: 'เช็คเบี้ยประกัน', uri: 'https://liff.line.me/{LIFF_ID}/quote' }),
+      area(833, 0, 834, { type: 'postback', label: 'งานต่ออายุ', data: 'action=renewal&month=current', displayText: 'งานครบกำหนดต่ออายุ' }),
+      area(1667, 0, 833, { type: 'postback', label: 'ขอสำเนากรมธรรม์', data: 'action=policy_copy', displayText: 'ขอสำเนากรมธรรม์' }),
+      area(0, 843, 833, { type: 'postback', label: 'รับชำระ/Credit', data: 'action=credit_status', displayText: 'สถานะรับชำระและวงเงิน' }),
+      area(833, 843, 834, { type: 'postback', label: 'ข้อมูลคู่ค้า', data: 'action=partner_profile', displayText: 'ข้อมูลคู่ค้า' }),
+      area(1667, 843, 833, { type: 'message', label: 'ติดต่อเจ้าหน้าที่', text: 'ติดต่อเจ้าหน้าที่' })
+    ]
+  };
+  const json = JSON.stringify(richMenu, null, 2);
+  const pre = document.getElementById('json'); pre.textContent = json;
+  const copyBtn = document.getElementById('copyJson');
+  copyBtn.addEventListener('click', () => {
+    const done = () => { copyBtn.textContent = 'คัดลอกแล้ว'; setTimeout(() => { copyBtn.textContent = 'คัดลอก JSON'; }, 1600); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); copyBtn.textContent = 'เลือกข้อความแล้ว กด Ctrl+C'; };
+    try { navigator.clipboard.writeText(json).then(done, fallback); } catch (err) { fallback(); }
+  });
+})();
+</script>
