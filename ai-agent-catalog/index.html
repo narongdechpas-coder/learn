@@ -1,0 +1,715 @@
+<title>AI Agent Catalog</title>
+<meta name="description" content="แคตตาล็อก AI Agent 12 ตัว พร้อม Benefit ต่อธุรกิจ และตัวจำลองความคุ้มค่า">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: summary-first executive dashboard — thesis + build/reuse strip, filterable agent grid opening a side sheet, then reuse map, ROI simulator, pillars. */
+:root {
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --surface-2: #EEF1F7;
+  --ink: #111A2E;
+  --muted: #586379;
+  --line: #DCE1EB;
+  --primary: #1B2A4A;        /* navy fill */
+  --primary-ink: #1B2A4A;    /* navy text */
+  --primary-soft: #E5EAF4;
+  --on-primary: #FFFFFF;
+  --accent: #8C1D2F;         /* burgundy fill */
+  --accent-ink: #8C1D2F;     /* burgundy text */
+  --accent-soft: #F5E6E9;
+  --on-accent: #FFFFFF;
+  --shadow: 0 1px 2px rgba(17,26,46,.06), 0 8px 24px rgba(17,26,46,.06);
+  --backdrop: rgba(10,16,30,.45);
+
+  --font-display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --r: 10px;
+  --wrap: 1180px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1222; --surface: #141C30; --surface-2: #1A2339; --ink: #E7EBF3; --muted: #9AA4BA; --line: #27314A;
+    --primary: #3B5594; --primary-ink: #B5C6EC; --primary-soft: #1B2743; --on-primary: #FFFFFF;
+    --accent: #B03A4E; --accent-ink: #EE97A5; --accent-soft: #3A1A23; --on-accent: #FFFFFF;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); --backdrop: rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1222; --surface: #141C30; --surface-2: #1A2339; --ink: #E7EBF3; --muted: #9AA4BA; --line: #27314A;
+  --primary: #3B5594; --primary-ink: #B5C6EC; --primary-soft: #1B2743; --on-primary: #FFFFFF;
+  --accent: #B03A4E; --accent-ink: #EE97A5; --accent-soft: #3A1A23; --on-accent: #FFFFFF;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); --backdrop: rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 16px/1.65 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.25; margin: 0; text-wrap: balance; color: var(--primary-ink); }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 4px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.eyebrow { font: 600 12px/1.4 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: 20px; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } }
+section { padding-block: 44px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 22px; }
+.section-head h2 { font-size: clamp(22px, 3vw, 28px); }
+.section-head p { color: var(--muted); max-width: 62ch; margin-top: 6px; }
+
+/* Top bar */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--primary); color: var(--on-primary); }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 13px/1.2 var(--font-data); letter-spacing: .1em; text-transform: uppercase; }
+.brand-mark { width: 26px; height: 26px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; letter-spacing: 0; }
+.topnav { display: flex; gap: 4px; flex-wrap: wrap; }
+.topnav a { color: var(--on-primary); opacity: .82; text-decoration: none; font-size: 14px; padding: 4px 10px; border-radius: 6px; }
+.topnav a:hover { opacity: 1; background: rgba(255,255,255,.1); }
+@media (max-width: 720px) { .topnav { display: none; } }
+
+/* Hero */
+.hero { padding-block: 40px 28px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; gap: 28px; } }
+.hero h1 { font-size: clamp(34px, 5.2vw, 56px); font-weight: 700; letter-spacing: -.01em; margin-top: 10px; }
+.hero h1 em { font-style: normal; color: var(--accent-ink); }
+.lede { margin-top: 14px; font-size: 18px; color: var(--muted); max-width: 54ch; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 26px; border-top: 1px solid var(--line); }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { padding: 14px 14px 4px 0; }
+.kpi b { display: block; font: 600 clamp(24px, 3vw, 30px)/1.1 var(--font-data); color: var(--primary-ink); }
+.kpi b.acc { color: var(--accent-ink); }
+.kpi span { font-size: 13px; color: var(--muted); line-height: 1.4; display: block; margin-top: 4px; }
+
+.strip-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); }
+.strip-card h3 { font-size: 17px; }
+.strip-card > p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.strip { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.strip-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 40px; align-items: center; gap: 10px; background: none; border: 0; padding: 2px 4px; border-radius: 6px; cursor: pointer; text-align: left; }
+.strip-row:hover { background: var(--surface-2); }
+.strip-row .id { font: 500 12px var(--font-data); color: var(--muted); }
+.strip-row .cells { display: flex; gap: 3px; flex-wrap: wrap; }
+.cell { width: 14px; height: 14px; border-radius: 3px; background: var(--primary); }
+.cell.build { background: var(--accent); }
+.strip-row .n { font: 600 13px var(--font-data); color: var(--muted); text-align: right; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; background: var(--primary); }
+.legend i.build { background: var(--accent); }
+
+.define { margin-top: 8px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; background: var(--accent-soft); border-radius: var(--r); padding: 18px 20px; }
+.define .tag { font: 600 12px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--on-accent); background: var(--accent); padding: 7px 10px; border-radius: 6px; white-space: nowrap; }
+.define p { color: var(--ink); }
+.define strong { color: var(--accent-ink); }
+@media (max-width: 560px) { .define { grid-template-columns: 1fr; } .define .tag { justify-self: start; } }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--primary-ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+/* Agent grid */
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+.card { display: flex; flex-direction: column; gap: 12px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; min-width: 0; }
+.card:hover { border-color: var(--primary-ink); box-shadow: var(--shadow); transform: translateY(-2px); }
+.card-top { display: flex; gap: 12px; align-items: start; }
+.ico { flex: none; width: 42px; height: 42px; border-radius: 9px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary-ink); }
+.ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.card .id { font: 500 12px var(--font-data); color: var(--muted); }
+.card h3 { font-size: 17px; margin-top: 2px; }
+.type { display: inline-block; font: 600 11px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 5px; margin-left: 6px; vertical-align: 2px; }
+.type.reusable { background: var(--primary-soft); color: var(--primary-ink); }
+.type.specialist { background: var(--accent-soft); color: var(--accent-ink); }
+.card .what { font-size: 14px; color: var(--muted); line-height: 1.55; }
+.headline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); }
+.headline b { font: 600 15px var(--font-data); color: var(--accent-ink); }
+.headline span { font-size: 13px; color: var(--ink); }
+.usage { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: auto; }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
+.usage span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.usage span b { color: var(--primary-ink); font-family: var(--font-data); }
+.more { font-size: 13px; color: var(--accent-ink); font-weight: 600; }
+
+/* Drawer */
+dialog.sheet { margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(600px, 100%); max-width: 100%; border: 0; padding: 0; background: var(--surface); color: var(--ink); box-shadow: -10px 0 40px rgba(0,0,0,.2); }
+dialog.sheet::backdrop { background: var(--backdrop); }
+dialog.sheet[open] { animation: slide .22s ease-out; }
+@keyframes slide { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+.sheet-inner { display: flex; flex-direction: column; height: 100%; }
+.sheet-head { padding: 22px 24px 18px; background: var(--primary); color: var(--on-primary); padding-top: calc(22px + env(safe-area-inset-top, 0px)); }
+.sheet-head .row { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.sheet-head .id { font: 500 12px var(--font-data); letter-spacing: .1em; opacity: .8; }
+.sheet-head h2 { color: var(--on-primary); font-size: 24px; margin-top: 4px; }
+.sheet-head .sub { opacity: .85; margin-top: 4px; font-size: 15px; }
+.x { flex: none; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: var(--on-primary); cursor: pointer; font-size: 20px; line-height: 1; }
+.sheet-body { flex: 1; overflow-y: auto; padding: 22px 24px 28px; display: flex; flex-direction: column; gap: 24px; }
+.sheet-body h4 { margin: 0 0 10px; font: 600 12px/1.4 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.flow { display: grid; grid-template-columns: minmax(0,1fr) 22px minmax(0,1fr) 22px minmax(0,1fr); align-items: stretch; gap: 4px; }
+.flow .step { border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 13px; line-height: 1.4; background: var(--surface-2); min-width: 0; }
+.flow .step small { display: block; font: 600 10px var(--font-data); letter-spacing: .1em; color: var(--muted); margin-bottom: 4px; }
+.flow .step.ai { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.flow .step.ai small { color: var(--on-primary); opacity: .75; }
+.flow .arrow { display: grid; place-items: center; color: var(--muted); }
+@media (max-width: 460px) { .flow { grid-template-columns: 1fr; } .flow .arrow { transform: rotate(90deg); height: 18px; } }
+.ba { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+.ba > div { border-radius: 8px; padding: 14px; min-width: 0; }
+.ba .before { background: var(--surface-2); border: 1px solid var(--line); }
+.ba .after { background: var(--accent-soft); border: 1px solid transparent; }
+.ba small { font: 600 11px var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ba .after small { color: var(--accent-ink); }
+.ba b { display: block; font: 600 20px/1.25 var(--font-display); margin-top: 4px; }
+.ba .after b { color: var(--accent-ink); }
+.ba p { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+@media (max-width: 420px) { .ba { grid-template-columns: 1fr; } }
+.benefits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.benefits li { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 12px; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.benefits li:last-child { border-bottom: 0; padding-bottom: 0; }
+.benefits .k { font: 600 12px var(--font-data); color: var(--accent-ink); letter-spacing: .04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--primary-ink); }
+button.chip { cursor: pointer; }
+.sheet-foot { display: flex; justify-content: space-between; gap: 10px; padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--primary-ink); }
+.btn:hover { border-color: var(--primary-ink); }
+
+/* Reuse map */
+.map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; }
+@media (max-width: 860px) { .map { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+.proj-list .chip[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.proj-list .chip .c { font-family: var(--font-data); font-size: 11px; margin-left: 6px; opacity: .7; }
+.mini { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 480px) { .mini { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.mini div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 8px; text-align: center; font-size: 12px; line-height: 1.3; color: var(--muted); transition: all .15s; min-width: 0; overflow-wrap: anywhere; }
+.mini div .ico { margin: 0 auto 6px; width: 34px; height: 34px; }
+.mini div .ico svg { width: 18px; height: 18px; }
+.mini div.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.mini div.on .ico { background: var(--accent); color: var(--on-accent); }
+.mini div.off { opacity: .45; }
+.map-note { margin-top: 14px; font-size: 15px; }
+.map-note b { color: var(--accent-ink); }
+
+/* ROI */
+.roi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; }
+@media (max-width: 860px) { .roi { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.field:last-child { border-bottom: 0; }
+.field .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.field label { font-size: 14px; }
+.field output { font: 600 15px var(--font-data); color: var(--primary-ink); white-space: nowrap; }
+.field input[type=range] { width: 100%; accent-color: var(--accent); }
+.field .hint { font-size: 12px; color: var(--muted); }
+.group-label { font: 600 12px var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); margin-top: 8px; }
+.total { padding: 18px; border-radius: 8px; background: var(--primary); color: var(--on-primary); }
+.total small { font-size: 13px; opacity: .85; }
+.total b { display: block; font: 600 clamp(28px, 4vw, 38px)/1.1 var(--font-data); margin-top: 4px; }
+.total span { font-size: 13px; opacity: .85; }
+.split { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; margin-top: 12px; }
+.split div { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.split small { font-size: 12px; color: var(--muted); }
+.split b { display: block; font: 600 20px var(--font-data); color: var(--accent-ink); }
+.compare { margin-top: 18px; display: grid; gap: 10px; }
+.cmp-row { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 10px; align-items: center; font-size: 13px; }
+.cmp-track { position: relative; height: 28px; background: var(--surface-2); border-radius: 6px; }
+.cmp-fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--muted); transition: width .25s; }
+.cmp-fill.reuse { background: var(--primary); }
+.cmp-val { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 600 13px var(--font-data); color: var(--ink); }
+.disclaimer { margin-top: 14px; font-size: 12px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; }
+@media (max-width: 420px) { .cmp-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* Pillars */
+.pillars { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0; border-top: 2px solid var(--primary); }
+@media (max-width: 860px) { .pillars { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 480px) { .pillars { grid-template-columns: 1fr; } }
+.pillar { padding: 20px 18px 8px 0; display: grid; gap: 6px; align-content: start; }
+.pillar .ico { background: var(--accent); color: var(--on-accent); }
+.pillar h3 { font-size: 18px; margin-top: 6px; }
+.pillar p { font-size: 14px; color: var(--muted); }
+footer { padding-block: 24px 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="brand-mark">AI</span>AI Portfolio · IT Innovation</div>
+    <nav class="topnav" aria-label="ส่วนของหน้า">
+      <a href="#catalog">Agents</a>
+      <a href="#reuse">Reuse Map</a>
+      <a href="#roi">ROI Simulator</a>
+      <a href="#value">คุณค่า</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">AI Inventory · AI Agent Catalog</div>
+        <h1>สร้าง 12 ครั้ง<br><em>ใช้งาน 41 ครั้ง</em></h1>
+        <p class="lede">AI Agent 12 ตัว (9 Reusable + 3 Specialist) ถูกนำไปใช้ซ้ำในหลายโครงการ ทุกโครงการใหม่จึงเริ่มจากชิ้นส่วนที่พร้อมใช้ และลดต้นทุนการพัฒนาได้ 40% ต่อโครงการ</p>
+        <div class="kpis">
+          <div class="kpi"><b class="num">12</b><span>AI Agents ที่ใช้งานจริง</span></div>
+          <div class="kpi"><b class="num">9 + 3</b><span>Reusable + Specialist</span></div>
+          <div class="kpi"><b class="num acc">−40%</b><span>ต้นทุนพัฒนาต่อโครงการใหม่</span></div>
+          <div class="kpi"><b class="num">24/7</b><span>ทำงานต่อเนื่อง ไม่มีวันหยุด</span></div>
+        </div>
+      </div>
+      <div class="strip-card">
+        <h3>แต่ละ Agent สร้างครั้งเดียว แล้วใช้ซ้ำ</h3>
+        <p>1 ช่อง = การนำไปใช้ใน 1 โครงการ · กดแถวเพื่อดูรายละเอียด</p>
+        <div class="strip" id="strip"></div>
+        <div class="legend"><span><i class="build"></i>ครั้งแรกที่สร้าง (12)</span><span><i></i>นำไปใช้ซ้ำ ไม่ต้องพัฒนาใหม่ (29)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="define">
+      <span class="tag">AI Agent คืออะไร</span>
+      <p>โปรแกรม AI ที่ทำงานเฉพาะทาง 1 อย่างโดยอัตโนมัติ เช่น อ่านเอกสาร ตอบแชท หรือจับคู่ข้อมูล เปรียบเสมือน <strong>“พนักงานดิจิทัลที่เก่ง 1 ทักษะ”</strong> ทำงานได้ 24/7 และ <strong>สร้างครั้งเดียว นำไปใช้ซ้ำได้ทุกโครงการ</strong> (Build Once, Use Many Times) ยิ่งใช้มากยิ่งคุ้ม เพราะไม่ต้องพัฒนาใหม่</p>
+    </div>
+  </div>
+
+  <section id="catalog">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Catalog</div>
+          <h2>AI Agent ทั้ง 12 ตัว</h2>
+          <p>กดการ์ดเพื่อดูว่าแต่ละ Agent แก้ปัญหาอะไร ผลลัพธ์ก่อนและหลังใช้ AI และโครงการที่นำไปใช้</p>
+        </div>
+        <div class="controls">
+          <div class="seg" role="group" aria-label="กรองประเภท">
+            <button type="button" data-filter="all" aria-pressed="true">ทั้งหมด</button>
+            <button type="button" data-filter="reusable" aria-pressed="false">Reusable (9)</button>
+            <button type="button" data-filter="specialist" aria-pressed="false">Specialist (3)</button>
+          </div>
+          <div class="seg" role="group" aria-label="เรียงลำดับ">
+            <button type="button" data-sort="id" aria-pressed="true">ตามลำดับ</button>
+            <button type="button" data-sort="usage" aria-pressed="false">ใช้ซ้ำมากสุด</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <section id="reuse" style="background: var(--surface);">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Reuse Map</div>
+          <h2>โครงการใหม่ = ประกอบจาก Agent ที่มีอยู่แล้ว</h2>
+          <p>เลือกโครงการเพื่อดูว่าใช้ Agent ตัวไหนบ้าง ยิ่งโครงการประกอบจาก Agent เดิมมากเท่าไร งานพัฒนาใหม่ก็น้อยลงเท่านั้น</p>
+        </div>
+      </div>
+      <div class="map">
+        <div class="panel">
+          <h4 class="eyebrow" style="margin:0 0 12px;">โครงการ (เรียงตามจำนวน Agent ที่ใช้)</h4>
+          <div class="chips proj-list" id="projList"></div>
+        </div>
+        <div class="panel">
+          <div class="mini" id="mini"></div>
+          <p class="map-note" id="mapNote"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roi">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">ROI Simulator</div>
+          <h2>ประเมินความคุ้มค่าต่อปี</h2>
+          <p>ปรับสมมติฐานให้ตรงกับข้อมูลจริงขององค์กร ตัวเลขจะคำนวณใหม่ทันที</p>
+        </div>
+      </div>
+      <div class="roi">
+        <div class="panel">
+          <div class="group-label">ต้นทุนพัฒนา</div>
+          <div class="field">
+            <div class="top"><label for="cost">ต้นทุนพัฒนาโครงการ AI ใหม่ (ถ้าสร้างเองทั้งหมด)</label><output id="costOut" for="cost"></output></div>
+            <input type="range" id="cost" min="0.5" max="10" step="0.5" value="3">
+          </div>
+          <div class="field">
+            <div class="top"><label for="projects">จำนวนโครงการ AI ใหม่ต่อปี</label><output id="projectsOut" for="projects"></output></div>
+            <input type="range" id="projects" min="1" max="20" step="1" value="6">
+          </div>
+          <div class="field">
+            <div class="top"><label for="reuseRate">ต้นทุนที่ลดได้จากการใช้ Agent ซ้ำ</label><output id="reuseOut" for="reuseRate"></output></div>
+            <input type="range" id="reuseRate" min="10" max="70" step="5" value="40">
+            <span class="hint">ค่าตั้งต้น 40% ตามผลจาก AI Inventory</span>
+          </div>
+          <div class="group-label" style="margin-top:16px;">งาน Manual ที่ลดได้</div>
+          <div class="field">
+            <div class="top"><label for="hours">ชั่วโมงงาน Manual ที่ลดได้ต่อเดือน</label><output id="hoursOut" for="hours"></output></div>
+            <input type="range" id="hours" min="0" max="3000" step="50" value="500">
+          </div>
+          <div class="field">
+            <div class="top"><label for="rate">ต้นทุนพนักงานเฉลี่ยต่อชั่วโมง</label><output id="rateOut" for="rate"></output></div>
+            <input type="range" id="rate" min="100" max="1500" step="50" value="300">
+          </div>
+        </div>
+        <div class="panel">
+          <div class="total">
+            <small>มูลค่าที่ได้รับต่อปี (ประมาณการ)</small>
+            <b id="totalOut"></b>
+            <span id="totalSub"></span>
+          </div>
+          <div class="split">
+            <div><small>ประหยัดต้นทุนพัฒนา</small><b id="devSave"></b></div>
+            <div><small>ลดค่าแรงงาน Manual</small><b id="laborSave"></b></div>
+          </div>
+          <div class="compare" aria-label="เปรียบเทียบงบพัฒนาต่อปี">
+            <h4 class="eyebrow" style="margin:6px 0 0;">งบพัฒนาต่อปี</h4>
+            <div class="cmp-row"><span>สร้างใหม่ทุกครั้ง</span><div class="cmp-track"><div class="cmp-fill" id="barNo"></div><span class="cmp-val" id="valNo"></span></div></div>
+            <div class="cmp-row"><span>ใช้ Agent ซ้ำ</span><div class="cmp-track"><div class="cmp-fill reuse" id="barYes"></div><span class="cmp-val" id="valYes"></span></div></div>
+          </div>
+          <p class="disclaimer">ตัวเลขในส่วนนี้เป็นค่าประมาณจากสมมติฐานที่ปรับได้ ไม่ใช่ผลประกอบการจริง ยกเว้นอัตราลดต้นทุน 40% ที่มาจาก AI Inventory</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="value" style="padding-top: 8px;">
+    <div class="wrap">
+      <div class="section-head"><div><div class="eyebrow">Business Value</div><h2>คุณค่าต่อองค์กร</h2></div></div>
+      <div class="pillars">
+        <div class="pillar"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></span><h3>ทำงานอัตโนมัติ 24/7</h3><p>ลดงาน Manual ที่ซ้ำซ้อน และเพิ่มประสิทธิภาพทีม</p></div>
+        <div class="pillar"><span class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/></svg></span><h3>ลดต้นทุนการพัฒนา 40%</h3><p>ต่อโครงการใหม่ พัฒนาเร็วขึ้นเพราะใช้ซ้ำได้</p></div>
+        <div class="pillar"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M5 15l5-5 3 3 6-6"/><path d="M15 7h4v4"/></svg></span><h3>ยิ่งใช้มาก ยิ่งคุ้ม</h3><p>สร้างครั้งเดียว ใช้ได้ไม่สิ้นสุด เพิ่มมูลค่าให้ธุรกิจอย่างยั่งยืน</p></div>
+        <div class="pillar"><span class="ico"><svg viewBox="0 0 24 24"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></svg></span><h3>Build Once, Use Many Times</h3><p>Agent ที่พัฒนาแล้วนำไปใช้ซ้ำได้ทุกโครงการ ช่วยให้องค์กรเติบโตอย่างชาญฉลาด</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">ข้อมูล Agent, จำนวนโครงการ และตัวชี้วัด Before/After มาจาก AI Inventory · ตัวเลขใน ROI Simulator เป็นค่าประมาณจากสมมติฐาน</div>
+</footer>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheetTitle">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div class="row">
+        <div>
+          <div class="id" id="sheetId"></div>
+          <h2 id="sheetTitle"></h2>
+          <p class="sub" id="sheetSub"></p>
+        </div>
+        <button class="x" type="button" id="closeBtn" aria-label="ปิด">×</button>
+      </div>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="sheet-foot">
+      <button class="btn" type="button" id="prevBtn">← ก่อนหน้า</button>
+      <button class="btn" type="button" id="nextBtn">ถัดไป →</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var ICONS = {
+    ocr: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M3 13h18"/>',
+    chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/>',
+    car: '<path d="M3 16v-4l2.2-5h13.6L21 12v4z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/><path d="M3 12h18"/>',
+    sheet: '<rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 9h16M4 14h16M10 9v11"/>',
+    quote: '<circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.3c-.5-.9-1.4-1.3-2.5-1.3-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2-.4-2.5-1.3M12 6.5v11"/>',
+    web: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18"/><path d="M9 12.5l-2 2 2 2M15 12.5l2 2-2 2"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 7l9 6 9-6"/>',
+    smile: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.3 2.2 2 3.5 2s2.5-.7 3.5-2M9 10h.01M15 10h.01"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+    pie: '<path d="M11 4a8 8 0 1 0 9 9h-9z"/><path d="M14 3.5A7 7 0 0 1 20.5 10H14z"/>',
+    shield: '<path d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    bars: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>'
+  };
+  function icon(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS[k] + '</svg>'; }
+
+  var agents = [
+    { id: 1, icon: 'ocr', type: 'reusable', usage: 11, usageLabel: 'ใช้ใน 11 โครงการ (หลัก)',
+      name: 'Content Extract Agent – OCR', role: 'อ่านเอกสารและภาพให้กลายเป็นข้อมูล',
+      what: 'ดึงข้อมูลจากภาพ / PDF ด้วย Image Recognition + OCR แปลงเป็น JSON structured พร้อมเปิดต่อยอด',
+      pain: 'ข้อมูลจำนวนมากอยู่ในภาพและ PDF ต้องให้คนเปิดอ่านและคีย์ลงระบบทีละฉบับ',
+      flow: ['ภาพ / PDF / เอกสารสแกน', 'Image Recognition + OCR', 'JSON structured ส่งต่อระบบ'],
+      headline: ['11 โครงการ', 'Agent ที่ถูกใช้ซ้ำมากที่สุด'],
+      before: ['คีย์ข้อมูลด้วยมือ', 'อ่านเอกสารแล้วกรอกข้อมูลลงระบบทีละรายการ'],
+      after: ['ข้อมูลพร้อมใช้อัตโนมัติ', 'ได้ JSON โครงสร้างเดียวกัน ใช้ต่อได้ทันที'],
+      benefits: [['เวลา', 'ลดการคีย์ข้อมูลจากเอกสารด้วยมือ'], ['ต้นทุน', 'เป็นฐานของ 11 โครงการ ไม่ต้องพัฒนา OCR ใหม่ทุกครั้ง'], ['คุณภาพ', 'ข้อมูลออกมาในรูปแบบเดียวกัน ส่งต่อระบบอื่นได้ทันที']],
+      projects: ['AI Auto Template', 'Auto Endorsements', 'Band Extract', 'DocFlow', 'E-Commerce', 'Invoice Thai Credit', 'Home Online', 'Live Chat', 'Microsite Driver', 'Non Voice Agent', 'Web Campaign 2ch'] },
+    { id: 2, icon: 'chat', type: 'reusable', usage: 5, usageLabel: 'ใช้ใน 5 โครงการ',
+      name: 'Chatbot Agent', role: 'ตอบลูกค้าและ Broker ทุกช่องทาง',
+      what: 'สนทนากับลูกค้าและ Broker แบบ Omnichannel (LINE / Web / Teams) ตอบคำถาม แจ้งโปรโมชั่น/สิทธิ์ ส่งต่อเคสให้เจ้าหน้าที่อัตโนมัติ',
+      pain: 'คำถามซ้ำ ๆ จากหลายช่องทางต้องรอเจ้าหน้าที่ตอบในเวลาทำการ',
+      flow: ['คำถามจาก LINE / Web / Teams', 'เข้าใจคำถามและตอบ', 'คำตอบ หรือส่งต่อเจ้าหน้าที่'],
+      headline: ['24/7', 'ตอบได้ 3 ช่องทาง'],
+      before: ['รอเจ้าหน้าที่ตอบ', 'ให้บริการได้เฉพาะเวลาทำการ'],
+      after: ['ตอบทันที 24/7', 'ส่งต่อเคสที่ต้องใช้คนให้เจ้าหน้าที่อัตโนมัติ'],
+      benefits: [['บริการ', 'ตอบลูกค้าและ Broker ได้ตลอดเวลาทั้ง LINE, Web และ Teams'], ['เวลา', 'เจ้าหน้าที่รับเฉพาะเคสที่ต้องใช้คนจริง'], ['ยอดขาย', 'แจ้งโปรโมชั่นและสิทธิ์ถึงลูกค้าโดยตรง']],
+      projects: ['Home+Clinic', 'Line Chat Mgmt', 'Non Voice Agent', 'Nong Roodee', 'T-Broker Doc'] },
+    { id: 3, icon: 'car', type: 'reusable', usage: 4, usageLabel: 'ใช้ใน 4 โครงการ',
+      name: 'Car Master Matching Agent', role: 'จับคู่ยี่ห้อ/รุ่นรถให้ตรง Master Data',
+      what: 'จับคู่ข้อมูลยี่ห้อ / รุ่นรถจาก Master Database ด้วย Fuzzy Search รองรับทุกช่องทาง Broker / Agent ที่ Input Format แตกต่างกัน',
+      pain: 'Broker แต่ละรายเขียนชื่อยี่ห้อและรุ่นรถไม่เหมือนกัน ต้องให้คนแมปกับ Master Data เอง',
+      flow: ['ชื่อรุ่นรถหลาย Format', 'Fuzzy Search กับ Master DB', 'รหัสรุ่นรถที่ถูกต้อง'],
+      headline: ['ทุก Format', 'รับข้อมูลจากทุก Broker'],
+      before: ['แมปข้อมูลด้วยมือ', 'ต้องปรับ Format แยกตาม Broker แต่ละราย'],
+      after: ['จับคู่อัตโนมัติ', 'รับ Input ได้ทุกรูปแบบ ไม่ต้องบังคับ Format'],
+      benefits: [['คุณภาพ', 'ลดความผิดพลาดจากชื่อรุ่นรถที่สะกดไม่ตรงกัน'], ['เวลา', 'ไม่ต้องแมปข้อมูลด้วยมือก่อนคำนวณเบี้ย'], ['ขยายได้', 'เพิ่ม Broker ใหม่ได้โดยไม่ต้องตกลง Format ใหม่']],
+      projects: ['AI Auto Template', 'Personalized Motor', 'Auto Statement TTB', 'InsurScan Compare'] },
+    { id: 4, icon: 'sheet', type: 'reusable', usage: 3, usageLabel: 'ใช้ใน 3 โครงการ',
+      name: 'Customized Template Generation Agent', role: 'ออกไฟล์ตาม Format ที่ Broker ต้องการ',
+      what: 'แปลงข้อมูลให้อยู่ในรูป (Rate / Transaction) ให้ออก Excel / Factsheet ตาม Format ที่แต่ละ Broker หรือระบบต้องการได้ทุกแบบ',
+      pain: 'Broker แต่ละรายต้องการไฟล์คนละรูปแบบ ทีมต้องจัดทำด้วยมือทีละราย',
+      flow: ['ข้อมูล Rate / Transaction', 'จัดรูปตาม Template', 'Excel / Factsheet พร้อมส่ง'],
+      headline: ['1 เดือน → 0–1 วัน', 'ระยะเวลางาน Manual'],
+      before: ['1 เดือน', 'จัดทำไฟล์ด้วยมือตาม Format ของแต่ละ Broker'],
+      after: ['0–1 วัน', 'ออกไฟล์ได้ทุกรูปแบบอัตโนมัติ'],
+      benefits: [['เวลา', 'ลดงานจาก 1 เดือน เหลือ 0–1 วัน'], ['บริการ', 'ส่งไฟล์ตาม Format ที่ Broker แต่ละรายต้องการได้ทันที'], ['ต้นทุน', 'ทีมไม่ต้องทำงานจัดรูปไฟล์ซ้ำทุกรอบ']],
+      projects: ['AI Auto Template', 'Auto Statement TTB', 'Factsheet Generator'] },
+    { id: 5, icon: 'quote', type: 'reusable', usage: 5, usageLabel: 'ใช้ใน 5 phases (2 main projects + 15 Buddy)',
+      name: 'Premium & Quote Generation Agent', role: 'คำนวณเบี้ยและออกใบเสนอราคา',
+      what: 'คำนวณเบี้ยและสร้างใบเสนอราคาอัตโนมัติ รองรับ OVS Package (Single Rate / 2+ Fix) ส่ง Quotation Document พร้อมใช้งานทันที',
+      pain: 'การคำนวณเบี้ยตามเงื่อนไข Package และทำใบเสนอราคาใช้เวลา ลูกค้าต้องรอ',
+      flow: ['ข้อมูลรถและความคุ้มครอง', 'คำนวณเบี้ยตาม Package', 'Quotation Document'],
+      headline: ['ทันที', 'ออกใบเสนอราคาพร้อมใช้'],
+      before: ['คำนวณและทำเอกสารเอง', 'ลูกค้ารอใบเสนอราคา'],
+      after: ['ส่ง Quotation ทันที', 'รองรับ OVS Package ทั้ง Single Rate และ 2+ Fix'],
+      benefits: [['ยอดขาย', 'ส่งใบเสนอราคาได้ระหว่างคุยกับลูกค้า ปิดการขายเร็วขึ้น'], ['คุณภาพ', 'คำนวณเบี้ยตามเงื่อนไข Package ถูกต้องสม่ำเสมอ'], ['ขยายได้', 'ใช้ซ้ำใน 2 โครงการหลักและ 15 Buddy']],
+      projects: ['Premium Bot PH-3', 'T-Broker Bot', 'Es Buddy'] },
+    { id: 6, icon: 'web', type: 'reusable', usage: 3, usageLabel: 'ใช้ใน 3 โครงการ',
+      name: 'Web Scraping Agent', role: 'ดึงข้อมูลจาก Broker Platform อัตโนมัติ',
+      what: 'ดึงข้อมูลธุรกรรมและผลิตภัณฑ์จาก Broker Platform (Rabbit Finance, Sunday, Roojai) อัตโนมัติทุกเดือน ไม่ต้องรอรายงานข้อมูลด้วยมือ',
+      pain: 'ต้องรอ Partner ส่งรายงาน หรือให้คนเข้าไปเก็บข้อมูลจากเว็บเองทุกเดือน',
+      flow: ['Rabbit Finance / Sunday / Roojai', 'Scrape ตามรอบเวลา', 'ข้อมูลธุรกรรมและผลิตภัณฑ์'],
+      headline: ['ทุกเดือน', 'อัตโนมัติจาก 3 Platform'],
+      before: ['รอรายงานด้วยมือ', 'ข้อมูลมาช้าและไม่สม่ำเสมอ'],
+      after: ['ดึงข้อมูลอัตโนมัติ', 'ได้ข้อมูลทุกเดือนตามรอบ'],
+      benefits: [['เวลา', 'ไม่ต้องรอรายงานข้อมูลจาก Partner'], ['ข้อมูล', 'เห็นธุรกรรมและผลิตภัณฑ์ในตลาดอย่างสม่ำเสมอ'], ['ต้นทุน', 'ลดงานรวบรวมข้อมูลซ้ำทุกเดือน']],
+      projects: ['Auto Statement TTB', 'InsurScan Compare', 'AI Investment'] },
+    { id: 7, icon: 'mail', type: 'reusable', usage: 3, usageLabel: 'ใช้ใน 3 โครงการ',
+      name: 'Email Classification Agent', role: 'คัดแยก Email และส่งเข้า Workflow',
+      what: 'จำแนกประเภท Email เช่น P/A, งาน, Invoice, Dealer Price แล้ว Route อัตโนมัติไปยัง Workflow ที่ถูกต้อง',
+      pain: 'Email เข้ากล่องรวมจำนวนมาก ต้องให้คนอ่านและส่งต่อให้ทีมที่รับผิดชอบ',
+      flow: ['Email เข้ากล่องรวม', 'จำแนกประเภท', 'ส่งเข้า Workflow ที่ถูกต้อง'],
+      headline: ['ลด 100%', 'งาน Manual Triage'],
+      before: ['คัดแยกด้วยมือ 100%', 'ต้องอ่านทุกฉบับก่อนส่งต่อ'],
+      after: ['Manual Triage 0%', 'Route อัตโนมัติตามประเภท'],
+      benefits: [['เวลา', 'ลดงานคัดแยก Email ด้วยมือ 100%'], ['บริการ', 'เรื่องถึงทีมที่ถูกต้องเร็วขึ้น'], ['ต่อยอด', 'ทำงานคู่กับ OCR Agent เพื่ออ่านไฟล์แนบต่อได้ทันที']],
+      projects: ['AI Auto Template', 'DocFlow AI Project', 'AI Investment'] },
+    { id: 8, icon: 'smile', type: 'reusable', usage: 2, usageLabel: 'ใช้ใน 2 โครงการ',
+      name: 'Sentimental Analysis Agent', role: 'อ่านความรู้สึกลูกค้าจากบทสนทนา',
+      what: 'วิเคราะห์ความรู้สึกจากบทสนทนา / รีวิว Broker เพื่อตรวจจับ Churn Signal และ Priority Alert ให้ทีม RM ดำเนินการก่อนที่ลูกค้าจะไม่พอใจ',
+      pain: 'รู้ว่าลูกค้าหรือ Broker ไม่พอใจเมื่อเกิดปัญหาไปแล้ว',
+      flow: ['บทสนทนา / รีวิว', 'วิเคราะห์ Sentiment', 'Churn Signal + Priority Alert'],
+      headline: ['ล่วงหน้า', 'แจ้งเตือน RM ก่อนลูกค้าไม่พอใจ'],
+      before: ['รู้ตัวเมื่อสายไป', 'ตามแก้หลังลูกค้าร้องเรียน'],
+      after: ['แจ้งเตือนล่วงหน้า', 'RM รู้ว่าควรดูแลรายไหนก่อน'],
+      benefits: [['ลูกค้า', 'ตรวจจับสัญญาณ Churn ก่อนลูกค้าจะไม่พอใจ'], ['ทีม RM', 'Priority Alert ช่วยจัดลำดับรายที่ต้องดูแลก่อน'], ['ข้อมูล', 'วัดความรู้สึกได้จากทุกบทสนทนา ไม่ใช่แค่การสุ่ม']],
+      projects: ['CRM Platform', 'AI for Telesales'] },
+    { id: 9, icon: 'mic', type: 'reusable', usage: 2, usageLabel: 'ใช้ใน 2 โครงการ',
+      name: 'Speech to Text Agent', role: 'ถอดเสียงสายโทรเป็นข้อความ',
+      what: 'ถอดความเสียงโทรศัพท์ (Voice / Call Center) เป็น Text แบบ Real-time ลดงาน Admin และเพิ่ม Quote Accuracy',
+      pain: 'ข้อมูลจากสายโทรต้องจดและสรุปเอง ใบเสนอราคาจึงคลาดเคลื่อนบ่อย',
+      flow: ['เสียงสายโทร Call Center', 'ถอดความ Real-time', 'ข้อความสำหรับออกใบเสนอราคา'],
+      headline: ['10% → 100%', 'Quote Accuracy'],
+      before: ['Quote Accuracy 10%', 'จดและสรุปสายด้วยมือ'],
+      after: ['Quote Accuracy 100%', 'ได้ข้อความทันทีระหว่างสาย'],
+      benefits: [['คุณภาพ', 'Quote Accuracy เพิ่มจาก 10% เป็น 100%'], ['เวลา', 'ลดงาน Admin สรุปสาย'], ['ต่อยอด', 'ส่งข้อความต่อให้ Sentiment และ QC Agent ใช้งาน']],
+      projects: ['Active Voice-to-Text', 'AI for Telesales'] },
+    { id: 10, icon: 'pie', type: 'specialist', usage: 1, usageLabel: 'ใช้ใน 1 โครงการ',
+      name: 'Broker Portfolio Scoring Agent', role: 'ให้คะแนน Broker เพื่อวางแผน Port',
+      what: 'คำนวณ Attention Score 0–100 จาก 5 Pillars สำหรับ Broker แต่ละราย เพื่อช่วยให้ RM วางแผน Port Mix และเพิ่ม Margin',
+      pain: 'RM ประเมิน Broker จากประสบการณ์ แต่ละคนใช้เกณฑ์ไม่เหมือนกัน',
+      flow: ['ข้อมูลผลงาน Broker', 'คำนวณ 5 Pillars', 'Attention Score 0–100'],
+      headline: ['Score 0–100', 'จาก 5 Pillars'],
+      before: ['ประเมินตามประสบการณ์', 'เกณฑ์ไม่เป็นมาตรฐานเดียวกัน'],
+      after: ['Attention Score 0–100', 'จัดลำดับ Broker ด้วยเกณฑ์เดียวกันทุกราย'],
+      benefits: [['รายได้', 'ช่วย RM วางแผน Port Mix เพื่อเพิ่ม Margin'], ['โฟกัส', 'รู้ว่า Broker รายไหนต้องดูแลก่อน'], ['มาตรฐาน', 'ใช้เกณฑ์ 5 Pillars เดียวกันทั้งองค์กร']],
+      projects: ['Nong Roodee'] },
+    { id: 11, icon: 'shield', type: 'specialist', usage: 1, usageLabel: 'ใช้ใน 1 โครงการ',
+      name: 'Compliance & QC Scoring Agent', role: 'ตรวจ Script และให้คะแนน QC ทุกสาย',
+      what: 'ประเมิน Script Compliance และ QC Score ตามเกณฑ์ Telesales อัตโนมัติ เพิ่ม QC Coverage',
+      pain: 'ทีม QC สุ่มฟังได้เพียงส่วนน้อยของสายทั้งหมด ความเสี่ยงด้าน Compliance จึงหลุดรอด',
+      flow: ['สายโทร Telesales', 'ตรวจ Script ตามเกณฑ์', 'QC Score ทุกสาย'],
+      headline: ['10% → 100%', 'QC Coverage'],
+      before: ['QC Coverage 10%', 'สุ่มฟังสายด้วยคน'],
+      after: ['QC Coverage 100%', 'ตรวจครบทุกสายอัตโนมัติ'],
+      benefits: [['ความเสี่ยง', 'QC Coverage เพิ่มจาก 10% เป็น 100%'], ['Compliance', 'ตรวจ Script ตามเกณฑ์เดียวกันทุกสาย'], ['เวลา', 'ทีม QC โฟกัสเฉพาะสายที่มีปัญหา']],
+      projects: ['AI for Telesales'] },
+    { id: 12, icon: 'bars', type: 'specialist', usage: 1, usageLabel: 'ใช้ใน 1 โครงการ',
+      name: 'Data Analytics Agent', role: 'สรุปภาพลูกค้าแบบ 360 องศา',
+      what: 'วิเคราะห์ข้อมูลลูกค้า 360 View สำหรับ Customer 360 & Case Management รองรับ AI Sentiment และสรุปผลอัตโนมัติ',
+      pain: 'ข้อมูลลูกค้ากระจายหลายระบบ ต้องรวบรวมเองก่อนดูแลเคส',
+      flow: ['ข้อมูลลูกค้าหลายระบบ', 'วิเคราะห์ + AI Sentiment', 'Customer 360 View'],
+      headline: ['360 View', 'ข้อมูลลูกค้าในที่เดียว'],
+      before: ['ข้อมูลกระจายหลายระบบ', 'รวบรวมและสรุปเอง'],
+      after: ['Customer 360 View', 'สรุปผลอัตโนมัติพร้อม Sentiment'],
+      benefits: [['ลูกค้า', 'เห็นข้อมูลลูกค้าครบในที่เดียว'], ['เวลา', 'สรุปผลอัตโนมัติ ไม่ต้องรวบรวมเอง'], ['ต่อยอด', 'รวมผล AI Sentiment เข้ากับ Case Management']],
+      projects: ['CRM Platform'] }
+  ];
+
+  var byId = {}; agents.forEach(function (a) { byId[a.id] = a; });
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var maxUsage = 11;
+
+  /* Hero strip */
+  var strip = document.getElementById('strip');
+  strip.innerHTML = agents.map(function (a) {
+    var cells = '';
+    for (var i = 0; i < a.usage; i++) cells += '<span class="cell' + (i === 0 ? ' build' : '') + '"></span>';
+    return '<button type="button" class="strip-row" data-open="' + a.id + '" aria-label="' + esc(a.name) + ' ' + esc(a.usageLabel) + '"><span class="id">' + pad(a.id) + '</span><span class="cells">' + cells + '</span><span class="n">×' + a.usage + '</span></button>';
+  }).join('');
+
+  /* Catalog */
+  var grid = document.getElementById('grid');
+  var state = { filter: 'all', sort: 'id' };
+  function visible() {
+    var list = agents.filter(function (a) { return state.filter === 'all' || a.type === state.filter; });
+    if (state.sort === 'usage') list = list.slice().sort(function (a, b) { return b.usage - a.usage || a.id - b.id; });
+    return list;
+  }
+  function renderGrid() {
+    grid.innerHTML = visible().map(function (a) {
+      return '<button type="button" class="card" data-open="' + a.id + '">' +
+        '<div class="card-top"><span class="ico">' + icon(a.icon) + '</span><div style="min-width:0">' +
+        '<div class="id">AGENT ' + pad(a.id) + '<span class="type ' + a.type + '">' + (a.type === 'reusable' ? 'Reusable' : 'Specialist') + '</span></div>' +
+        '<h3>' + esc(a.name) + '</h3></div></div>' +
+        '<p class="what">' + esc(a.role) + '</p>' +
+        '<div class="headline"><b>' + esc(a.headline[0]) + '</b><span>' + esc(a.headline[1]) + '</span></div>' +
+        '<div class="usage"><div class="bar"><i style="width:' + (a.usage / maxUsage * 100) + '%"></i></div><span><b>' + a.usage + '</b> ' + (a.id === 5 ? 'phases' : 'โครงการ') + '</span></div>' +
+        '<span class="more">ดูรายละเอียด →</span></button>';
+    }).join('');
+  }
+  document.querySelectorAll('[data-filter]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.filter = b.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      renderGrid();
+    });
+  });
+  document.querySelectorAll('[data-sort]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.sort = b.dataset.sort;
+      document.querySelectorAll('[data-sort]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      renderGrid();
+    });
+  });
+  renderGrid();
+
+  /* Detail sheet */
+  var sheet = document.getElementById('sheet');
+  var current = null;
+  function openAgent(id) {
+    var a = byId[id]; if (!a) return;
+    current = id;
+    document.getElementById('sheetId').textContent = 'AGENT ' + pad(a.id) + ' · ' + (a.type === 'reusable' ? 'REUSABLE' : 'SPECIALIST') + ' · ' + a.usageLabel.toUpperCase();
+    document.getElementById('sheetTitle').textContent = a.name;
+    document.getElementById('sheetSub').textContent = a.role;
+    var arrow = '<span class="arrow" aria-hidden="true">→</span>';
+    document.getElementById('sheetBody').innerHTML =
+      '<div><h4>ปัญหาเดิม</h4><p>' + esc(a.pain) + '</p></div>' +
+      '<div><h4>AI ทำอะไร</h4><p style="margin-bottom:12px">' + esc(a.what) + '</p>' +
+      '<div class="flow"><div class="step"><small>INPUT</small>' + esc(a.flow[0]) + '</div>' + arrow +
+      '<div class="step ai"><small>AI AGENT</small>' + esc(a.flow[1]) + '</div>' + arrow +
+      '<div class="step"><small>OUTPUT</small>' + esc(a.flow[2]) + '</div></div></div>' +
+      '<div><h4>ก่อน vs หลังใช้ AI</h4><div class="ba">' +
+      '<div class="before"><small>ก่อน</small><b>' + esc(a.before[0]) + '</b><p>' + esc(a.before[1]) + '</p></div>' +
+      '<div class="after"><small>หลัง</small><b>' + esc(a.after[0]) + '</b><p>' + esc(a.after[1]) + '</p></div></div></div>' +
+      '<div><h4>Benefit ต่อธุรกิจ</h4><ul class="benefits">' + a.benefits.map(function (b) { return '<li><span class="k">' + esc(b[0]) + '</span><span>' + esc(b[1]) + '</span></li>'; }).join('') + '</ul></div>' +
+      '<div><h4>โครงการที่ใช้ (' + a.projects.length + ')</h4><div class="chips">' + a.projects.map(function (p) { return '<button type="button" class="chip" data-proj="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div></div>';
+    document.getElementById('sheetBody').scrollTop = 0;
+    if (!sheet.open) sheet.showModal();
+    try { history.replaceState(null, '', '#agent-' + pad(id)); } catch (e) {}
+  }
+  function closeSheet() { sheet.close(); }
+  sheet.addEventListener('close', function () { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} });
+  function step(d) { var i = (current - 1 + d + agents.length) % agents.length; openAgent(agents[i].id); }
+  document.getElementById('closeBtn').addEventListener('click', closeSheet);
+  document.getElementById('prevBtn').addEventListener('click', function () { step(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function () { step(1); });
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+  sheet.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') step(1);
+    if (e.key === 'ArrowLeft') step(-1);
+  });
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open]'); if (o) { openAgent(+o.dataset.open); return; }
+    var p = e.target.closest('#sheetBody [data-proj]');
+    if (p) { closeSheet(); selectProject(p.dataset.proj); document.getElementById('reuse').scrollIntoView({ behavior: 'smooth' }); }
+  });
+
+  /* Reuse map */
+  var projects = {};
+  agents.forEach(function (a) { a.projects.forEach(function (p) { (projects[p] = projects[p] || []).push(a.id); }); });
+  var projNames = Object.keys(projects).sort(function (a, b) { return projects[b].length - projects[a].length || a.localeCompare(b); });
+  var projList = document.getElementById('projList');
+  projList.innerHTML = projNames.map(function (p) {
+    return '<button type="button" class="chip" aria-pressed="false" data-select="' + esc(p) + '">' + esc(p) + '<span class="c">' + projects[p].length + '</span></button>';
+  }).join('');
+  var mini = document.getElementById('mini');
+  mini.innerHTML = agents.map(function (a) {
+    return '<div data-mini="' + a.id + '"><span class="ico">' + icon(a.icon) + '</span>' + pad(a.id) + ' ' + esc(a.name.replace(' Agent', '').replace(' – OCR', '')) + '</div>';
+  }).join('');
+  function selectProject(name) {
+    var ids = projects[name] || [];
+    projList.querySelectorAll('[data-select]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.select === name)); });
+    mini.querySelectorAll('[data-mini]').forEach(function (d) {
+      var on = ids.indexOf(+d.dataset.mini) > -1;
+      d.className = on ? 'on' : 'off';
+    });
+    document.getElementById('mapNote').innerHTML = '<b>' + esc(name) + '</b> ประกอบจาก <b>' + ids.length + ' Agent</b> ที่มีอยู่แล้ว: ' +
+      ids.map(function (i) { return esc(byId[i].name); }).join(', ') + (ids.length > 1 ? ' จึงไม่ต้องพัฒนาความสามารถเหล่านี้ใหม่' : '');
+  }
+  projList.addEventListener('click', function (e) { var b = e.target.closest('[data-select]'); if (b) selectProject(b.dataset.select); });
+  selectProject(projNames[0]);
+
+  /* ROI */
+  var f = function (id) { return document.getElementById(id); };
+  var nf = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 1 });
+  var nf0 = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 });
+  function mb(v) { return nf.format(v) + ' ล้านบาท'; }
+  function calc() {
+    var cost = +f('cost').value, n = +f('projects').value, r = +f('reuseRate').value / 100, h = +f('hours').value, w = +f('rate').value;
+    f('costOut').textContent = mb(cost);
+    f('projectsOut').textContent = n + ' โครงการ';
+    f('reuseOut').textContent = Math.round(r * 100) + '%';
+    f('hoursOut').textContent = nf0.format(h) + ' ชม.';
+    f('rateOut').textContent = nf0.format(w) + ' บาท';
+    var noReuse = cost * n, withReuse = noReuse * (1 - r), dev = noReuse - withReuse;
+    var labor = h * w * 12 / 1e6;
+    f('totalOut').textContent = mb(dev + labor);
+    f('totalSub').textContent = 'เทียบเท่า ' + nf0.format(h * 12) + ' ชั่วโมงงานต่อปีที่ทีมนำไปทำงานที่มีมูลค่าสูงกว่า';
+    f('devSave').textContent = mb(dev);
+    f('laborSave').textContent = mb(labor);
+    f('barNo').style.width = '100%';
+    f('barYes').style.width = (noReuse ? withReuse / noReuse * 100 : 0) + '%';
+    f('valNo').textContent = mb(noReuse);
+    f('valYes').textContent = mb(withReuse);
+  }
+  ['cost', 'projects', 'reuseRate', 'hours', 'rate'].forEach(function (id) { f(id).addEventListener('input', calc); });
+  calc();
+
+  /* Deep link: #agent-04 */
+  var m = /^#agent-(\d{2})$/.exec(location.hash);
+  if (m) openAgent(+m[1]);
+})();
+</script>
