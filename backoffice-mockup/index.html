@@ -1,0 +1,690 @@
+<title>Partner Desk Backoffice</title>
+<meta name="description" content="Mockup ระบบหลังบ้านของ LINE OA Partner Desk: ภาพรวม, Action ของคู่ค้า, งานติดตามของ Marketing ตามขอบเขตคู่ค้า และการตั้งค่าสิทธิ์">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: work-tool shell. Fixed sidebar nav + top bar (role, theme); content swaps per view. Sidebar folds to a top strip on phones. */
+:root {
+  --page: #EEF2F6;
+  --surface: #FFFFFF;
+  --surface-2: #F5F8FB;
+  --ink: #0F2438;
+  --muted: #56677A;
+  --line: #D5DDE6;
+  --navy: #0E3A5B;
+  --navy-2: #13507C;
+  --side: #0E3A5B;
+  --side-ink: #D7E4EF;
+  --teal: #0A7C74;
+  --teal-soft: #DDF1EE;
+  --amber: #A86500;
+  --amber-soft: #FBEBD2;
+  --red: #B9382F;
+  --red-soft: #F8DEDB;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --grid: #E3E9EF;
+  --font-display: "Anuphan", "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0B141D; --surface: #13202C; --surface-2: #182837; --ink: #E4ECF3; --muted: #93A4B5; --line: #263646;
+    --navy: #2C6A99; --navy-2: #3B83B8; --side: #0A1823; --side-ink: #B8C9D8;
+    --teal: #3FB8AC; --teal-soft: #11332F; --amber: #F0AA45; --amber-soft: #3A2A10; --red: #F07C72; --red-soft: #3A1A17;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --grid: #223242;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0B141D; --surface: #13202C; --surface-2: #182837; --ink: #E4ECF3; --muted: #93A4B5; --line: #263646;
+  --navy: #2C6A99; --navy-2: #3B83B8; --side: #0A1823; --side-ink: #B8C9D8;
+  --teal: #3FB8AC; --teal-soft: #11332F; --amber: #F0AA45; --amber-soft: #3A2A10; --red: #F07C72; --red-soft: #3A1A17;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --grid: #223242;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.25; text-wrap: balance; }
+h1 { font-size: 24px; font-weight: 700; }
+h2 { font-size: 17px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+/* ---------- Shell ---------- */
+.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100%; }
+.side { background: var(--side); color: var(--side-ink); padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
+.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: #0A7C74; display: grid; place-items: center; flex: none; }
+.brand .logo svg { width: 19px; height: 19px; }
+.brand b { font-family: var(--font-display); color: #fff; font-size: 15px; display: block; line-height: 1.2; }
+.brand small { font-size: 11.5px; opacity: .75; }
+.nav { display: grid; gap: 2px; }
+.nav button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; color: var(--side-ink); padding: 9px 10px; border-radius: 10px; cursor: pointer; text-align: left; font-size: 14px; }
+.nav button svg { width: 18px; height: 18px; flex: none; opacity: .85; }
+.nav button:hover { background: rgba(255, 255, 255, .06); }
+.nav button[aria-current="page"] { background: rgba(255, 255, 255, .12); color: #fff; font-weight: 600; }
+.nav .count { margin-left: auto; font-size: 11.5px; background: rgba(255, 255, 255, .14); color: #fff; padding: 0 7px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.nav .count.hot { background: #B9382F; }
+.side-foot { margin-top: auto; font-size: 12px; opacity: .7; padding: 0 6px; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; }
+.top .now { color: var(--muted); font-size: 13px; }
+.top .spacer { flex: 1; }
+.role { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.role select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; color: var(--ink); max-width: 100%; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.seg button svg { width: 14px; height: 14px; }
+.seg button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.me { display: flex; align-items: center; gap: 8px; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: #fff; background: var(--navy-2); flex: none; }
+.av.sm { width: 24px; height: 24px; font-size: 10.5px; }
+.me b { font-size: 13px; display: block; line-height: 1.2; }
+.me small { font-size: 11.5px; color: var(--muted); }
+.content { padding: 24px; display: grid; gap: 20px; align-content: start; min-width: 0; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.head p { color: var(--muted); margin-top: 4px; }
+.scope { display: flex; gap: 8px; align-items: center; background: var(--teal-soft); color: var(--teal); padding: 8px 12px; border-radius: 10px; font-size: 13px; }
+.scope svg { width: 16px; height: 16px; flex: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; padding: 12px 16px; gap: 10px; }
+  .nav { display: flex; overflow-x: auto; gap: 4px; }
+  .nav button { width: auto; white-space: nowrap; }
+  .side-foot { display: none; }
+  .top { padding: 10px 16px; position: static; }
+  .content { padding: 16px; }
+}
+
+/* ---------- Building blocks ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; align-content: start; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .lbl { font-size: 12.5px; color: var(--muted); }
+.kpi .val { font-family: var(--font-display); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--muted); }
+.kpi .sub { font-size: 12px; color: var(--muted); }
+.kpi.alert { border-color: var(--red); }
+@media (max-width: 600px) { .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+.kpi.alert .val { color: var(--red); }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 1100px) { .grid-2 { grid-template-columns: minmax(0, 1fr); } }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.chip svg { width: 11px; height: 11px; }
+.chip.urgent { background: var(--red-soft); color: var(--red); }
+.chip.high { background: var(--amber-soft); color: var(--amber); }
+.chip.normal { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.chip.ok { background: var(--teal-soft); color: var(--teal); }
+.cat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.cat i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
+.btn { border: 0; border-radius: 10px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--navy); color: #fff; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.teal { background: var(--teal); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+.link { border: 0; background: none; padding: 0; color: var(--navy-2); cursor: pointer; text-align: left; font-weight: 500; }
+.link:hover { text-decoration: underline; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filters input[type="search"], .filters select { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-width: 0; }
+.filters input[type="search"] { width: 220px; max-width: 100%; }
+.filters label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+th { font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); white-space: nowrap; }
+td .me { white-space: nowrap; }
+.team th, .team td { padding-inline: 10px; }
+.grid-2.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1100px) { .grid-2.even { grid-template-columns: minmax(0, 1fr); } }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { padding: 28px; text-align: center; color: var(--muted); }
+.meter { height: 8px; border-radius: 999px; background: var(--grid); overflow: hidden; width: 90px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.meter i { display: block; height: 100%; background: var(--teal); }
+.meter.warn i { background: var(--amber); }
+.meter.bad i { background: var(--red); }
+
+/* ---------- Charts ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.chart { position: relative; overflow-x: auto; }
+.chart svg { min-width: 520px; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover { fill: var(--ink); fill-opacity: .04; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 8px 24px -12px rgba(9, 30, 50, .35); min-width: 150px; z-index: 2; }
+.tip b { display: block; margin-bottom: 4px; font-family: var(--font-display); }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .row span:last-child { font-variant-numeric: tabular-nums; }
+.tip .tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; font-weight: 600; }
+.hbars { display: grid; gap: 10px; }
+.hbar { display: grid; grid-template-columns: 130px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 13px; }
+.hbar .bar { height: 14px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.hbar .bar i { display: block; height: 100%; background: var(--c); border-radius: 0 4px 4px 0; }
+.hbar .v { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Lists ---------- */
+.list { display: grid; }
+.item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item .t { font-weight: 500; }
+.item .s { font-size: 12.5px; color: var(--muted); }
+.due { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.due.late { color: var(--red); font-weight: 600; }
+
+/* ---------- Kanban ---------- */
+.board-wrap { overflow-x: auto; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(230px, 1fr)); gap: 12px; min-width: 960px; }
+.col { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; display: grid; gap: 8px; align-content: start; }
+.col h3 { display: flex; justify-content: space-between; padding: 2px 4px 4px; font-size: 14px; }
+.col h3 span { color: var(--muted); font-family: var(--font-body); font-weight: 500; font-variant-numeric: tabular-nums; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; cursor: pointer; text-align: left; width: 100%; }
+.task:hover { border-color: var(--navy-2); }
+.task.late { border-left: 3px solid var(--red); }
+.task .t { font-weight: 600; font-size: 13.5px; line-height: 1.4; }
+.task .p { font-size: 12.5px; color: var(--muted); }
+.task .f { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.task .tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* ---------- Drawer + toast ---------- */
+.veil { position: fixed; inset: 0; background: rgba(5, 15, 25, .45); z-index: 10; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--surface); z-index: 11; display: flex; flex-direction: column; box-shadow: -20px 0 50px -30px rgba(0, 0, 0, .5); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.drawer .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.drawer .dh small { color: var(--muted); font-size: 12px; display: block; }
+.drawer .x { border: 0; background: none; font-size: 22px; cursor: pointer; color: var(--muted); line-height: 1; }
+.drawer .db { padding: 18px 20px; overflow-y: auto; display: grid; gap: 18px; align-content: start; }
+.drawer .df { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
+.kv { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 12px; font-size: 13.5px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.source { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; display: grid; gap: 2px; }
+.timeline { display: grid; gap: 10px; border-left: 2px solid var(--line); padding-left: 14px; margin-left: 4px; }
+.timeline div { position: relative; font-size: 13px; }
+.timeline div::before { content: ""; position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--navy-2); }
+.timeline small { color: var(--muted); display: block; font-size: 12px; }
+.field { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.field select, .field textarea { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--ink); width: 100%; font-size: 14px; }
+.field textarea { min-height: 72px; resize: vertical; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; z-index: 20; max-width: calc(100% - 32px); }
+
+/* ---------- Settings ---------- */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button { border: 0; background: none; padding: 10px 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; font-size: 14px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--teal); font-weight: 600; }
+.switch { position: relative; width: 38px; height: 22px; display: inline-block; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch input:checked + span { background: var(--teal); }
+.switch input:checked + span::after { transform: translateX(16px); }
+.switch input:focus-visible + span { outline: 2px solid var(--teal); outline-offset: 2px; }
+.yes { color: var(--teal); font-weight: 600; }
+.no { color: var(--muted); }
+td select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+@media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div><b>Partner Desk</b><small>ระบบหลังบ้าน</small></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="เมนูหลัก"></nav>
+    <div class="side-foot">ข้อมูลทั้งหมดเป็นตัวอย่างสมมติ</div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <span class="now">ศ. 2 ต.ค. 2569 · 10:30 น.</span>
+      <span class="spacer"></span>
+      <label class="role" for="roleSel">มุมมองตัวอย่าง
+        <select id="roleSel">
+          <option value="admin">Admin · สมศักดิ์</option>
+          <option value="mgr">หัวหน้าทีม · วรรณา</option>
+          <option value="m1" selected>Marketing · ธนพล</option>
+          <option value="m2">Marketing · ปิยะนุช</option>
+          <option value="m3">Marketing · กิตติ</option>
+        </select>
+      </label>
+      <div class="seg" role="group" aria-label="ธีม">
+        <button type="button" id="th-light" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>สว่าง</button>
+        <button type="button" id="th-dark" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>มืด</button>
+      </div>
+      <div class="me" id="me"></div>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+</div>
+
+<div class="veil" id="veil" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog" aria-labelledby="drawerTitle"></aside>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  /* ================= Sample data ================= */
+  const users = {
+    admin: { name: 'สมศักดิ์ ใจเย็น', role: 'Admin', title: 'ผู้ดูแลระบบ', ini: 'สจ', color: '#5A4FB0' },
+    mgr: { name: 'วรรณา พิทักษ์', role: 'หัวหน้าทีม', title: 'ผู้จัดการฝ่ายการตลาดคู่ค้า', ini: 'วพ', color: '#0A7C74' },
+    m1: { name: 'ธนพล ศรีวงศ์', role: 'Marketing', title: 'Marketing · นายหน้า/ตัวแทน กทม.ตะวันออก', ini: 'ธศ', color: '#13507C' },
+    m2: { name: 'ปิยะนุช แก้วกาญจน์', role: 'Marketing', title: 'Marketing · นายหน้ารายใหญ่', ini: 'ปก', color: '#A8501E' },
+    m3: { name: 'กิตติ ชัยมงคล', role: 'Marketing', title: 'Marketing · ดีลเลอร์รถยนต์', ini: 'กช', color: '#2E7D32' }
+  };
+  const mkts = ['m1', 'm2', 'm3'];
+  const partners = [
+    { id: 'BK-10482', name: 'บจก. ศรีสยาม โบรกเกอร์', type: 'นายหน้านิติบุคคล', tier: 'Gold', owner: 'm1', line: 3, last: 'วันนี้ 10:21', idle: 0, credit: 68 },
+    { id: 'BK-10511', name: 'หจก. รุ่งเรืองประกันภัย', type: 'นายหน้านิติบุคคล', tier: 'Silver', owner: 'm1', line: 1, last: 'วันนี้ 09:30', idle: 0, credit: 84 },
+    { id: 'AG-20317', name: 'คุณมาลี ทองดี', type: 'ตัวแทน', tier: 'Silver', owner: 'm1', line: 1, last: 'เมื่อวาน 16:40', idle: 1, credit: 35 },
+    { id: 'AG-20455', name: 'คุณจันทร์เพ็ญ ศรีสุข', type: 'ตัวแทน', tier: 'Bronze', owner: 'm1', line: 1, last: '34 วันก่อน', idle: 34, credit: 12 },
+    { id: 'BK-10620', name: 'บจก. เอเชียชัวร์ โบรกเกอร์', type: 'นายหน้านิติบุคคล', tier: 'Platinum', owner: 'm2', line: 5, last: 'วันนี้ 10:28', idle: 0, credit: 91 },
+    { id: 'AG-20402', name: 'คุณประเสริฐ วงศ์ใหญ่', type: 'ตัวแทน', tier: 'Gold', owner: 'm2', line: 1, last: 'วันนี้ 09:58', idle: 0, credit: 40 },
+    { id: 'BK-10733', name: 'บจก. ไทยเซฟ อินชัวรันส์ โบรกเกอร์', type: 'นายหน้านิติบุคคล', tier: 'Silver', owner: 'm2', line: 2, last: '3 วันก่อน', idle: 3, credit: 55 },
+    { id: 'DL-30044', name: 'บจก. เมืองทอง ออโต้', type: 'ดีลเลอร์รถยนต์', tier: 'Gold', owner: 'm3', line: 4, last: 'วันนี้ 10:26', idle: 0, credit: 73 },
+    { id: 'DL-30051', name: 'บจก. บางนา มอเตอร์', type: 'ดีลเลอร์รถยนต์', tier: 'Silver', owner: 'm3', line: 2, last: 'วันนี้ 09:20', idle: 0, credit: 82 },
+    { id: 'DL-30077', name: 'บจก. สุพรรณ ยนตรกิจ', type: 'ดีลเลอร์รถยนต์', tier: 'Bronze', owner: 'm3', line: 1, last: 'เมื่อวาน 14:05', idle: 1, credit: 30 }
+  ];
+  const P = Object.fromEntries(partners.map(p => [p.id, p]));
+  const cats = {
+    quote: { label: 'เช็คเบี้ย / ใบเสนอราคา', short: 'เช็คเบี้ย', c: 'var(--s1)' },
+    renew: { label: 'งานต่ออายุ', short: 'ต่ออายุ', c: 'var(--s2)' },
+    copy: { label: 'ขอสำเนากรมธรรม์', short: 'สำเนา', c: 'var(--s3)' },
+    fin: { label: 'รับชำระ / Credit', short: 'การเงิน', c: 'var(--s4)' },
+    contact: { label: 'ติดต่อ / อื่นๆ', short: 'ติดต่อ', c: 'var(--s5)' }
+  };
+  const catKeys = Object.keys(cats);
+  const rules = [
+    { id: 'R1', when: 'คู่ค้ากด “คุยกับเจ้าหน้าที่”', task: 'ติดต่อกลับคู่ค้า', sla: '30 นาที', pr: 'urgent', notify: 'LINE + แจ้งเตือนในระบบ', on: true },
+    { id: 'R2', when: 'ออกใบเสนอราคาแล้ว 3 วัน ยังไม่ออกกรมธรรม์', task: 'ติดตามปิดการขาย', sla: '1 วัน', pr: 'high', notify: 'แจ้งเตือนในระบบ', on: true },
+    { id: 'R3', when: 'งานต่ออายุเหลือ ≤ 7 วัน ยังไม่เสนอราคา', task: 'ช่วยคู่ค้าเสนอราคาต่ออายุ', sla: '1 วัน', pr: 'high', notify: 'อีเมลสรุปเช้า 08:00', on: true },
+    { id: 'R4', when: 'ใช้วงเงินเครดิตเกิน 80%', task: 'แจ้งเร่งชำระ หรือเสนอขยายวงเงิน', sla: '2 วัน', pr: 'high', notify: 'LINE + แจ้งเตือนในระบบ', on: true },
+    { id: 'R5', when: 'บิลครบกำหนดใน ≤ 3 วัน ยังไม่ชำระ', task: 'เตือนคู่ค้าชำระบิล', sla: '1 วัน', pr: 'normal', notify: 'อีเมลสรุปเช้า 08:00', on: true },
+    { id: 'R6', when: 'คู่ค้าไม่ใช้ LINE OA เกิน 30 วัน', task: 'โทรหรือเยี่ยมกระตุ้นการใช้งาน', sla: '5 วัน', pr: 'normal', notify: 'อีเมลสรุปรายสัปดาห์', on: true },
+    { id: 'R7', when: 'ขอสำเนากรมธรรม์แต่ไม่พบไฟล์ในระบบ', task: 'ตรวจสอบและส่งสำเนาให้คู่ค้า', sla: '4 ชั่วโมง', pr: 'high', notify: 'LINE + แจ้งเตือนในระบบ', on: true },
+    { id: 'R8', when: 'เช็คเบี้ยซ้ำรถคันเดิมเกิน 3 ครั้งใน 1 วัน', task: 'โทรช่วยคู่ค้าเลือกแผน', sla: '1 วัน', pr: 'normal', notify: 'แจ้งเตือนในระบบ', on: false }
+  ];
+  const R = Object.fromEntries(rules.map(r => [r.id, r]));
+  const activities = [
+    ['10:28', 'BK-10620', 'คุณนิดา', 'quote', 'เช็คเบี้ย', 'ชั้น 1 ซ่อมห้าง · Honda HR-V e:HEV ปี 2025 ทุน 1,050,000', null],
+    ['10:26', 'DL-30044', 'คุณวีระ', 'quote', 'เช็คเบี้ย', 'ชั้น 1 ซ่อมห้าง · Toyota Corolla Cross 1.8 HEV ปี 2025 ทุน 980,000', null],
+    ['10:21', 'BK-10482', 'คุณเอก', 'renew', 'ดูงานต่ออายุ', 'ต.ค. 2569 · 12 ราย ยังไม่เสนอราคา 4 ราย', null],
+    ['10:19', 'BK-10482', 'คุณเอก', 'renew', 'เสนอราคาต่ออายุ', 'คุณวิภา รุ่งเรือง · V-2568-004877 · ฿15,440', null],
+    ['10:12', 'BK-10620', 'คุณนิดา', 'fin', 'ดูวงเงินเครดิต', 'ใช้ไป 91% · คงเหลือ ฿270,400', 'T-2040'],
+    ['10:05', 'DL-30044', 'คุณวีระ', 'quote', 'ออกใบเสนอราคา', 'Q-2569-10-0392 · ชั้น 1 · ฿27,350', null],
+    ['09:58', 'AG-20402', 'คุณประเสริฐ', 'copy', 'ขอสำเนากรมธรรม์', 'V-2568-007731 · ส่ง PDF ในแชท', null],
+    ['09:48', 'BK-10620', 'คุณนิดา', 'contact', 'คุยกับเจ้าหน้าที่', 'เรื่องเคลมลูกค้า ทะเบียน 4กท 2290', 'T-2041'],
+    ['09:41', 'BK-10482', 'คุณมณี', 'quote', 'เช็คเบี้ย', 'ชั้น 2+ · Honda City 1.0 Turbo ปี 2023 ทุน 450,000', null],
+    ['09:30', 'BK-10511', 'คุณสุรชัย', 'fin', 'ดูวงเงินเครดิต', 'ใช้ไป 84% · บิลรอชำระ ฿412,800', 'T-2037'],
+    ['09:20', 'DL-30051', 'คุณอรทัย', 'renew', 'ดูงานต่ออายุ', 'ต.ค. 2569 · 9 ราย ยังไม่เสนอราคา 6 ราย', null],
+    ['09:15', 'DL-30051', 'คุณอรทัย', 'contact', 'คุยกับเจ้าหน้าที่', 'สอบถามรับประกันรถดัดแปลง', 'T-2034'],
+    ['09:02', 'BK-10620', 'คุณภาคิน', 'quote', 'ออกใบเสนอราคา', 'Q-2569-10-0388 · ชั้น 1 · ฿19,840', null],
+    ['08:55', 'BK-10511', 'คุณสุรชัย', 'quote', 'เช็คเบี้ย', 'พ.ร.บ. · Isuzu D-Max 1.9 Cab4', null],
+    ['08:40', 'AG-20402', 'คุณประเสริฐ', 'copy', 'ขอสำเนากรมธรรม์', 'H-2567-000912 · ไม่พบไฟล์ในระบบ', 'T-2035'],
+    ['08:31', 'DL-30044', 'คุณวีระ', 'renew', 'ดูงานต่ออายุ', 'ต.ค. 2569 · 15 ราย', null],
+    ['08:20', 'BK-10620', 'คุณนิดา', 'copy', 'ส่งสำเนาทางอีเมล', 'V-2568-006110 · ส่งให้ลูกค้า', null],
+    ['07:52', 'BK-10482', 'คุณมณี', 'fin', 'ดูรายละเอียดบิล', 'INV-2569-0912 · ฿845,200 ครบ 15 ต.ค.', null],
+    ['07:30', 'AG-20402', 'คุณประเสริฐ', 'contact', 'ยืนยันตัวตน', 'ผูก LINE ใหม่ (เปลี่ยนเครื่อง)', null]
+  ].map(a => ({ t: a[0], pid: a[1], who: a[2], cat: a[3], act: a[4], detail: a[5], task: a[6] }));
+  const tasks = [
+    { id: 'T-2041', rule: 'R1', pid: 'BK-10620', st: 'new', title: 'ติดต่อกลับเรื่องเคลมลูกค้า ทะเบียน 4กท 2290', created: 'วันนี้ 09:48', due: 'เกิน 12 นาที', late: true, src: 'คุณนิดา กด “คุยกับเจ้าหน้าที่” ใน LINE OA 09:48' },
+    { id: 'T-2040', rule: 'R4', pid: 'BK-10620', st: 'doing', title: 'วงเงินใช้ 91% เสนอขยายวงเงิน หรือเร่งชำระ INV-2569-0921', created: 'วันนี้ 10:12', due: 'ครบ 4 ต.ค. 10:12', late: false, src: 'คุณนิดา ดูวงเงินเครดิต 10:12 · ระบบพบใช้ไป 91%' },
+    { id: 'T-2039', rule: 'R3', pid: 'BK-10482', st: 'new', title: 'ช่วยเสนอราคาต่ออายุ คุณสมชาย ใจดี (หมดอายุ 8 ต.ค.)', created: 'วันนี้ 00:30', due: 'ครบ 3 ต.ค. 00:30', late: false, src: 'ระบบตรวจงานต่ออายุรอบคืน · V-2568-004512 เหลือ 6 วัน ยังไม่เสนอราคา' },
+    { id: 'T-2038', rule: 'R2', pid: 'DL-30044', st: 'waiting', title: 'ติดตามใบเสนอราคา Q-2569-09-0355 Corolla Cross 3 คัน', created: '30 ก.ย. 09:00', due: 'เกิน 1 วัน', late: true, src: 'ออกใบเสนอราคา 27 ก.ย. · ยังไม่ออกกรมธรรม์ครบ 3 วัน' },
+    { id: 'T-2037', rule: 'R4', pid: 'BK-10511', st: 'new', title: 'วงเงินใช้ 84% แจ้งเร่งชำระบิลรอชำระ ฿412,800', created: 'วันนี้ 09:30', due: 'ครบ 4 ต.ค. 09:30', late: false, src: 'คุณสุรชัย ดูวงเงินเครดิต 09:30 · ระบบพบใช้ไป 84%' },
+    { id: 'T-2036', rule: 'R4', pid: 'DL-30051', st: 'doing', title: 'วงเงินใช้ 82% เสนอขยายวงเงินช่วงปลายปี', created: '30 ก.ย. 07:20', due: 'เกิน 3 ชม.', late: true, src: 'ระบบพบใช้วงเงินเกิน 80% · 30 ก.ย.' },
+    { id: 'T-2035', rule: 'R7', pid: 'AG-20402', st: 'doing', title: 'ตรวจสอบสำเนากรมธรรม์ H-2567-000912 ที่ไม่พบไฟล์', created: 'วันนี้ 08:40', due: 'ครบ วันนี้ 12:40', late: false, src: 'คุณประเสริฐ ขอสำเนา 08:40 · ไม่พบไฟล์ PDF ในระบบ' },
+    { id: 'T-2034', rule: 'R1', pid: 'DL-30051', st: 'done', title: 'ตอบคำถามรับประกันรถดัดแปลง', created: 'วันนี้ 09:15', due: 'ปิดแล้ว 09:31', late: false, src: 'คุณอรทัย กด “คุยกับเจ้าหน้าที่” 09:15', outcome: 'แก้ปัญหาแล้ว · ส่งเงื่อนไขรับประกันให้แล้ว' },
+    { id: 'T-2033', rule: 'R5', pid: 'BK-10733', st: 'new', title: 'เตือนชำระ INV-2569-0905 ครบกำหนด 5 ต.ค.', created: 'วันนี้ 08:00', due: 'ครบ 3 ต.ค. 08:00', late: false, src: 'ระบบตรวจบิลรอบเช้า · ยังไม่ชำระ ฿236,500' },
+    { id: 'T-2032', rule: 'R6', pid: 'AG-20455', st: 'new', title: 'โทรกระตุ้นการใช้ LINE OA (ไม่ใช้งาน 34 วัน)', created: '29 ก.ย. 08:00', due: 'ครบ 4 ต.ค.', late: false, src: 'ระบบตรวจการใช้งานรายสัปดาห์' },
+    { id: 'T-2031', rule: 'R2', pid: 'BK-10482', st: 'waiting', title: 'ติดตามใบเสนอราคา Q-2569-09-0349 Honda HR-V', created: '1 ต.ค. 09:00', due: 'ครบ 3 ต.ค. 09:00', late: false, src: 'ออกใบเสนอราคา 28 ก.ย. · ยังไม่ออกกรมธรรม์ครบ 3 วัน' },
+    { id: 'T-2030', rule: 'R3', pid: 'DL-30077', st: 'doing', title: 'ช่วยเสนอราคาต่ออายุ 2 คัน (หมดอายุ 6 ต.ค.)', created: '1 ต.ค. 00:30', due: 'ครบ วันนี้ 00:30 · ต่อเวลาแล้ว', late: false, src: 'ระบบตรวจงานต่ออายุรอบคืน' },
+    { id: 'T-2029', rule: 'R2', pid: 'AG-20317', st: 'done', title: 'ติดตามใบเสนอราคา Q-2569-09-0331 Mazda 2', created: '1 ต.ค. 09:00', due: 'ปิดแล้ว วันนี้ 08:15', late: false, src: 'ออกใบเสนอราคา 26 ก.ย.', outcome: 'ปิดการขายได้ · ออกกรมธรรม์ V-2569-000184' },
+    { id: 'T-2028', rule: 'R5', pid: 'BK-10620', st: 'done', title: 'เตือนชำระ INV-2569-0901', created: '1 ต.ค. 08:00', due: 'ปิดแล้ว วันนี้ 09:05', late: false, src: 'ระบบตรวจบิลรอบเช้า', outcome: 'คู่ค้าชำระแล้ว ฿318,900' }
+  ].map(t => Object.assign(t, { owner: P[t.pid].owner, log: [] }));
+  const T = Object.fromEntries(tasks.map(t => [t.id, t]));
+  const team = { m1: { resp: '42 น.', week: 9, renew: [26, 41] }, m2: { resp: '28 น.', week: 12, renew: [41, 58] }, m3: { resp: '75 น.', week: 6, renew: [19, 37] } };
+
+  /* 14-day action history per marketing scope; today's column comes from the activity log above. */
+  const dayLabels = ['19 ก.ย.', '20 ก.ย.', '21 ก.ย.', '22 ก.ย.', '23 ก.ย.', '24 ก.ย.', '25 ก.ย.', '26 ก.ย.', '27 ก.ย.', '28 ก.ย.', '29 ก.ย.', '30 ก.ย.', '1 ต.ค.', '2 ต.ค.'];
+  const weekend = [0, 1, 7, 8];
+  let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const base = { m1: [9, 6, 3, 4, 2], m2: [12, 7, 4, 6, 3], m3: [10, 4, 2, 5, 2] };
+  const history = {};
+  mkts.forEach(m => {
+    history[m] = dayLabels.slice(0, 13).map((_, d) => catKeys.map((c, i) => {
+      let f = weekend.includes(d) ? 0.3 : 1;
+      if (c === 'renew' && d === 12) f *= 2.2;
+      return Math.round(base[m][i] * f * (0.75 + rnd() * 0.5));
+    }));
+  });
+
+  /* ================= State ================= */
+  const S = { role: 'm1', view: 'overview', actCat: '', actOwner: '', actQ: '', actTaskOnly: false, taskOwner: '', setTab: 'users' };
+  const isMkt = () => mkts.includes(S.role);
+  const canManage = () => S.role === 'admin' || S.role === 'mgr';
+  const inScope = pid => !isMkt() || P[pid].owner === S.role;
+  const scopedPartners = () => partners.filter(p => inScope(p.id));
+  const scopedTasks = () => tasks.filter(t => inScope(t.pid));
+  const scopedActs = () => activities.filter(a => inScope(a.pid));
+  const ownersInScope = () => isMkt() ? [S.role] : mkts;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const nf = n => n.toLocaleString('th-TH');
+  const av = (uid, sm) => '<span class="av' + (sm ? ' sm' : '') + '" style="background:' + users[uid].color + '" title="' + users[uid].name + '">' + users[uid].ini + '</span>';
+  const prChip = pr => ({ urgent: '<span class="chip urgent">ด่วน</span>', high: '<span class="chip high">สูง</span>', normal: '<span class="chip normal">ปกติ</span>' })[pr];
+  const catTag = c => '<span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].short + '</span>';
+  const ico = {
+    overview: '<path d="M4 13h6V4H4zM14 20h6v-9h-6zM14 4v4h6V4zM4 20h6v-4H4z"/>',
+    activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    tasks: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/>',
+    partners: '<circle cx="9" cy="8" r="3"/><path d="M3 20c.7-3 3.2-5 6-5s5.3 2 6 5"/><path d="M16 4.5a3 3 0 0 1 0 6M18 15c1.8.6 3 2.4 3.4 5"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4.6V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/>',
+    scope: '<path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/>'
+  };
+  const svg = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ico[k] + '</svg>';
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2600); }
+
+  /* ================= Shell ================= */
+  function renderShell() {
+    const u = users[S.role];
+    $('me').innerHTML = av(S.role) + '<div><b>' + u.name + '</b><small>' + u.role + '</small></div>';
+    const open = scopedTasks().filter(t => t.st !== 'done');
+    const late = open.filter(t => t.late).length;
+    const items = [
+      ['overview', 'ภาพรวม', ''],
+      ['activity', 'Action ของคู่ค้า', '<span class="count">' + scopedActs().length + '</span>'],
+      ['tasks', isMkt() ? 'งานของฉัน' : 'งานติดตาม', '<span class="count' + (late ? ' hot' : '') + '">' + open.length + '</span>'],
+      ['partners', isMkt() ? 'คู่ค้าของฉัน' : 'คู่ค้า', ''],
+      ['settings', 'ตั้งค่าระบบ', '']
+    ].filter(i => i[0] !== 'settings' || S.role === 'admin');
+    if (S.view === 'settings' && S.role !== 'admin') S.view = 'overview';
+    $('nav').innerHTML = items.map(i => '<button type="button" data-view="' + i[0] + '"' + (S.view === i[0] ? ' aria-current="page"' : '') + '>' + svg(i[0]) + '<span>' + i[1] + '</span>' + i[2] + '</button>').join('');
+  }
+  function scopeBanner() {
+    if (!isMkt()) return '<div class="scope">' + svg('scope') + '<span>' + (S.role === 'admin' ? 'Admin เห็นข้อมูลคู่ค้าทุกราย และจัดการสิทธิ์ได้' : 'หัวหน้าทีมเห็นคู่ค้าทุกราย และมอบหมายงานให้ Marketing ได้') + '</span></div>';
+    return '<div class="scope">' + svg('scope') + '<span>แสดงเฉพาะคู่ค้า ' + scopedPartners().length + ' รายที่คุณดูแล ข้อมูลของ Marketing คนอื่นจะไม่แสดง</span></div>';
+  }
+  function render() {
+    renderShell();
+    const v = { overview: vOverview, activity: vActivity, tasks: vTasks, partners: vPartners, settings: vSettings }[S.view];
+    $('view').innerHTML = v();
+    if (S.view === 'overview') drawStack();
+  }
+
+  /* ================= Overview ================= */
+  function series() {
+    const owners = ownersInScope();
+    const rows = dayLabels.slice(0, 13).map((_, d) => catKeys.map((_, i) => owners.reduce((s, m) => s + history[m][d][i], 0)));
+    rows.push(catKeys.map(c => scopedActs().filter(a => a.cat === c).length));
+    return rows;
+  }
+  function vOverview() {
+    const sp = scopedPartners(), st = scopedTasks(), open = st.filter(t => t.st !== 'done'), late = open.filter(t => t.late);
+    const active = sp.filter(p => p.idle < 30).length;
+    const rn = ownersInScope().reduce((a, m) => [a[0] + team[m].renew[0], a[1] + team[m].renew[1]], [0, 0]);
+    const rows = series(), totals = catKeys.map((_, i) => rows.reduce((s, r) => s + r[i], 0)), maxT = Math.max.apply(null, totals);
+    const urgent = open.slice().sort((a, b) => (b.late - a.late) || (['urgent', 'high', 'normal'].indexOf(R[a.rule].pr) - ['urgent', 'high', 'normal'].indexOf(R[b.rule].pr))).slice(0, 5);
+    let html = '<div class="head"><div><h1>' + (isMkt() ? 'ภาพรวมคู่ค้าของฉัน' : 'ภาพรวม Partner Desk') + '</h1><p>การใช้งาน LINE OA ของคู่ค้า และงานที่ต้องติดตามต่อ</p></div></div>' + scopeBanner() +
+      '<div class="kpis">' +
+      '<div class="kpi"><span class="lbl">คู่ค้าที่ใช้ LINE OA (30 วัน)</span><span class="val">' + active + '<small> / ' + sp.length + ' ราย</small></span><span class="sub">ผู้ใช้ LINE ที่ผูกแล้ว ' + sp.reduce((s, p) => s + p.line, 0) + ' คน</span></div>' +
+      '<div class="kpi"><span class="lbl">Action วันนี้</span><span class="val">' + scopedActs().length + '</span><span class="sub">สร้างงานติดตาม ' + scopedActs().filter(a => a.task).length + ' งาน</span></div>' +
+      '<div class="kpi"><span class="lbl">งานที่ยังเปิดอยู่</span><span class="val">' + open.length + '</span><span class="sub">ใหม่ ' + open.filter(t => t.st === 'new').length + ' · กำลังทำ ' + open.filter(t => t.st === 'doing').length + ' · รอคู่ค้า ' + open.filter(t => t.st === 'waiting').length + '</span></div>' +
+      '<div class="kpi' + (late.length ? ' alert' : '') + '"><span class="lbl">เกิน SLA</span><span class="val">' + late.length + '</span><span class="sub">' + (late.length ? 'ต้องจัดการก่อน' : 'ไม่มีงานเกินกำหนด') + '</span></div>' +
+      '<div class="kpi"><span class="lbl">งานต่ออายุ ต.ค. ที่เสนอราคาแล้ว</span><span class="val">' + Math.round(rn[0] / rn[1] * 100) + '%</span><span class="sub">' + rn[0] + ' จาก ' + rn[1] + ' ราย</span></div>' +
+      '</div>' +
+      '<div class="grid-2">' +
+      '<section class="card"><div class="card-head"><h2>Action ของคู่ค้า 14 วัน</h2><div class="seg" role="group" aria-label="รูปแบบ"><button type="button" id="vChart" aria-pressed="true">กราฟ</button><button type="button" id="vTable" aria-pressed="false">ตาราง</button></div></div>' +
+      '<div class="legend">' + catKeys.map(c => '<span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].label + '</span>').join('') + '</div>' +
+      '<div class="chart" id="stack"></div>' +
+      '<div class="tbl" id="stackTable" hidden><table><thead><tr><th>วันที่</th>' + catKeys.map(c => '<th class="r">' + cats[c].short + '</th>').join('') + '<th class="r">รวม</th></tr></thead><tbody>' +
+      rows.map((r, d) => '<tr><td>' + dayLabels[d] + (d === 13 ? ' (ถึง 10:30)' : '') + '</td>' + r.map(v => '<td class="r">' + v + '</td>').join('') + '<td class="r"><b>' + r.reduce((a, b) => a + b, 0) + '</b></td></tr>').join('') + '</tbody></table></div>' +
+      '<p class="muted" style="font-size:12.5px">1 ต.ค. งานต่ออายุพุ่งขึ้นหลังส่งแจ้งเตือนประจำเดือนทาง LINE ส่วนวันนี้นับถึง 10:30 น.</p></section>' +
+      '<section class="card"><h2>เมนูที่คู่ค้าใช้ 14 วัน</h2><div class="hbars">' +
+      catKeys.map((c, i) => '<div class="hbar" title="' + cats[c].label + ': ' + totals[i] + ' ครั้ง"><span>' + cats[c].label + '</span><span class="bar"><i style="width:' + (totals[i] / maxT * 100) + '%;--c:var(--s1)"></i></span><span class="v">' + nf(totals[i]) + '</span></div>').join('') +
+      '</div><p class="muted" style="font-size:12.5px">นับจำนวนครั้งที่กดเมนูหรือปุ่มใน LINE OA</p></section>' +
+      '</div>' +
+      '<div class="grid-2 even">' +
+      '<section class="card"><div class="card-head"><h2>งานที่ต้องจัดการก่อน</h2><button type="button" class="link" data-view="tasks">ดูงานทั้งหมด</button></div><div class="list">' +
+      (urgent.length ? urgent.map(t => '<div class="item">' + prChip(R[t.rule].pr) + '<div><button type="button" class="link t" data-task="' + t.id + '">' + t.title + '</button><div class="s">' + P[t.pid].name + ' · ' + R[t.rule].task + '</div></div><div style="display:grid;justify-items:end;gap:4px"><span class="due' + (t.late ? ' late' : '') + '">' + t.due + '</span>' + av(t.owner, true) + '</div></div>').join('') : '<div class="empty">ไม่มีงานค้าง</div>') +
+      '</div></section>';
+    if (isMkt()) {
+      html += '<section class="card"><h2>คู่ค้าที่ควรดูแล</h2><div class="list">' +
+        sp.filter(p => p.credit >= 80 || p.idle >= 30).map(p => '<div class="item"><span class="chip ' + (p.credit >= 80 ? 'high' : 'normal') + '">' + (p.credit >= 80 ? 'วงเงิน ' + p.credit + '%' : 'ไม่ใช้งาน') + '</span><div><button type="button" class="link t" data-partner="' + p.id + '">' + p.name + '</button><div class="s">' + p.id + ' · ใช้งานล่าสุด ' + p.last + '</div></div><span></span></div>').join('') +
+        '</div></section>';
+    } else {
+      html += '<section class="card"><h2>ภาระงานทีม Marketing</h2><div class="tbl team"><table><thead><tr><th>Marketing</th><th class="r">คู่ค้า</th><th class="r">งานเปิด</th><th class="r">เกิน SLA</th><th class="r">ปิด 7 วัน</th><th class="r">ตอบกลับเฉลี่ย</th></tr></thead><tbody>' +
+        mkts.map(m => { const o = tasks.filter(t => t.owner === m && t.st !== 'done'); const l = o.filter(t => t.late).length;
+          return '<tr><td><span class="me">' + av(m, true) + users[m].name + '</span></td><td class="r">' + partners.filter(p => p.owner === m).length + '</td><td class="r">' + o.length + '</td><td class="r">' + (l ? '<span class="chip urgent">' + l + '</span>' : '0') + '</td><td class="r">' + team[m].week + '</td><td class="r">' + team[m].resp + '</td></tr>'; }).join('') +
+        '</tbody></table></div></section>';
+    }
+    return html + '</div>';
+  }
+  function drawStack() {
+    const el = $('stack'); if (!el) return;
+    const rows = series(), W = 640, H = 240, L = 34, Rr = 8, Tp = 10, B = 26;
+    const tot = rows.map(r => r.reduce((a, b) => a + b, 0));
+    const max = Math.max.apply(null, tot), step = max > 60 ? 20 : 10, top = Math.ceil(max / step) * step;
+    const y = v => Tp + (H - Tp - B) * (1 - v / top), bw = (W - L - Rr) / rows.length, w = Math.min(28, bw * 0.62);
+    let g = '';
+    for (let v = 0; v <= top; v += step) g += '<line class="gridline" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    rows.forEach((r, d) => {
+      const x = L + bw * d + (bw - w) / 2; let acc = 0;
+      const lastIdx = r.reduce((li, v, i) => v > 0 ? i : li, -1);
+      r.forEach((v, i) => {
+        if (!v) return;
+        const y0 = y(acc), y1 = y(acc + v); acc += v;
+        const h = Math.max(0, y0 - y1 - (i === lastIdx ? 0 : 2));
+        if (i === lastIdx) {
+          const rr = Math.min(4, h);
+          g += '<path d="M' + x + ' ' + y0 + 'V' + (y0 - h + rr) + 'Q' + x + ' ' + (y0 - h) + ' ' + (x + rr) + ' ' + (y0 - h) + 'H' + (x + w - rr) + 'Q' + (x + w) + ' ' + (y0 - h) + ' ' + (x + w) + ' ' + (y0 - h + rr) + 'V' + y0 + 'Z" style="fill:' + cats[catKeys[i]].c + '"/>';
+        } else g += '<rect x="' + x + '" y="' + (y0 - h) + '" width="' + w + '" height="' + h + '" style="fill:' + cats[catKeys[i]].c + '"/>';
+      });
+      if (d % 2 === 1 || d === 13) g += '<text x="' + (x + w / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + dayLabels[d] + '</text>';
+      g += '<rect class="hit" data-d="' + d + '" x="' + (L + bw * d) + '" y="' + Tp + '" width="' + bw + '" height="' + (H - Tp - B) + '"/>';
+    });
+    g += '<text x="' + (L + bw * 13 + bw / 2) + '" y="' + (y(tot[13]) - 6) + '" text-anchor="middle" style="fill:var(--ink);font-weight:600">' + tot[13] + '</text>';
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="กราฟแท่งซ้อน จำนวน Action ของคู่ค้ารายวัน 14 วัน แยกตามเมนู">' + g + '</svg><div class="tip" id="tip" hidden></div>';
+    const tip = $('tip');
+    el.querySelectorAll('.hit').forEach(h => {
+      const show = () => {
+        const d = +h.dataset.d, r = rows[d];
+        tip.innerHTML = '<b>' + dayLabels[d] + (d === 13 ? ' (ถึง 10:30)' : '') + '</b>' + catKeys.map((c, i) => '<div class="row"><span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].short + '</span><span>' + r[i] + '</span></div>').join('') + '<div class="row tot"><span>รวม</span><span>' + tot[d] + '</span></div>';
+        tip.hidden = false;
+        const box = el.getBoundingClientRect(), hb = h.getBoundingClientRect();
+        let left = hb.left - box.left + hb.width / 2 + 12; if (left + 170 > box.width) left = hb.left - box.left - 170;
+        tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '8px';
+      };
+      h.addEventListener('mouseenter', show); h.addEventListener('click', show);
+      h.addEventListener('mouseleave', () => { tip.hidden = true; });
+    });
+  }
+
+  /* ================= Activity ================= */
+  function vActivity() {
+    let list = scopedActs();
+    if (S.actCat) list = list.filter(a => a.cat === S.actCat);
+    if (S.actOwner) list = list.filter(a => P[a.pid].owner === S.actOwner);
+    if (S.actTaskOnly) list = list.filter(a => a.task);
+    if (S.actQ) { const q = S.actQ.toLowerCase(); list = list.filter(a => (P[a.pid].name + a.pid + a.who + a.act + a.detail).toLowerCase().includes(q)); }
+    return '<div class="head"><div><h1>Action ของคู่ค้า</h1><p>ทุกครั้งที่คู่ค้ากดเมนูหรือปุ่มใน LINE OA วันนี้ ' + scopedActs().length + ' รายการ</p></div></div>' + scopeBanner() +
+      '<div class="filters">' +
+      '<input type="search" id="fQ" placeholder="ค้นหาคู่ค้า ผู้ใช้ หรือรายละเอียด" aria-label="ค้นหา" value="' + esc(S.actQ) + '">' +
+      '<select id="fCat" aria-label="เมนู"><option value="">ทุกเมนู</option>' + catKeys.map(c => '<option value="' + c + '"' + (S.actCat === c ? ' selected' : '') + '>' + cats[c].label + '</option>').join('') + '</select>' +
+      (isMkt() ? '' : '<select id="fOwner" aria-label="Marketing"><option value="">Marketing ทุกคน</option>' + mkts.map(m => '<option value="' + m + '"' + (S.actOwner === m ? ' selected' : '') + '>' + users[m].name + '</option>').join('') + '</select>') +
+      '<label class="check"><input type="checkbox" id="fTask"' + (S.actTaskOnly ? ' checked' : '') + '> เฉพาะที่สร้างงานติดตาม</label>' +
+      '</div>' +
+      '<div class="tbl"><table><thead><tr><th>เวลา</th><th>คู่ค้า</th><th>ผู้ใช้ LINE</th><th>เมนู</th><th>Action</th><th>รายละเอียด</th>' + (isMkt() ? '' : '<th>Marketing</th>') + '<th>งานติดตาม</th></tr></thead><tbody>' +
+      (list.length ? list.map(a => '<tr><td class="num">' + a.t + '</td><td><button type="button" class="link" data-partner="' + a.pid + '">' + P[a.pid].name + '</button><div class="muted mono">' + a.pid + '</div></td><td>' + a.who + '</td><td>' + catTag(a.cat) + '</td><td>' + a.act + '</td><td>' + a.detail + '</td>' + (isMkt() ? '' : '<td>' + av(P[a.pid].owner, true) + '</td>') + '<td>' + (a.task ? '<button type="button" class="link mono" data-task="' + a.task + '">' + a.task + '</button> ' + stChip(T[a.task].st) : '<span class="muted">–</span>') + '</td></tr>').join('')
+        : '<tr><td colspan="8" class="empty">ไม่พบรายการตามเงื่อนไขที่เลือก</td></tr>') +
+      '</tbody></table></div>';
+  }
+  const stName = { new: 'ใหม่', doing: 'กำลังดำเนินการ', waiting: 'รอคู่ค้า', done: 'เสร็จแล้ว' };
+  const stChip = st => '<span class="chip ' + (st === 'done' ? 'ok' : st === 'new' ? 'high' : 'normal') + '">' + stName[st] + '</span>';
+
+  /* ================= Tasks ================= */
+  function vTasks() {
+    let list = scopedTasks();
+    if (S.taskOwner) list = list.filter(t => t.owner === S.taskOwner);
+    const cols = ['new', 'doing', 'waiting', 'done'];
+    return '<div class="head"><div><h1>' + (isMkt() ? 'งานของฉัน' : 'งานติดตาม') + '</h1><p>ระบบสร้างงานจาก Action ของคู่ค้าตามกฎที่ตั้งไว้ แล้วส่งให้ Marketing ที่ดูแลคู่ค้ารายนั้น</p></div>' +
+      (isMkt() ? '' : '<div class="filters"><select id="fTaskOwner" aria-label="Marketing"><option value="">Marketing ทุกคน</option>' + mkts.map(m => '<option value="' + m + '"' + (S.taskOwner === m ? ' selected' : '') + '>' + users[m].name + '</option>').join('') + '</select></div>') +
+      '</div>' + scopeBanner() +
+      '<div class="board-wrap"><div class="board">' + cols.map(c => {
+        const items = list.filter(t => t.st === c).sort((a, b) => b.late - a.late);
+        return '<section class="col" aria-label="' + stName[c] + '"><h3>' + stName[c] + (c === 'done' ? ' (วันนี้)' : '') + '<span>' + items.length + '</span></h3>' +
+          (items.length ? items.map(t => '<button type="button" class="task' + (t.late && t.st !== 'done' ? ' late' : '') + '" data-task="' + t.id + '">' +
+            '<span class="tags">' + prChip(R[t.rule].pr) + catTag(ruleCat(t.rule)) + '<span class="muted mono">' + t.id + '</span></span>' +
+            '<span class="t">' + t.title + '</span><span class="p">' + P[t.pid].name + '</span>' +
+            '<span class="f"><span class="due' + (t.late && t.st !== 'done' ? ' late' : '') + '">' + t.due + '</span>' + av(t.owner, true) + '</span></button>').join('') : '<div class="empty" style="padding:16px">ไม่มีงาน</div>') +
+          '</section>';
+      }).join('') + '</div></div>';
+  }
+  const ruleCat = r => ({ R1: 'contact', R2: 'quote', R3: 'renew', R4: 'fin', R5: 'fin', R6: 'contact', R7: 'copy', R8: 'quote' })[r];
+
+  /* ================= Partners ================= */
+  function vPartners() {
+    const sp = scopedPartners();
+    return '<div class="head"><div><h1>' + (isMkt() ? 'คู่ค้าของฉัน' : 'คู่ค้า') + '</h1><p>' + sp.length + ' ราย · กดชื่อเพื่อดู Action และงานของคู่ค้ารายนั้น</p></div></div>' + scopeBanner() +
+      '<div class="tbl"><table><thead><tr><th>คู่ค้า</th><th>ประเภท</th><th>ระดับ</th>' + (isMkt() ? '' : '<th>Marketing</th>') + '<th class="r">ผู้ใช้ LINE</th><th>ใช้งานล่าสุด</th><th>วงเงินที่ใช้</th><th class="r">งานเปิด</th></tr></thead><tbody>' +
+      sp.map(p => { const o = tasks.filter(t => t.pid === p.id && t.st !== 'done').length;
+        return '<tr><td><button type="button" class="link" data-partner="' + p.id + '">' + p.name + '</button><div class="muted mono">' + p.id + '</div></td><td>' + p.type + '</td><td>' + p.tier + '</td>' + (isMkt() ? '' : '<td><span class="me">' + av(p.owner, true) + users[p.owner].name + '</span></td>') + '<td class="r">' + p.line + '</td><td>' + (p.idle >= 30 ? '<span class="chip normal">' + p.last + '</span>' : p.last) + '</td><td class="num">' + meter(p.credit) + p.credit + '%</td><td class="r">' + o + '</td></tr>'; }).join('') +
+      '</tbody></table></div>';
+  }
+  const meter = v => '<span class="meter' + (v >= 90 ? ' bad' : v >= 80 ? ' warn' : '') + '" aria-hidden="true"><i style="width:' + v + '%"></i></span>';
+
+  /* ================= Settings (Admin) ================= */
+  function vSettings() {
+    const tabs = [['users', 'ผู้ใช้และสิทธิ์'], ['assign', 'มอบหมายคู่ค้า'], ['rules', 'กฎสร้างงานอัตโนมัติ']];
+    let body = '';
+    if (S.setTab === 'users') {
+      const perms = [
+        ['ดูภาพรวมและ Action ของคู่ค้า', 'ทุกราย', 'ทุกราย', 'เฉพาะคู่ค้าของตน'],
+        ['รับงานและบันทึกผล', '✓', '✓', 'เฉพาะงานของตน'],
+        ['มอบหมายงานให้คนอื่น', '✓', '✓', '–'],
+        ['เปลี่ยน Marketing ผู้ดูแลคู่ค้า', '✓', '–', '–'],
+        ['ตั้งกฎสร้างงานและ SLA', '✓', '–', '–'],
+        ['จัดการผู้ใช้และสิทธิ์', '✓', '–', '–']
+      ];
+      const cell = v => v === '✓' ? '<span class="yes">✓</span>' : v === '–' ? '<span class="no">–</span>' : v;
+      body = '<div class="tbl"><table><thead><tr><th>ผู้ใช้</th><th>บทบาท</th><th>ตำแหน่ง</th><th>ขอบเขตข้อมูล</th><th>สถานะ</th></tr></thead><tbody>' +
+        Object.keys(users).map(k => '<tr><td><span class="me">' + av(k, true) + users[k].name + '</span></td><td>' + users[k].role + '</td><td>' + users[k].title + '</td><td>' + (mkts.includes(k) ? 'คู่ค้า ' + partners.filter(p => p.owner === k).length + ' ราย' : 'คู่ค้าทุกราย') + '</td><td><span class="chip ok">ใช้งาน</span></td></tr>').join('') +
+        '</tbody></table></div><h2>สิทธิ์ตามบทบาท</h2><div class="tbl"><table><thead><tr><th>สิทธิ์</th><th>Admin</th><th>หัวหน้าทีม</th><th>Marketing</th></tr></thead><tbody>' +
+        perms.map(r => '<tr><td>' + r[0] + '</td>' + r.slice(1).map(v => '<td>' + cell(v) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+    } else if (S.setTab === 'assign') {
+      body = '<p class="muted">เปลี่ยน Marketing ผู้ดูแลแล้ว งานที่ยังเปิดอยู่ของคู่ค้ารายนั้นจะย้ายไปให้ผู้ดูแลคนใหม่ทันที</p><div class="tbl"><table><thead><tr><th>คู่ค้า</th><th>ประเภท</th><th>Marketing ผู้ดูแล</th><th class="r">งานเปิด</th></tr></thead><tbody>' +
+        partners.map(p => '<tr><td>' + p.name + '<div class="muted mono">' + p.id + '</div></td><td>' + p.type + '</td><td><select data-assign="' + p.id + '" aria-label="ผู้ดูแล ' + p.name + '">' + mkts.map(m => '<option value="' + m + '"' + (p.owner === m ? ' selected' : '') + '>' + users[m].name + '</option>').join('') + '</select></td><td class="r">' + tasks.filter(t => t.pid === p.id && t.st !== 'done').length + '</td></tr>').join('') +
+        '</tbody></table></div>';
+    } else {
+      body = '<p class="muted">ระบบตรวจ Action ของคู่ค้าและข้อมูลกรมธรรม์/บิลตามกฎด้านล่าง แล้วสร้างงานให้ Marketing ที่ดูแลคู่ค้ารายนั้น</p><div class="tbl"><table><thead><tr><th>กฎ</th><th>เมื่อ</th><th>สร้างงาน</th><th>SLA</th><th>ความสำคัญ</th><th>แจ้ง Marketing ทาง</th><th>เปิดใช้</th></tr></thead><tbody>' +
+        rules.map(r => '<tr><td class="mono">' + r.id + '</td><td>' + r.when + '</td><td>' + r.task + '</td><td class="num">' + r.sla + '</td><td>' + prChip(r.pr) + '</td><td>' + r.notify + '</td><td><label class="switch"><input type="checkbox" data-rule="' + r.id + '"' + (r.on ? ' checked' : '') + ' aria-label="เปิดใช้กฎ ' + r.id + '"><span></span></label></td></tr>').join('') +
+        '</tbody></table></div>';
+    }
+    return '<div class="head"><div><h1>ตั้งค่าระบบ</h1><p>เฉพาะ Admin</p></div></div><div class="tabs" role="tablist">' +
+      tabs.map(t => '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (S.setTab === t[0]) + '">' + t[1] + '</button>').join('') + '</div>' + body;
+  }
+
+  /* ================= Drawers ================= */
+  function openDrawer(html) { $('drawer').innerHTML = html; $('drawer').hidden = false; $('veil').hidden = false; const f = $('drawer').querySelector('.x'); if (f) f.focus(); }
+  function closeDrawer() { $('drawer').hidden = true; $('veil').hidden = true; }
+  function taskDrawer(id) {
+    const t = T[id], p = P[t.pid], r = R[t.rule];
+    if (!inScope(t.pid)) { toast('งานนี้อยู่นอกขอบเขตคู่ค้าของคุณ'); return; }
+    const mine = t.owner === S.role, can = mine || canManage();
+    let foot = '';
+    if (t.st !== 'done' && can) {
+      if (t.st === 'new') foot += '<button type="button" class="btn" data-move="doing">รับงาน</button>';
+      if (t.st !== 'waiting') foot += '<button type="button" class="btn ghost" data-move="waiting">รอคู่ค้าตอบ</button>';
+      if (t.st === 'waiting') foot += '<button type="button" class="btn ghost" data-move="doing">กลับมาดำเนินการ</button>';
+      foot += '<button type="button" class="btn teal" id="doClose">ปิดงาน</button>';
+    }
+    openDrawer('<div class="dh"><div><small class="mono">' + t.id + ' · กฎ ' + r.id + '</small><h2 id="drawerTitle">' + t.title + '</h2></div><button type="button" class="x" data-close aria-label="ปิด">×</button></div>' +
+      '<div class="db">' +
+      '<div class="tags" style="display:flex;gap:6px;flex-wrap:wrap">' + prChip(r.pr) + stChip(t.st) + catTag(ruleCat(t.rule)) + '</div>' +
+      '<dl class="kv"><dt>คู่ค้า</dt><dd><button type="button" class="link" data-partner="' + p.id + '">' + p.name + '</button> <span class="muted mono">' + p.id + '</span></dd>' +
+      '<dt>สิ่งที่ต้องทำ</dt><dd>' + r.task + '</dd><dt>สร้างเมื่อ</dt><dd>' + t.created + '</dd><dt>กำหนดเสร็จ</dt><dd><span class="due' + (t.late && t.st !== 'done' ? ' late' : '') + '">' + t.due + '</span> (SLA ' + r.sla + ')</dd>' +
+      '<dt>ผู้รับผิดชอบ</dt><dd>' + (canManage() && t.st !== 'done' ? '<select id="reassign" aria-label="มอบหมายให้">' + mkts.map(m => '<option value="' + m + '"' + (t.owner === m ? ' selected' : '') + '>' + users[m].name + '</option>').join('') + '</select>' : '<span class="me">' + av(t.owner, true) + users[t.owner].name + '</span>') + '</dd></dl>' +
+      '<div><h3 style="margin-bottom:6px">ที่มาของงาน</h3><div class="source"><span>' + t.src + '</span><span class="muted">เงื่อนไข: ' + r.when + '</span></div></div>' +
+      (t.outcome ? '<div><h3 style="margin-bottom:6px">ผลการดำเนินการ</h3><div class="source">' + esc(t.outcome) + '</div></div>' : '') +
+      '<div><h3 style="margin-bottom:8px">ประวัติ</h3><div class="timeline"><div>ระบบสร้างงาน และแจ้ง ' + users[t.owner].name + ' ทาง ' + r.notify + '<small>' + t.created + '</small></div>' + t.log.map(l => '<div>' + esc(l[1]) + '<small>' + l[0] + '</small></div>').join('') + '</div></div>' +
+      (t.st !== 'done' && can ? '<div id="closeForm" hidden style="display:grid;gap:10px"><label class="field" for="outcome">ผลการดำเนินการ<select id="outcome"><option>ปิดการขายได้</option><option>แก้ปัญหาแล้ว</option><option>คู่ค้าชำระแล้ว</option><option>คู่ค้าไม่สนใจ</option><option>อื่นๆ</option></select></label><label class="field" for="note">บันทึกเพิ่มเติม<textarea id="note" placeholder="เช่น โทรคุยกับคุณนิดาแล้ว จะส่งเอกสารเคลมภายในวันนี้"></textarea></label><button type="button" class="btn teal" id="confirmClose">ยืนยันปิดงาน</button></div>' : '') +
+      (!can ? '<p class="muted">งานนี้เป็นของ ' + users[t.owner].name + ' คุณดูได้อย่างเดียว</p>' : '') +
+      '</div>' + (foot ? '<div class="df">' + foot + '</div>' : ''));
+    const d = $('drawer');
+    d.querySelectorAll('[data-move]').forEach(b => b.addEventListener('click', () => { t.st = b.dataset.move; t.log.push(['วันนี้ 10:30', users[S.role].name + ' เปลี่ยนสถานะเป็น “' + stName[t.st] + '”']); toast(t.id + ' · ' + stName[t.st]); render(); taskDrawer(id); }));
+    const dc = $('doClose'); if (dc) dc.addEventListener('click', () => { $('closeForm').hidden = false; $('outcome').focus(); });
+    const cc = $('confirmClose'); if (cc) cc.addEventListener('click', () => {
+      const note = $('note').value.trim();
+      t.st = 'done'; t.late = false; t.due = 'ปิดแล้ว วันนี้ 10:30'; t.outcome = $('outcome').value + (note ? ' · ' + note : '');
+      t.log.push(['วันนี้ 10:30', users[S.role].name + ' ปิดงาน: ' + t.outcome]); toast('ปิดงาน ' + t.id + ' แล้ว'); render(); taskDrawer(id);
+    });
+    const ra = $('reassign'); if (ra) ra.addEventListener('change', () => { t.owner = ra.value; t.log.push(['วันนี้ 10:30', users[S.role].name + ' มอบหมายงานให้ ' + users[t.owner].name]); toast('มอบหมาย ' + t.id + ' ให้ ' + users[t.owner].name + ' แล้ว'); render(); taskDrawer(id); });
+  }
+  function partnerDrawer(id) {
+    const p = P[id]; if (!inScope(id)) return;
+    const acts = activities.filter(a => a.pid === id), ts = tasks.filter(t => t.pid === id);
+    openDrawer('<div class="dh"><div><small class="mono">' + p.id + '</small><h2 id="drawerTitle">' + p.name + '</h2></div><button type="button" class="x" data-close aria-label="ปิด">×</button></div><div class="db">' +
+      '<dl class="kv"><dt>ประเภท</dt><dd>' + p.type + ' · ' + p.tier + '</dd><dt>Marketing ผู้ดูแล</dt><dd><span class="me">' + av(p.owner, true) + users[p.owner].name + '</span></dd><dt>ผู้ใช้ LINE ที่ผูก</dt><dd>' + p.line + ' คน</dd><dt>ใช้งานล่าสุด</dt><dd>' + p.last + '</dd><dt>วงเงินที่ใช้</dt><dd class="num">' + meter(p.credit) + p.credit + '%</dd></dl>' +
+      '<div><h3 style="margin-bottom:6px">งานติดตาม</h3><div class="list">' + (ts.length ? ts.map(t => '<div class="item">' + prChip(R[t.rule].pr) + '<div><button type="button" class="link t" data-task="' + t.id + '">' + t.title + '</button><div class="s">' + stName[t.st] + '</div></div><span class="due' + (t.late && t.st !== 'done' ? ' late' : '') + '">' + t.due + '</span></div>').join('') : '<div class="muted">ไม่มีงาน</div>') + '</div></div>' +
+      '<div><h3 style="margin-bottom:8px">Action วันนี้</h3>' + (acts.length ? '<div class="timeline">' + acts.map(a => '<div>' + catTag(a.cat) + ' ' + a.act + ' · ' + a.detail + '<small>' + a.t + ' น. · ' + a.who + '</small></div>').join('') + '</div>' : '<p class="muted">วันนี้ยังไม่มี Action</p>') + '</div>' +
+      '</div>');
+  }
+
+  /* ================= Events ================= */
+  document.addEventListener('click', e => {
+    const v = e.target.closest('[data-view]'); if (v) { S.view = v.dataset.view; closeDrawer(); render(); window.scrollTo(0, 0); return; }
+    const tk = e.target.closest('[data-task]'); if (tk) { taskDrawer(tk.dataset.task); return; }
+    const pt = e.target.closest('[data-partner]'); if (pt) { partnerDrawer(pt.dataset.partner); return; }
+    if (e.target.closest('[data-close]') || e.target === $('veil')) { closeDrawer(); return; }
+    const tab = e.target.closest('[data-tab]'); if (tab) { S.setTab = tab.dataset.tab; render(); return; }
+    if (e.target.closest('#vChart') || e.target.closest('#vTable')) {
+      const tbl = e.target.closest('#vTable') !== null;
+      $('stack').hidden = tbl; $('stackTable').hidden = !tbl;
+      $('vChart').setAttribute('aria-pressed', String(!tbl)); $('vTable').setAttribute('aria-pressed', String(tbl));
+    }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('drawer').hidden) closeDrawer(); });
+  document.addEventListener('input', e => {
+    if (e.target.id === 'fQ') { S.actQ = e.target.value; const pos = e.target.selectionStart; render(); const q = $('fQ'); q.focus(); q.setSelectionRange(pos, pos); }
+  });
+  document.addEventListener('change', e => {
+    const id = e.target.id;
+    if (id === 'roleSel') { S.role = e.target.value; S.actOwner = ''; S.taskOwner = ''; closeDrawer(); render(); toast('สลับเป็นมุมมอง ' + users[S.role].role + ' · ' + users[S.role].name); }
+    else if (id === 'fCat') { S.actCat = e.target.value; render(); }
+    else if (id === 'fOwner') { S.actOwner = e.target.value; render(); }
+    else if (id === 'fTask') { S.actTaskOnly = e.target.checked; render(); }
+    else if (id === 'fTaskOwner') { S.taskOwner = e.target.value; render(); }
+    else if (e.target.dataset.assign) {
+      const p = P[e.target.dataset.assign], to = e.target.value;
+      const moved = tasks.filter(t => t.pid === p.id && t.st !== 'done');
+      p.owner = to; moved.forEach(t => { t.owner = to; t.log.push(['วันนี้ 10:30', 'Admin เปลี่ยนผู้ดูแลคู่ค้าเป็น ' + users[to].name]); });
+      render(); toast('ย้าย ' + p.name + ' และงานที่เปิดอยู่ ' + moved.length + ' งานไปให้ ' + users[to].name + ' แล้ว');
+    }
+    else if (e.target.dataset.rule) { R[e.target.dataset.rule].on = e.target.checked; toast('กฎ ' + e.target.dataset.rule + (e.target.checked ? ' เปิดใช้แล้ว' : ' ปิดแล้ว')); }
+  });
+
+  /* ================= Theme ================= */
+  const root = document.documentElement, darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+  const showTheme = () => { const t = root.dataset.theme || (darkMq.matches ? 'dark' : 'light'); $('th-light').setAttribute('aria-pressed', String(t === 'light')); $('th-dark').setAttribute('aria-pressed', String(t === 'dark')); };
+  const setTheme = t => { root.dataset.theme = t; try { localStorage.setItem('pd-bo-theme', t); } catch (err) {} showTheme(); };
+  try { const s = localStorage.getItem('pd-bo-theme'); if (s === 'light' || s === 'dark') root.dataset.theme = s; } catch (err) {}
+  $('th-light').addEventListener('click', () => setTheme('light'));
+  $('th-dark').addEventListener('click', () => setTheme('dark'));
+  if (darkMq.addEventListener) darkMq.addEventListener('change', showTheme);
+  showTheme();
+
+  render();
+})();
+</script>
