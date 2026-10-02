@@ -33,11 +33,19 @@
       <form id="quoteForm" class="grid">
         <fieldset class="wheels full">
           <legend>รถของคุณ <span class="muted" id="carPicked"></span></legend>
-          <div class="wheel-heads" aria-hidden="true"><span>ยี่ห้อ</span><span>รุ่น</span><span>ปี (ค.ศ.)</span></div>
           <div class="wheel-frame">
-            <div class="wheel" id="brandWheel" role="listbox" tabindex="0" aria-label="ยี่ห้อรถ"></div>
-            <div class="wheel" id="modelWheel" role="listbox" tabindex="0" aria-label="รุ่นรถ"></div>
-            <div class="wheel" id="yearWheel" role="listbox" tabindex="0" aria-label="ปีรถ (ค.ศ.)"></div>
+            <div class="wheel-col">
+              <span class="wheel-label" aria-hidden="true">ยี่ห้อ</span>
+              <div class="wheel-box"><div class="wheel" id="brandWheel" role="listbox" tabindex="0" aria-label="ยี่ห้อรถ"></div></div>
+            </div>
+            <div class="wheel-col">
+              <span class="wheel-label" aria-hidden="true">รุ่น</span>
+              <div class="wheel-box"><div class="wheel" id="modelWheel" role="listbox" tabindex="0" aria-label="รุ่นรถ"></div></div>
+            </div>
+            <div class="wheel-col">
+              <span class="wheel-label" aria-hidden="true">ปี (ค.ศ.)</span>
+              <div class="wheel-box"><div class="wheel" id="yearWheel" role="listbox" tabindex="0" aria-label="ปีรถ (ค.ศ.)"></div></div>
+            </div>
           </div>
           <input type="hidden" name="carBrand" id="carBrand">
           <input type="hidden" name="carModel" id="carModel">
