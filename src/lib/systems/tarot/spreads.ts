@@ -1,4 +1,4 @@
-import { drawFrom, mulberry32 } from "@/lib/random";
+import { drawFrom, mulberry32, shuffle } from "@/lib/random";
 import { TAROT_DECK, TAROT_SUITS, type TarotCard, type TarotSuit } from "./deck";
 
 export interface Position {
@@ -91,9 +91,21 @@ export function drawTarot(seed: number, count: number): { card: TarotCard; rever
   return cards.map((card) => ({ card, reversed: rand() < 0.5 }));
 }
 
-export function readTarot(spreadId: string, seed: number): TarotReading {
+/**
+ * The cards a user picked from the shuffled deck (indices into the shuffle), each with an
+ * orientation fixed per deck position. Without picks, falls back to drawTarot (older links).
+ */
+export function pickTarot(seed: number, count: number, picks?: number[] | null): { card: TarotCard; reversed: boolean }[] {
+  if (!picks) return drawTarot(seed, count);
+  const rand = mulberry32(seed);
+  const deck = shuffle(TAROT_DECK, rand);
+  const reversed = deck.map(() => rand() < 0.5);
+  return picks.map((i) => ({ card: deck[i], reversed: reversed[i] }));
+}
+
+export function readTarot(spreadId: string, seed: number, picks?: number[] | null): TarotReading {
   const spread = getTarotSpread(spreadId);
-  const drawn = drawTarot(seed, spread.positions.length);
+  const drawn = pickTarot(seed, spread.positions.length, picks);
   const cards = drawn.map((d, i) => ({ ...d, position: spread.positions[i] }));
   return { spread, seed, cards, summary: summarize(spread, cards) };
 }
@@ -106,19 +118,19 @@ function summarize(spread: TarotSpread, cards: DrawnTarot[]): string[] {
   const reversed = cards.filter((c) => c.reversed).length;
 
   if (n > 1) {
-    if (majors / n >= 0.5) lines.push(`ไพ่ชุดใหญ่ (Major Arcana) ออกมาถึง ${majors} ใบ เรื่องนี้เป็นจุดเปลี่ยนสำคัญที่ส่งผลต่อชีวิตในระยะยาว`);
-    else if (majors === 0) lines.push("ไม่มีไพ่ชุดใหญ่เลย เรื่องนี้อยู่ในมือคุณ เปลี่ยนแปลงได้ด้วยการกระทำในชีวิตประจำวัน");
+    if (majors / n >= 0.5) lines.push(`ไพ่ใบใหญ่ออกมาถึง ${majors} ใบ เรื่องที่ถามเป็นจุดเปลี่ยนสำคัญที่จะส่งผลต่อชีวิตไปอีกนาน ให้ตัดสินใจอย่างตั้งใจ`);
+    else if (majors === 0) lines.push("เรื่องนี้อยู่ในมือคุณ ผลลัพธ์เปลี่ยนได้ด้วยสิ่งที่คุณทำในแต่ละวัน");
 
     const counts = new Map<TarotSuit, number>();
     for (const c of cards) if (c.card.suit) counts.set(c.card.suit, (counts.get(c.card.suit) ?? 0) + 1);
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
     if (top && top[1] >= 2 && top[1] / n >= 0.3) {
       const s = TAROT_SUITS[top[0]];
-      lines.push(`ไพ่ชุด${s.nameTh} (ธาตุ${s.element}) ออกมา ${top[1]} ใบ เรื่องที่เด่นคือ${s.theme}`);
+      lines.push(`ไพ่ชุด${s.nameTh}ออกมา ${top[1]} ใบ เรื่องที่เด่นในตอนนี้คือ${s.theme}`);
     }
 
-    if (reversed / n > 0.5) lines.push("ไพ่กลับหัวมากกว่าครึ่ง พลังยังติดขัด อาจต้องแก้ที่ตัวเองหรือรอจังหวะ");
-    else if (reversed === 0) lines.push("ไพ่ตั้งทุกใบ พลังไหลลื่น เป็นช่วงที่เหมาะกับการลงมือ");
+    if (reversed / n > 0.5) lines.push("ไพ่กลับหัวออกมาเกินครึ่ง ช่วงนี้อะไร ๆ อาจยังติดขัด ลองถอยมาดูที่ตัวเองหรือรอจังหวะที่ดีกว่า");
+    else if (reversed === 0) lines.push("ไพ่ตั้งทุกใบ ทุกอย่างพร้อมจะไหลไปข้างหน้า เป็นจังหวะที่ดีที่จะลงมือ");
   }
 
   const outcome = cards[spread.outcomeIndex];

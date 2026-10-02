@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { calculateBazi, interpretBazi, type BaziResult, type Gender } from "@/lib/systems/bazi/calculate";
+import { calculateBazi, type BaziResult, type Gender } from "@/lib/systems/bazi/calculate";
+import { interpretBazi } from "@/lib/systems/bazi/story";
 import { ELEMENT_INFO, TEN_GODS } from "@/lib/systems/bazi/names";
 import { ReadingList } from "@/components/ReadingList";
 import { ElementBars } from "./ElementBars";
@@ -79,6 +80,13 @@ export function BaziClient() {
 
       {result && (
         <>
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">คำทำนาย</h2>
+            <ReadingList items={interpretBazi(result)} />
+          </section>
+          <details className="rounded-xl border border-[var(--border)] p-4">
+            <summary className="cursor-pointer font-semibold">ดูผังดวงสี่เสา (สำหรับผู้สนใจโหราศาสตร์จีน)</summary>
+            <div className="mt-4 space-y-8">
           <section className="space-y-3">
             <h2 className="text-xl font-semibold">สี่เสา</h2>
             <div className={`grid gap-2 ${result.pillars.length === 4 ? "grid-cols-4" : "grid-cols-3"}`} data-testid="pillars">
@@ -161,10 +169,8 @@ export function BaziClient() {
             </section>
           )}
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold">คำทำนาย</h2>
-            <ReadingList items={interpretBazi(result)} />
-          </section>
+            </div>
+          </details>
         </>
       )}
     </div>

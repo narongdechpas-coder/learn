@@ -1,6 +1,6 @@
 import { Solar, type EightChar } from "lunar-typescript";
 import {
-  BRANCHES, CONTROLLED_BY, CONTROLS, DAY_MASTER_TEXT, ELEMENTS, ELEMENT_INFO, PRODUCED_BY, PRODUCES, STEMS, TEN_GODS,
+  BRANCHES, CONTROLLED_BY, CONTROLS, ELEMENTS, PRODUCED_BY, PRODUCES, STEMS,
   type BranchInfo, type Element, type StemInfo,
 } from "./names";
 
@@ -194,83 +194,4 @@ export function calculateBazi(input: BaziInput, now: Date = new Date()): BaziRes
     unfavorable,
     luck,
   };
-}
-
-export interface Reading {
-  heading: string;
-  body: string;
-}
-
-const el = (e: Element) => `ธาตุ${ELEMENT_INFO[e].th}`;
-const list = (es: Element[]) => es.map(el).join(" ");
-
-/** คำทำนายจากกฎที่เขียนไว้ล่วงหน้า (ไม่ใช้ AI) */
-export function interpretBazi(r: BaziResult): Reading[] {
-  const readings: Reading[] = [];
-  const dm = r.dayMaster;
-
-  readings.push({
-    heading: "ธาตุประจำตัว",
-    body: `คุณคือ ${dm.gan} (${dm.stem.th}) ${DAY_MASTER_TEXT[dm.gan]}`,
-  });
-
-  const sorted = [...ELEMENTS].sort((a, b) => r.elementCounts[b] - r.elementCounts[a]);
-  const missing = ELEMENTS.filter((e) => r.elementCounts[e] === 0);
-  const top = sorted[0];
-  readings.push({
-    heading: "สมดุลธาตุทั้งห้า",
-    body:
-      `ในดวงมี${el(top)}มากที่สุด (${r.elementCounts[top]} ตัว) เด่นเรื่อง${ELEMENT_INFO[top].trait} ` +
-      (missing.length
-        ? `ส่วน${list(missing)}ไม่ปรากฏในดวงเลย ควรเติมด้วยสี ทิศ หรือกิจกรรมของธาตุนั้น`
-        : "ดวงมีครบทั้งห้าธาตุ ถือว่ามีพื้นฐานที่สมดุล"),
-  });
-
-  const fav = r.favorable;
-  readings.push({
-    heading: r.strong ? "ดวงธาตุประจำตัวแข็ง" : "ดวงธาตุประจำตัวอ่อน",
-    body:
-      (r.strong
-        ? "ธาตุประจำตัวได้รับการสนับสนุนมาก มีพลัง มั่นใจ พึ่งพาตัวเองได้ ควรระบายพลังออกไปในทางสร้างสรรค์ "
-        : "ธาตุประจำตัวได้รับการสนับสนุนน้อย ควรหาแรงหนุนจากผู้ใหญ่ ความรู้ และคนที่ไว้ใจได้ ") +
-      `ธาตุที่ส่งเสริมคุณคือ ${list(fav)} สีมงคลได้แก่ ${fav.map((e) => ELEMENT_INFO[e].color).join(" / ")} ` +
-      `ทิศที่ดีคือ ${[...new Set(fav.map((e) => ELEMENT_INFO[e].direction))].join(" ")} ` +
-      `ส่วนธาตุที่ควรเลี่ยงคือ ${list(r.unfavorable)}`,
-  });
-
-  // เทพทั้งสิบที่เด่น: ก้านฟ้าทุกเสา (ยกเว้นเสาวัน) + ชี่หลักของกิ่งดิน
-  const gods = new Map<string, number>();
-  for (const p of r.pillars) {
-    if (p.key !== "day") gods.set(p.tenGod, (gods.get(p.tenGod) ?? 0) + 1);
-    const main = p.hidden[0];
-    if (main) gods.set(main.tenGod, (gods.get(main.tenGod) ?? 0) + 1);
-  }
-  const [godTop] = [...gods.entries()].sort((a, b) => b[1] - a[1]);
-  if (godTop) {
-    const info = TEN_GODS[godTop[0]];
-    readings.push({
-      heading: "ดาวเด่นในดวง",
-      body: `ดาวที่ปรากฏมากที่สุดคือ ${godTop[0]} “${info.th}” (${godTop[1]} ตำแหน่ง): ${info.meaning}`,
-    });
-  }
-
-  if (r.luck) {
-    const cur = r.luck.find((l) => l.current);
-    const next = cur ? r.luck[r.luck.indexOf(cur) + 1] : r.luck[0];
-    const parts: string[] = [];
-    if (cur) {
-      parts.push(
-        `ตอนนี้อยู่ในวัยจร ${cur.ganZhi} (${cur.startYear}–${cur.endYear}) ก้านฟ้าเป็น${el(cur.stemElement)} ` +
-          (cur.favorable ? "ซึ่งส่งเสริมดวง เป็นช่วงที่เหมาะกับการเริ่มต้นและขยายงาน" : "ซึ่งไม่ใช่ธาตุที่ส่งเสริม ควรค่อยเป็นค่อยไปและระวังการเสี่ยง"),
-      );
-    }
-    if (next) {
-      parts.push(
-        `วัยจรถัดไป ${next.ganZhi} เริ่มปี ${next.startYear} (อายุราว ${next.startAge} ปี) เป็น${el(next.stemElement)} ` +
-          (next.favorable ? "เป็นช่วงขาขึ้น" : "ควรเตรียมตัวรับมือ"),
-      );
-    }
-    readings.push({ heading: "วัยจร (10 ปี)", body: parts.join(" ") });
-  }
-  return readings;
 }

@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { newSeed } from "@/lib/random";
-import { TAROT_SUITS } from "@/lib/systems/tarot/deck";
-import { TAROT_SPREADS, readTarot } from "@/lib/systems/tarot/spreads";
+import { parsePicks } from "@/lib/random";
+import { TAROT_DECK, TAROT_SUITS } from "@/lib/systems/tarot/deck";
+import { TAROT_SPREADS, getTarotSpread, readTarot } from "@/lib/systems/tarot/spreads";
+import { CardDrawFlow, type DrawResult } from "@/components/CardDrawFlow";
 import { TarotCard } from "@/components/TarotCard";
 import { CelticCross } from "./CelticCross";
+
+const FLOW_SPREADS = TAROT_SPREADS.map((s) => ({
+  id: s.id, name: s.name, description: s.description, positions: s.positions.map((p) => p.name),
+}));
 
 export function TarotClient() {
   const params = useSearchParams();
@@ -14,20 +19,19 @@ export function TarotClient() {
   const pathname = usePathname();
   const qSpread = params.get("s");
   const qSeed = params.get("seed");
+  const qPick = params.get("pick");
   const qQuestion = params.get("q") ?? "";
-  const [spreadId, setSpreadId] = useState(qSpread ?? TAROT_SPREADS[0].id);
-  const [question, setQuestion] = useState(qQuestion);
 
   const reading = useMemo(() => {
     const seed = Number(qSeed);
     if (!qSpread || !qSeed || !Number.isInteger(seed) || seed < 0) return null;
-    return readTarot(qSpread, seed);
-  }, [qSpread, qSeed]);
+    const picks = parsePicks(qPick, TAROT_DECK.length, getTarotSpread(qSpread).positions.length);
+    return readTarot(qSpread, seed, picks);
+  }, [qSpread, qSeed, qPick]);
 
-  function draw(e: React.FormEvent) {
-    e.preventDefault();
-    const q = new URLSearchParams({ s: spreadId, seed: String(newSeed()) });
-    if (question.trim()) q.set("q", question.trim());
+  function reveal({ spreadId, seed, picks, question }: DrawResult) {
+    const q = new URLSearchParams({ s: spreadId, seed: String(seed), pick: picks.join(",") });
+    if (question) q.set("q", question);
     router.push(`${pathname}?${q}`);
   }
 
@@ -38,37 +42,19 @@ export function TarotClient() {
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold">ไพ่ยิปซี (Tarot)</h1>
         <p className="text-[var(--muted)]">
-          สำรับ Rider-Waite 78 ใบ ทำสมาธิถึงเรื่องที่อยากรู้ เลือกรูปแบบการเปิดไพ่ แล้วกดสับไพ่ ไพ่กลับหัวจะมีความหมายต่างจากไพ่ตั้ง
+          สำรับ Rider-Waite 78 ใบ ทำสมาธิถึงเรื่องที่อยากรู้ กดสับไพ่ แล้วเลือกไพ่ที่คว่ำอยู่ด้วยตัวเอง ไพ่กลับหัวจะมีความหมายต่างจากไพ่ตั้ง
         </p>
       </section>
 
-      <form onSubmit={draw} className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-        <div className="grid gap-2 sm:grid-cols-2">
-          {TAROT_SPREADS.map((s) => (
-            <label
-              key={s.id}
-              className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${
-                spreadId === s.id ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--border)]"
-              }`}
-            >
-              <input type="radio" name="spread" value={s.id} checked={spreadId === s.id} onChange={() => setSpreadId(s.id)} className="sr-only" />
-              <span className="font-semibold">{s.name}</span>
-              <span className="block text-xs text-[var(--muted)]">{s.description}</span>
-            </label>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="คำถามของคุณ (ไม่บังคับ) เช่น ความสัมพันธ์นี้จะไปทางไหน"
-          maxLength={120}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2"
+      {!reading && (
+        <CardDrawFlow
+          spreads={FLOW_SPREADS}
+          deckSize={TAROT_DECK.length}
+          cardAspect="aspect-[3/5]"
+          questionPlaceholder="เช่น ความสัมพันธ์นี้จะไปทางไหน"
+          onReveal={reveal}
         />
-        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
-          สับไพ่และเปิดไพ่
-        </button>
-      </form>
+      )}
 
       {reading && (
         <section className="space-y-4">
@@ -81,7 +67,8 @@ export function TarotClient() {
             {reading.cards.map(({ position, card, reversed }, i) => (
               <div
                 key={card.id}
-                className={`flex gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 ${
+                style={{ animationDelay: `${i * 120}ms` }}
+                className={`animate-card-in flex gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 ${
                   reading.cards.length === 1 ? "flex-col items-center text-center sm:flex-row sm:items-start sm:text-left" : ""
                 }`}
               >
@@ -119,6 +106,9 @@ export function TarotClient() {
             </ul>
           </div>
           <p className="text-xs text-[var(--muted)]">คัดลอกลิงก์ของหน้านี้ไปแชร์ได้ คนที่เปิดลิงก์จะเห็นไพ่ชุดเดียวกับคุณ</p>
+          <button type="button" onClick={() => router.push(pathname)} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+            🔀 ดูดวงใหม่
+          </button>
         </section>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { Solar } from "lunar-typescript";
 import { describe, expect, it } from "vitest";
-import { calculateBazi, interpretBazi, tenGodOf } from "./calculate";
+import { calculateBazi, tenGodOf } from "./calculate";
 import { STEMS } from "./names";
 
 const gz = (r: ReturnType<typeof calculateBazi>) => r.pillars.map((p) => p.gan + p.zhi).join(" ");
@@ -52,13 +52,6 @@ describe("calculateBazi", () => {
 
   it("rejects invalid dates", () => {
     expect(() => calculateBazi({ year: 2023, month: 2, day: 29 })).toThrow();
-  });
-
-  it("writes every reading section", () => {
-    const r = calculateBazi({ year: 1990, month: 8, day: 15, time: "19:30", gender: "female" });
-    const headings = interpretBazi(r).map((x) => x.heading);
-    expect(headings).toContain("ธาตุประจำตัว");
-    expect(headings).toContain("วัยจร (10 ปี)");
   });
 });
 

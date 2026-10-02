@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { TAROT_DECK } from "./deck";
-import { TAROT_SPREADS, drawTarot, readTarot } from "./spreads";
+import { TAROT_SPREADS, drawTarot, pickTarot, readTarot } from "./spreads";
 
 describe("TAROT_DECK", () => {
   it("has 22 major and 56 minor cards with unique ids", () => {
@@ -58,5 +58,23 @@ describe("readTarot", () => {
 
   it("falls back to the daily spread for unknown ids", () => {
     expect(readTarot("nope", 1).spread.id).toBe("daily");
+  });
+});
+
+describe("pickTarot", () => {
+  it("gives each deck position a fixed orientation, whichever card is picked first", () => {
+    const a = pickTarot(5, 2, [10, 70]);
+    const b = pickTarot(5, 2, [70, 10]);
+    expect(a[0]).toEqual(b[1]);
+    expect(a[1]).toEqual(b[0]);
+  });
+
+  it("keeps old links without picks unchanged", () => {
+    expect(pickTarot(2024, 3)).toEqual(drawTarot(2024, 3));
+  });
+
+  it("supports a full Celtic Cross pick", () => {
+    const r = readTarot("celtic", 3, [77, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(new Set(r.cards.map((c) => c.card.id)).size).toBe(10);
   });
 });

@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SUITS } from "@/lib/systems/playing-cards/deck";
-import { newSeed } from "@/lib/systems/playing-cards/draw";
-import { SPREADS, readSpread } from "@/lib/systems/playing-cards/spreads";
+import { DECK, SUITS } from "@/lib/systems/playing-cards/deck";
+import { SPREADS, getSpread, readSpread } from "@/lib/systems/playing-cards/spreads";
+import { parsePicks } from "@/lib/random";
+import { CardDrawFlow, type DrawResult } from "@/components/CardDrawFlow";
 import { PlayingCard } from "@/components/PlayingCard";
+
+const FLOW_SPREADS = SPREADS.map((s) => ({ id: s.id, name: s.name, description: s.description, positions: s.positions }));
 
 const TONE_LABEL = { good: "ดี", neutral: "กลาง ๆ", caution: "ระวัง" } as const;
 
@@ -15,20 +18,19 @@ export function PlayingCardsClient() {
   const pathname = usePathname();
   const qSpread = params.get("s");
   const qSeed = params.get("seed");
+  const qPick = params.get("pick");
   const qQuestion = params.get("q") ?? "";
-  const [spreadId, setSpreadId] = useState(qSpread ?? SPREADS[0].id);
-  const [question, setQuestion] = useState(qQuestion);
 
   const reading = useMemo(() => {
     const seed = Number(qSeed);
     if (!qSpread || !qSeed || !Number.isInteger(seed) || seed < 0) return null;
-    return readSpread(qSpread, seed);
-  }, [qSpread, qSeed]);
+    const picks = parsePicks(qPick, DECK.length, getSpread(qSpread).positions.length);
+    return readSpread(qSpread, seed, picks);
+  }, [qSpread, qSeed, qPick]);
 
-  function draw(e: React.FormEvent) {
-    e.preventDefault();
-    const q = new URLSearchParams({ s: spreadId, seed: String(newSeed()) });
-    if (question.trim()) q.set("q", question.trim());
+  function reveal({ spreadId, seed, picks, question }: DrawResult) {
+    const q = new URLSearchParams({ s: spreadId, seed: String(seed), pick: picks.join(",") });
+    if (question) q.set("q", question);
     router.push(`${pathname}?${q}`);
   }
 
@@ -37,45 +39,31 @@ export function PlayingCardsClient() {
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold">ไพ่ป๊อก</h1>
         <p className="text-[var(--muted)]">
-          ตั้งจิตอธิษฐานถึงเรื่องที่อยากรู้ แล้วกดเปิดไพ่ ไพ่แต่ละดอกมีความหมายต่างกัน:{" "}
+          ตั้งจิตถึงเรื่องที่อยากรู้ กดสับไพ่ แล้วเลือกไพ่ด้วยตัวเอง ไพ่แต่ละดอกมีความหมายต่างกัน:{" "}
           {Object.values(SUITS).map((s) => `${s.symbol} ${s.theme}`).join(" · ")}
         </p>
       </section>
 
-      <form onSubmit={draw} className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-        <div className="flex flex-wrap gap-2">
-          {SPREADS.map((s) => (
-            <label
-              key={s.id}
-              className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${
-                spreadId === s.id ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--border)]"
-              }`}
-            >
-              <input type="radio" name="spread" value={s.id} checked={spreadId === s.id} onChange={() => setSpreadId(s.id)} className="sr-only" />
-              <span className="font-semibold">{s.name}</span>
-              <span className="block text-xs text-[var(--muted)]">{s.description}</span>
-            </label>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="คำถามของคุณ (ไม่บังคับ) เช่น งานใหม่จะเป็นอย่างไร"
-          maxLength={120}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2"
+      {!reading && (
+        <CardDrawFlow
+          spreads={FLOW_SPREADS}
+          deckSize={DECK.length}
+          cardAspect="aspect-[5/7]"
+          questionPlaceholder="เช่น งานใหม่จะเป็นอย่างไร"
+          onReveal={reveal}
         />
-        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
-          สับไพ่และเปิดไพ่
-        </button>
-      </form>
+      )}
 
       {reading && (
         <section className="space-y-4">
           {qQuestion && <p className="text-lg">คำถาม: “{qQuestion}”</p>}
           <div className="grid gap-4 sm:grid-cols-3">
-            {reading.cards.map(({ position, card }) => (
-              <div key={card.id} className="flex flex-col items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center">
+            {reading.cards.map(({ position, card }, i) => (
+              <div
+                key={card.id}
+                className="animate-card-in flex flex-col items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center"
+                style={{ animationDelay: `${i * 150}ms` }}
+              >
                 <div className="text-sm font-semibold text-[var(--gold)]">{position}</div>
                 <PlayingCard card={card} />
                 <div className="text-sm">
@@ -90,6 +78,9 @@ export function PlayingCardsClient() {
             <p className="mt-1 leading-relaxed">{reading.summary}</p>
           </div>
           <p className="text-xs text-[var(--muted)]">คัดลอกลิงก์ของหน้านี้ไปแชร์ได้ คนที่เปิดลิงก์จะเห็นไพ่ชุดเดียวกับคุณ</p>
+          <button type="button" onClick={() => router.push(pathname)} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+            🔀 ดูดวงใหม่
+          </button>
         </section>
       )}
     </div>

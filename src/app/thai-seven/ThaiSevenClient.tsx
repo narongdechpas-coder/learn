@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { calculateSeven, interpretSeven, sumLevel, type SevenResult } from "@/lib/systems/thai-seven/calculate";
+import { calculateSeven, sumLevel, type SevenResult } from "@/lib/systems/thai-seven/calculate";
+import { interpretSeven } from "@/lib/systems/thai-seven/story";
 import { ReadingList } from "@/components/ReadingList";
 
 const LEVEL_STYLE = { สูง: "text-emerald-600", กลาง: "text-[var(--muted)]", ต่ำ: "text-rose-500" } as const;
@@ -77,45 +78,48 @@ export function ThaiSevenClient() {
       {result && (
         <>
           <section className="space-y-3">
-            <p>
+            <h2 className="text-xl font-semibold">คำทำนาย</h2>
+            <p className="text-[var(--muted)]">
               วัน{result.dayName} {result.lunar.phase} {result.lunar.kham} ค่ำ {result.monthName} ปี{result.lunar.naksatrName}
               {result.shiftedToPreviousDay && (
                 <span className="text-sm text-[var(--muted)]"> (เกิดก่อน 06:00 จึงนับเป็นวันก่อนหน้า)</span>
               )}
             </p>
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-              <table className="w-full table-fixed text-center" data-testid="seven-table">
-                <tbody>
-                  {result.rows.map((row, r) => (
-                    <tr key={r} className="border-b border-[var(--border)]">
-                      {row.map((cell) => (
-                        <td key={cell.house} className="px-0.5 py-2 sm:p-2" title={cell.meaning}>
-                          <div className="text-xl sm:text-2xl font-semibold">{cell.value}</div>
-                          <div className={`text-[10px] sm:text-xs ${cell.negative ? "text-rose-500" : "text-[var(--muted)]"}`}>{cell.house}</div>
+            <ReadingList items={interpretSeven(result)} />
+          </section>
+          <details className="rounded-xl border border-[var(--border)] p-4">
+            <summary className="cursor-pointer font-semibold">ดูตารางเลข 7 ตัว (สำหรับผู้สนใจโหราศาสตร์)</summary>
+            <div className="mt-3 space-y-3">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                <table className="w-full table-fixed text-center" data-testid="seven-table">
+                  <tbody>
+                    {result.rows.map((row, r) => (
+                      <tr key={r} className="border-b border-[var(--border)]">
+                        {row.map((cell) => (
+                          <td key={cell.house} className="px-0.5 py-2 sm:p-2" title={cell.meaning}>
+                            <div className="text-xl sm:text-2xl font-semibold">{cell.value}</div>
+                            <div className={`text-[10px] sm:text-xs ${cell.negative ? "text-rose-500" : "text-[var(--muted)]"}`}>{cell.house}</div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                    <tr className="bg-[var(--bg)]">
+                      {result.sums.map((s, c) => (
+                        <td key={c} className="px-0.5 py-2 sm:p-2">
+                          <div className="text-xl sm:text-2xl font-semibold text-[var(--gold)]">{s}</div>
+                          <div className={`text-[10px] sm:text-xs ${LEVEL_STYLE[sumLevel(s)]}`}>กำลัง{sumLevel(s)}</div>
                         </td>
                       ))}
                     </tr>
-                  ))}
-                  <tr className="bg-[var(--bg)]">
-                    {result.sums.map((s, c) => (
-                      <td key={c} className="px-0.5 py-2 sm:p-2">
-                        <div className="text-xl sm:text-2xl font-semibold text-[var(--gold)]">{s}</div>
-                        <div className={`text-[10px] sm:text-xs ${LEVEL_STYLE[sumLevel(s)]}`}>กำลัง{sumLevel(s)}</div>
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-[var(--muted)]">
+                แถว 1 เริ่มจากเลขวันเกิด แถว 2 เริ่มจากเดือนจันทรคติ แถว 3 เริ่มจากปีนักษัตร (เปลี่ยนปีตามจุลศักราช
+                ราวกลางเดือนเมษายน) แถวล่างคือผลรวมของแต่ละหลัก ชื่อภพสีแดงคือภพฝ่ายร้าย
+              </p>
             </div>
-            <p className="text-xs text-[var(--muted)]">
-              แถว 1 เริ่มจากเลขวันเกิด แถว 2 เริ่มจากเดือนจันทรคติ แถว 3 เริ่มจากปีนักษัตร (เปลี่ยนปีตามจุลศักราช
-              ราวกลางเดือนเมษายน) แถวล่างคือผลรวมของแต่ละหลัก ชื่อภพสีแดงคือภพฝ่ายร้าย
-            </p>
-          </section>
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold">คำทำนาย</h2>
-            <ReadingList items={interpretSeven(result)} />
-          </section>
+          </details>
         </>
       )}
     </div>

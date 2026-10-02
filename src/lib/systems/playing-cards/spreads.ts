@@ -1,5 +1,5 @@
 import { SUITS, type Card, type Suit } from "./deck";
-import { drawCards } from "./draw";
+import { pickCards } from "./draw";
 
 export interface Spread {
   id: string;
@@ -37,9 +37,9 @@ export interface SpreadReading {
 const TONE_SCORE = { good: 1, neutral: 0, caution: -1 } as const;
 
 /** เปิดไพ่ตาม spread แล้วสรุปคำทำนายจากกฎที่เขียนไว้ล่วงหน้า */
-export function readSpread(spreadId: string, seed: number): SpreadReading {
+export function readSpread(spreadId: string, seed: number, picks?: number[] | null): SpreadReading {
   const spread = getSpread(spreadId);
-  const drawn = drawCards(seed, spread.positions.length);
+  const drawn = pickCards(seed, spread.positions.length, picks);
   const cards = drawn.map((card, i) => ({ position: spread.positions[i], card }));
 
   const counts = new Map<Suit, number>();

@@ -30,3 +30,22 @@ export function drawFrom<T>(items: readonly T[], rand: () => number, count: numb
   }
   return deck.slice(0, count);
 }
+
+/** Shuffle the whole deck. Its first n items equal drawFrom(items, rand, n) for the same generator. */
+export function shuffle<T>(items: readonly T[], rand: () => number): T[] {
+  return drawFrom(items, rand, items.length);
+}
+
+/**
+ * Parse the cards a user picked from a shuffled deck, e.g. "12,3,40".
+ * Returns null unless there are exactly `count` distinct indices within the deck.
+ */
+export function parsePicks(raw: string | null, deckSize: number, count: number): number[] | null {
+  if (!raw) return null;
+  const picks = raw.split(",").map(Number);
+  const valid =
+    picks.length === count &&
+    picks.every((p) => Number.isInteger(p) && p >= 0 && p < deckSize) &&
+    new Set(picks).size === count;
+  return valid ? picks : null;
+}

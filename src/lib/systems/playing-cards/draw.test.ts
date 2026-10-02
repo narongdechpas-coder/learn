@@ -49,3 +49,15 @@ describe("seed compatibility", () => {
     ]);
   });
 });
+
+describe("pickCards", () => {
+  it("returns exactly the cards picked from the shuffled deck", async () => {
+    const { shuffle, mulberry32 } = await import("@/lib/random");
+    const deck = shuffle(DECK, mulberry32(77));
+    expect(readSpread("three", 77, [51, 0, 20]).cards.map((c) => c.card)).toEqual([deck[51], deck[0], deck[20]]);
+  });
+
+  it("keeps old links without picks unchanged", () => {
+    expect(readSpread("three", 12345).cards.map((c) => c.card.id)).toEqual([50, 16, 26]);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateSeven, interpretSeven } from "./calculate";
+import { calculateSeven } from "./calculate";
 
 describe("calculateSeven", () => {
   // 11 พ.ค. 2025 = วันอาทิตย์ ขึ้น 15 ค่ำ เดือน 6 ปีมะเส็ง
@@ -48,13 +48,5 @@ describe("calculateSeven", () => {
   it("rejects invalid dates", () => {
     expect(() => calculateSeven({ year: 2025, month: 2, day: 30 })).toThrow();
     expect(() => calculateSeven({ year: 1800, month: 1, day: 1 })).toThrow();
-  });
-
-  it("produces a reading for every topic", () => {
-    const readings = interpretSeven(r);
-    expect(readings.map((x) => x.heading)).toEqual([
-      "ภาพรวม", "ตัวตนและบุคลิก", "การงาน", "การเงิน", "ความรัก", "สุขภาพ", "หลักที่เด่นและหลักที่อ่อน",
-    ]);
-    expect(readings.every((x) => x.body.length > 20)).toBe(true);
   });
 });
