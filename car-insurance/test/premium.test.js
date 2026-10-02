@@ -42,6 +42,7 @@ test('ซ่อมห้างแพงกว่าซ่อมอู่ แล�
 test('ข้อมูลไม่ถูกต้องโยน QuoteError', () => {
   assert.throws(() => calculatePlans({ ...base, carValue: 10 }, now), QuoteError);
   assert.throws(() => calculatePlans({ ...base, vehicleType: 'boat' }, now), QuoteError);
+  assert.throws(() => calculatePlans({ ...base, carModel: 'Civic' }, now), QuoteError); // รุ่นไม่ตรงยี่ห้อ
 });
 
 test('ตรวจเลขบัตรประชาชนและ Luhn', () => {

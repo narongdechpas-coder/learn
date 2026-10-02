@@ -62,7 +62,96 @@ function withBusy(btn, fn) {
   };
 }
 
+// ---------- Wheel picker ----------
+// คอลัมน์เลื่อนแบบล้อหมุน (scroll-snap) — เลื่อนด้วยนิ้ว/เมาส์ คลิกรายการ หรือใช้ปุ่มลูกศรได้
+class WheelPicker {
+  constructor(root, { onChange } = {}) {
+    this.root = root;
+    this.onChange = onChange || (() => {});
+    this.items = [];
+    this.index = 0;
+    this.settleTimer = null;
+    root.addEventListener('scroll', () => this.onScroll(), { passive: true });
+    root.addEventListener('click', (e) => {
+      const item = e.target.closest('.wheel-item');
+      if (item) this.select(Number(item.dataset.index), { smooth: true });
+    });
+    root.addEventListener('keydown', (e) => {
+      const step = { ArrowDown: 1, ArrowUp: -1, PageDown: 5, PageUp: -5 }[e.key];
+      if (step) this.select(this.index + step, { smooth: true });
+      else if (e.key === 'Home') this.select(0, { smooth: true });
+      else if (e.key === 'End') this.select(this.items.length - 1, { smooth: true });
+      else return;
+      e.preventDefault();
+    });
+  }
+
+  get rowHeight() {
+    return this.root.querySelector('.wheel-item')?.offsetHeight || 40;
+  }
+
+  get value() {
+    return this.items[this.index]?.value;
+  }
+
+  setItems(items, value) {
+    this.items = items;
+    this.root.replaceChildren(
+      ...items.map((it, i) => {
+        const node = el('div', { className: 'wheel-item', id: `${this.root.id}-${i}`, textContent: it.label });
+        node.setAttribute('role', 'option');
+        node.dataset.index = i;
+        return node;
+      }),
+    );
+    const i = items.findIndex((it) => it.value === value);
+    this.select(i >= 0 ? i : 0);
+  }
+
+  select(i, { smooth = false, silent = false } = {}) {
+    i = Math.max(0, Math.min(this.items.length - 1, i));
+    this.root.scrollTo({ top: i * this.rowHeight, behavior: smooth ? 'smooth' : 'auto' });
+    this.commit(i, silent);
+  }
+
+  onScroll() {
+    const i = Math.round(this.root.scrollTop / this.rowHeight);
+    this.highlight(i);
+    clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => this.commit(i), 120);
+  }
+
+  highlight(i) {
+    [...this.root.children].forEach((node, n) => {
+      node.classList.toggle('selected', n === i);
+      node.setAttribute('aria-selected', String(n === i));
+    });
+    this.root.setAttribute('aria-activedescendant', `${this.root.id}-${i}`);
+  }
+
+  commit(i, silent = false) {
+    i = Math.max(0, Math.min(this.items.length - 1, i));
+    this.highlight(i);
+    const changed = i !== this.index || this.committedValue !== this.items[i]?.value;
+    this.index = i;
+    this.committedValue = this.items[i]?.value;
+    if (changed && !silent) this.onChange(this.value);
+  }
+}
+
 // ---------- ขั้นที่ 1: เช็คเบี้ย ----------
+const pickers = {};
+
+function syncCarFields() {
+  const brand = pickers.brand.value;
+  const model = pickers.model.value;
+  const year = pickers.year.value;
+  $('#carBrand').value = brand ?? '';
+  $('#carModel').value = model ?? '';
+  $('#carYear').value = year ?? '';
+  $('#carPicked').textContent = brand && model ? `${brand} ${model} ปี ${year}` : '';
+}
+
 async function loadOptions() {
   const opts = await api('/api/options');
   const fill = (id, items) => $(id).replaceChildren(...items.map((o) => el('option', { value: o.value, textContent: o.label })));
@@ -70,7 +159,31 @@ async function loadOptions() {
   fill('#region', opts.regions);
   fill('#garage', opts.garages);
   fill('#deductible', opts.deductibles.map((d) => ({ value: d, label: d ? `${num(d)} บาท` : 'ไม่มี' })));
-  $('#quoteForm').carYear.value = new Date().getFullYear() - 2;
+
+  const catalog = opts.catalog;
+  const modelsOf = (brand) => catalog.find((b) => b.brand === brand)?.models ?? [];
+
+  pickers.model = new WheelPicker($('#modelWheel'), {
+    onChange(model) {
+      // เลือกประเภทรถให้อัตโนมัติตามรุ่น (ผู้ใช้เปลี่ยนเองได้)
+      const info = modelsOf(pickers.brand.value).find((m) => m.name === model);
+      if (info) $('#vehicleType').value = info.type;
+      syncCarFields();
+    },
+  });
+  pickers.brand = new WheelPicker($('#brandWheel'), {
+    onChange(brand) {
+      pickers.model.setItems(modelsOf(brand).map((m) => ({ value: m.name, label: m.name })));
+      syncCarFields();
+    },
+  });
+  const thisYear = new Date().getFullYear();
+  pickers.year = new WheelPicker($('#yearWheel'), { onChange: syncCarFields });
+  pickers.year.setItems(
+    Array.from({ length: 26 }, (_, i) => ({ value: String(thisYear - i), label: String(thisYear - i) })),
+    String(thisYear - 2),
+  );
+  pickers.brand.setItems(catalog.map((b) => ({ value: b.brand, label: b.brand })));
 }
 
 $('#quoteForm').addEventListener('submit', (e) => {

@@ -1,6 +1,7 @@
 // คำนวณเบี้ยประกันรถยนต์
 // อัตราและตัวคูณทั้งหมดเป็น "ตัวอย่าง" สำหรับเดโม ไม่ใช่พิกัดอัตราเบี้ยจริงของ คปภ.
 // คำนวณเป็นหน่วยสตางค์ (จำนวนเต็ม) เพื่อเลี่ยงปัญหาทศนิยมของ float
+const { findModel } = require('./catalog');
 
 const VEHICLE_TYPES = {
   sedan: { label: 'รถเก๋ง', factor: 1.0, cmiNet: 600 },
@@ -166,12 +167,11 @@ function validateInput(input, now = new Date()) {
       errors.push('อายุผู้ขับขี่ต้องอยู่ระหว่าง 18 – 90 ปี');
     }
   }
-  if (!input.carBrand || String(input.carBrand).trim().length < 2) errors.push('กรุณาระบุยี่ห้อรถ');
-  if (!input.carModel || String(input.carModel).trim().length < 1) errors.push('กรุณาระบุรุ่นรถ');
+  if (!findModel(input.carBrand, input.carModel)) errors.push('กรุณาเลือกยี่ห้อและรุ่นรถจากรายการ');
   if (errors.length) throw new QuoteError(errors.join(', '));
   return {
-    carBrand: String(input.carBrand).trim().slice(0, 50),
-    carModel: String(input.carModel).trim().slice(0, 80),
+    carBrand: input.carBrand,
+    carModel: input.carModel,
     carYear: year,
     carAge: Math.max(0, thisYear - year),
     carValue: Math.round(carValue),

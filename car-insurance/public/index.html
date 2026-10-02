@@ -31,9 +31,18 @@
     <section class="card" data-panel="1">
       <h1>เช็คเบี้ยประกันรถยนต์</h1>
       <form id="quoteForm" class="grid">
-        <label>ยี่ห้อรถ<input name="carBrand" required placeholder="เช่น Toyota"></label>
-        <label>รุ่นรถ<input name="carModel" required placeholder="เช่น Yaris Ativ 1.2"></label>
-        <label>ปีรถ (ค.ศ.)<input name="carYear" type="number" required></label>
+        <fieldset class="wheels full">
+          <legend>รถของคุณ <span class="muted" id="carPicked"></span></legend>
+          <div class="wheel-heads" aria-hidden="true"><span>ยี่ห้อ</span><span>รุ่น</span><span>ปี (ค.ศ.)</span></div>
+          <div class="wheel-frame">
+            <div class="wheel" id="brandWheel" role="listbox" tabindex="0" aria-label="ยี่ห้อรถ"></div>
+            <div class="wheel" id="modelWheel" role="listbox" tabindex="0" aria-label="รุ่นรถ"></div>
+            <div class="wheel" id="yearWheel" role="listbox" tabindex="0" aria-label="ปีรถ (ค.ศ.)"></div>
+          </div>
+          <input type="hidden" name="carBrand" id="carBrand">
+          <input type="hidden" name="carModel" id="carModel">
+          <input type="hidden" name="carYear" id="carYear">
+        </fieldset>
         <label>ราคารถ / ทุนประกันโดยประมาณ (บาท)<input name="carValue" type="number" min="50000" step="1000" required placeholder="เช่น 550000"></label>
         <label>ประเภทรถ<select name="vehicleType" id="vehicleType"></select></label>
         <label>พื้นที่ใช้รถเป็นหลัก<select name="region" id="region"></select></label>

@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const { MockGateway } = require('./payment');
 const { validateOrderDetails } = require('./validation');
 const premium = require('./premium');
+const { CATALOG } = require('./catalog');
 
 const QUOTE_TTL_MS = 30 * 60_000;
 
@@ -78,6 +79,7 @@ function createService(store) {
         vehicleTypes: pick(premium.VEHICLE_TYPES),
         regions: pick(premium.REGIONS),
         garages: pick(premium.GARAGES),
+        catalog: CATALOG,
         deductibles: Object.keys(premium.DEDUCTIBLES).map(Number),
       });
     },
