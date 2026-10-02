@@ -18,7 +18,7 @@ const VENDOR = [
   'app/vendor/aioi-design-system.js',
 ];
 const SOURCES = [
-  'ios-frame.jsx', 'data.js', 'api.js', 'ui.jsx', 'home.jsx', 'wallet.jsx', 'detail.jsx', 'wheel.jsx',
+  'ios-frame.jsx', 'data.js', 'api.js', 'ui.jsx', 'home.jsx', 'wallet.jsx', 'detail.jsx',
   'quote.jsx', 'checkout.jsx', 'purchase.jsx', 'phyd.jsx', 'app.jsx',
 ];
 const STYLES = ['fonts', 'tokens-color', 'tokens-type', 'tokens-spacing', 'tokens-radius', 'base', 'page', 'app'];

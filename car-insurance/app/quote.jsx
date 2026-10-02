@@ -58,15 +58,11 @@ function clampYear(model, year) {
   return year > ys[0] ? ys[0] : ys[ys.length - 1];
 }
 
-/* ===== STEP 1 — Car (wheel pickers: ยี่ห้อ → รุ่น → ปี) ===== */
+/* ===== STEP 1 — Car (dropdown: ยี่ห้อ → รุ่น → ปี) ===== */
 function StepCar({ form, set, P }) {
   const brand = P.catalog.find(b => b.brand === form.brand);
   const model = brand.models.find(m => m.name === form.model);
   const body = P.bodyTypes.find(b => b.id === model.body);
-
-  const brandItems = React.useMemo(() => P.catalog.map(b => ({ value: b.brand, label: b.brand })), [P]);
-  const modelItems = React.useMemo(() => brand.models.map(m => ({ value: m.name, label: m.name })), [brand]);
-  const yearItems = React.useMemo(() => model.years.map(y => ({ value: y, label: String(y + 543) })), [model]);
 
   const modelPatch = (m) => ({ model: m.name, year: clampYear(m, form.year), sumInsured: m.value });
   const onBrand = (v) => { const b = P.catalog.find(x => x.brand === v); if (b) set({ brand: b.brand, ...modelPatch(b.models[0]) }); };
@@ -80,17 +76,20 @@ function StepCar({ form, set, P }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: 'var(--navy-900)', lineHeight: 1.2 }}>{form.brand} {form.model}</div>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink-500)' }}>{beYear(form.year)} · {body.label} ({body.sub})</div>
-          {model.since === model.years[model.years.length - 1] && (
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--ink-400)' }}>เริ่มขายในไทยปี {model.since + 543}</div>
-          )}
         </div>
       </div>
 
-      <FieldLabel hint="เลื่อนเพื่อเลือก">ข้อมูลรถ</FieldLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .85fr)', gap: 8, marginBottom: 22 }}>
-        <window.WheelPicker label="ยี่ห้อ" ariaLabel="ยี่ห้อรถ" items={brandItems} value={form.brand} onChange={onBrand} />
-        <window.WheelPicker label="รุ่น" ariaLabel="รุ่นรถ" items={modelItems} value={form.model} onChange={onModel} />
-        <window.WheelPicker label="ปี (พ.ศ.)" ariaLabel="ปีรถ" items={yearItems} value={form.year} onChange={v => set({ year: v })} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 22 }}>
+        <QSelect label="ยี่ห้อรถ" value={form.brand} placeholder="เลือกยี่ห้อ"
+          options={P.catalog.map(b => ({ value: b.brand, label: b.brand }))}
+          onChange={e => onBrand(e.target.value)} />
+        <QSelect label="รุ่นรถ" value={form.model} placeholder="เลือกรุ่น"
+          options={brand.models.map(m => ({ value: m.name, label: m.name }))}
+          onChange={e => onModel(e.target.value)} />
+        <QSelect label="ปีรถ" value={String(form.year)} placeholder="เลือกปี"
+          options={model.years.map(y => ({ value: String(y), label: beYear(y) }))}
+          hint={model.since === model.years[model.years.length - 1] ? `${form.brand} ${form.model} เริ่มขายในไทยปี ${model.since + 543}` : undefined}
+          onChange={e => set({ year: Number(e.target.value) })} />
       </div>
 
       <div>
