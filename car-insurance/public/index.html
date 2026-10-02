@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เช็คเบี้ยประกันรถยนต์</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <strong>เดโม ประกันภัย</strong>
+      <span class="demo-badge">ระบบเดโม</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <ol class="steps" id="steps">
+      <li data-step="1">ข้อมูลรถ</li>
+      <li data-step="2">เลือกแผน</li>
+      <li data-step="3">ผู้เอาประกัน</li>
+      <li data-step="4">ชำระเงิน</li>
+      <li data-step="5">รับกรมธรรม์</li>
+    </ol>
+
+    <div class="alert" id="error" hidden></div>
+
+    <!-- ขั้นที่ 1: เช็คเบี้ย -->
+    <section class="card" data-panel="1">
+      <h1>เช็คเบี้ยประกันรถยนต์</h1>
+      <form id="quoteForm" class="grid">
+        <label>ยี่ห้อรถ<input name="carBrand" required placeholder="เช่น Toyota"></label>
+        <label>รุ่นรถ<input name="carModel" required placeholder="เช่น Yaris Ativ 1.2"></label>
+        <label>ปีรถ (ค.ศ.)<input name="carYear" type="number" required></label>
+        <label>ราคารถ / ทุนประกันโดยประมาณ (บาท)<input name="carValue" type="number" min="50000" step="1000" required placeholder="เช่น 550000"></label>
+        <label>ประเภทรถ<select name="vehicleType" id="vehicleType"></select></label>
+        <label>พื้นที่ใช้รถเป็นหลัก<select name="region" id="region"></select></label>
+        <label>อายุผู้ขับขี่หลัก (ปี)<input name="driverAge" type="number" min="18" max="90" placeholder="เว้นว่าง = ไม่ระบุผู้ขับขี่"></label>
+        <label>การซ่อม (ชั้น 1)<select name="garage" id="garage"></select></label>
+        <label>ค่าเสียหายส่วนแรก<select name="deductible" id="deductible"></select></label>
+        <div class="actions full"><button type="submit" class="btn primary">เช็คเบี้ย</button></div>
+      </form>
+    </section>
+
+    <!-- ขั้นที่ 2: เลือกแผน -->
+    <section class="card" data-panel="2" hidden>
+      <h2>เลือกแผนประกัน</h2>
+      <p class="muted" id="carSummary"></p>
+      <div id="plans" class="plans"></div>
+      <label class="check"><input type="checkbox" id="includeCmi"> ซื้อ พ.ร.บ. พร้อมกัน (<span id="cmiPrice"></span> บาท)</label>
+      <div class="actions">
+        <button class="btn" data-go="1">ย้อนกลับ</button>
+        <button class="btn primary" id="toHolder" disabled>ถัดไป</button>
+      </div>
+    </section>
+
+    <!-- ขั้นที่ 3: ข้อมูลผู้เอาประกัน -->
+    <section class="card" data-panel="3" hidden>
+      <h2>ข้อมูลผู้เอาประกันและรถ</h2>
+      <form id="holderForm" class="grid">
+        <label>คำนำหน้า<select name="title"><option>นาย</option><option>นาง</option><option>นางสาว</option></select></label>
+        <label>ชื่อ<input name="firstName" required></label>
+        <label>นามสกุล<input name="lastName" required></label>
+        <label>เลขบัตรประชาชน<input name="idCard" required inputmode="numeric" maxlength="17"></label>
+        <label>เบอร์โทรศัพท์<input name="phone" required inputmode="tel"></label>
+        <label>อีเมล<input name="email" type="email" required></label>
+        <label class="full">ที่อยู่สำหรับจัดส่งเอกสาร<textarea name="address" rows="2" required></textarea></label>
+        <label>ทะเบียนรถ<input name="plate" required placeholder="เช่น 1กข 1234"></label>
+        <label>จังหวัดทะเบียน<input name="plateProvince" required placeholder="เช่น กรุงเทพมหานคร"></label>
+        <label>เลขตัวถัง (Chassis No.)<input name="chassisNo" required></label>
+        <label>วันเริ่มคุ้มครอง<input name="startDate" type="date" required></label>
+        <div class="summary full" id="orderSummary"></div>
+        <div class="actions full">
+          <button type="button" class="btn" data-go="2">ย้อนกลับ</button>
+          <button type="submit" class="btn primary">ไปหน้าชำระเงิน</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ขั้นที่ 4: ชำระเงิน -->
+    <section class="card" data-panel="4" hidden>
+      <h2>ชำระเงิน</h2>
+      <p class="total">ยอดชำระ <strong id="payAmount"></strong> บาท</p>
+      <div class="tabs">
+        <button class="tab active" data-method="card">บัตรเครดิต / เดบิต</button>
+        <button class="tab" data-method="promptpay">พร้อมเพย์ (QR)</button>
+      </div>
+
+      <form id="cardForm" class="grid" data-method-panel="card">
+        <label class="full">หมายเลขบัตร<input name="number" required inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242"></label>
+        <label class="full">ชื่อบนบัตร<input name="name" required autocomplete="cc-name"></label>
+        <label>เดือนหมดอายุ (MM)<input name="expMonth" required inputmode="numeric" maxlength="2" placeholder="12"></label>
+        <label>ปีหมดอายุ (YY)<input name="expYear" required inputmode="numeric" maxlength="4" placeholder="30"></label>
+        <label>CVV<input name="cvc" required inputmode="numeric" maxlength="4" autocomplete="cc-csc"></label>
+        <p class="hint full">โหมดทดสอบ: บัตร <code>4242 4242 4242 4242</code> = สำเร็จ, <code>4000 0000 0000 0002</code> = ถูกปฏิเสธ</p>
+        <div class="actions full"><button type="submit" class="btn primary">ชำระเงิน</button></div>
+      </form>
+
+      <div data-method-panel="promptpay" hidden>
+        <div class="qr-box">
+          <button class="btn primary" id="createQr">สร้าง QR สำหรับชำระเงิน</button>
+          <img id="qrImage" alt="QR พร้อมเพย์" hidden>
+          <p id="qrStatus" class="muted"></p>
+          <button class="btn" id="simulatePaid" hidden>(ทดสอบ) จำลองว่าสแกนจ่ายแล้ว</button>
+        </div>
+      </div>
+      <div class="actions"><button class="btn" data-go="3">ย้อนกลับ</button></div>
+    </section>
+
+    <!-- ขั้นที่ 5: สำเร็จ -->
+    <section class="card center" data-panel="5" hidden>
+      <div class="success-icon">✓</div>
+      <h2>ชำระเงินสำเร็จ</h2>
+      <p>เลขที่กรมธรรม์ <strong id="policyNumber"></strong></p>
+      <div class="actions center">
+        <a class="btn" id="viewPdf" target="_blank" rel="noopener">เปิดดูกรมธรรม์</a>
+        <a class="btn primary" id="downloadPdf">ดาวน์โหลด PDF</a>
+      </div>
+      <p><button class="btn link" id="restart">เช็คเบี้ยคันอื่น</button></p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
