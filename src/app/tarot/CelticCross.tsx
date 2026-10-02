@@ -15,7 +15,7 @@ export function CelticCross({ cards }: { cards: DrawnTarot[] }) {
           {at(0)}
           <div className="absolute">{at(1, 90, false)}</div>
           {/* the crossing card shares card 1's box, so its number sits on the right edge instead */}
-          <span className="absolute -right-9 top-1/2 z-10 flex h-6 w-6 -translate-y-[190%] items-center justify-center rounded-full bg-[var(--accent)] text-xs font-semibold text-white shadow">
+          <span className="absolute -right-9 top-1/2 z-10 flex h-6 w-6 -translate-y-[190%] items-center justify-center rounded-full bg-[var(--accent)] text-xs font-semibold text-[var(--on-accent)] shadow">
             2
           </span>
         </div>

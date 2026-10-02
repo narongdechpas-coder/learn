@@ -78,7 +78,7 @@ export function PlayingCardsClient() {
             <p className="mt-1 leading-relaxed">{reading.summary}</p>
           </div>
           <p className="text-xs text-[var(--muted)]">คัดลอกลิงก์ของหน้านี้ไปแชร์ได้ คนที่เปิดลิงก์จะเห็นไพ่ชุดเดียวกับคุณ</p>
-          <button type="button" onClick={() => router.push(pathname)} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+          <button type="button" onClick={() => router.push(pathname)} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-[var(--on-accent)]">
             🔀 ดูดวงใหม่
           </button>
         </section>

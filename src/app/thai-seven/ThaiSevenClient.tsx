@@ -68,7 +68,7 @@ export function ThaiSevenClient() {
             className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2"
           />
         </label>
-        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-[var(--on-accent)]">
           ดูดวง
         </button>
       </form>

@@ -28,7 +28,7 @@ export function TarotCard({ card, reversed, width = "w-28", rotate = 0, label }:
         style={deg ? { transform: `rotate(${deg}deg)` } : undefined}
       />
       {label && (
-        <span className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-semibold text-white shadow">
+        <span className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-semibold text-[var(--on-accent)] shadow">
           {label}
         </span>
       )}

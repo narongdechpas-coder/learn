@@ -5,24 +5,27 @@
 }
 
 :root {
-  --bg: #fbf7f0;
+  /* เขียวมะกอก + ครีมอุ่น */
+  --bg: #f6f4ec;
   --surface: #ffffff;
-  --text: #2a2233;
-  --muted: #6b6475;
-  --accent: #8a3ffc;
-  --gold: #b7791f;
-  --border: #e9e2d6;
+  --text: #26291d;
+  --muted: #656a57;
+  --accent: #5f6b2f;
+  --on-accent: #ffffff;
+  --gold: #946c1e;
+  --border: #e2dfd0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #15121c;
-    --surface: #211c2b;
-    --text: #f1ecf7;
-    --muted: #a59eb3;
-    --accent: #b98cff;
-    --gold: #e6b450;
-    --border: #352e42;
+    --bg: #161812;
+    --surface: #1f221a;
+    --text: #eef0e4;
+    --muted: #a7ab96;
+    --accent: #b3c07a;
+    --on-accent: #1c2010;
+    --gold: #d9b45a;
+    --border: #33372a;
   }
 }
 
@@ -60,7 +63,7 @@ body {
   background:
     radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.35) 0 18%, transparent 19%),
     repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 4px, transparent 4px 8px),
-    linear-gradient(160deg, #6d28d9, #4c1d95);
+    linear-gradient(160deg, #4f5a26, #363e18);
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #4c1d95, 0 1px 3px rgb(0 0 0 / 0.25);
+  box-shadow: 0 0 0 1px #363e18, 0 1px 3px rgb(0 0 0 / 0.25);
 }

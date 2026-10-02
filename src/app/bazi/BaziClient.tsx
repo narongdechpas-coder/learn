@@ -71,7 +71,7 @@ export function BaziClient() {
             <option value="female">หญิง</option>
           </select>
         </label>
-        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+        <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-[var(--on-accent)]">
           วางดวง
         </button>
       </form>

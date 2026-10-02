@@ -88,7 +88,7 @@ export function CardDrawFlow({
           onChange={(e) => setQuestion(e.target.value)}
           className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2"
         />
-        <button type="button" onClick={shuffleDeck} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white">
+        <button type="button" onClick={shuffleDeck} className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-[var(--on-accent)]">
           🔀 สับไพ่
         </button>
       </div>
@@ -124,7 +124,7 @@ export function CardDrawFlow({
             <span
               key={name}
               className={`rounded-full border px-2 py-0.5 ${
-                i < picks.length ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--border)] text-[var(--muted)]"
+                i < picks.length ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]" : "border-[var(--border)] text-[var(--muted)]"
               }`}
             >
               {i + 1}. {name}
@@ -152,7 +152,7 @@ export function CardDrawFlow({
               style={{ animationDelay: `${Math.min(i * 8, 400)}ms` }}
             >
               {picked && (
-                <span className="absolute inset-0 m-auto flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gold)] text-xs font-semibold text-white">
+                <span className="absolute inset-0 m-auto flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gold)] text-xs font-semibold text-[var(--on-accent)]">
                   {order + 1}
                 </span>
               )}
@@ -166,7 +166,7 @@ export function CardDrawFlow({
           type="button"
           disabled={!done}
           onClick={() => onReveal({ spreadId, seed, picks, question: question.trim() })}
-          className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-white disabled:opacity-40"
+          className="rounded-lg bg-[var(--accent)] px-5 py-2 font-semibold text-[var(--on-accent)] disabled:opacity-40"
         >
           ✨ เปิดไพ่
         </button>
