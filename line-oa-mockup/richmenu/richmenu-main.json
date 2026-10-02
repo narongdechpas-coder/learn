@@ -1,0 +1,20 @@
+{
+  "size": { "width": 2500, "height": 1686 },
+  "selected": true,
+  "name": "partner-main",
+  "chatBarText": "เมนูคู่ค้า",
+  "areas": [
+    { "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "uri", "label": "เช็คเบี้ยประกัน", "uri": "https://liff.line.me/{LIFF_ID}/quote" } },
+    { "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
+      "action": { "type": "postback", "label": "งานต่ออายุ", "data": "action=renewal&month=current", "displayText": "งานครบกำหนดต่ออายุ" } },
+    { "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "postback", "label": "ขอสำเนากรมธรรม์", "data": "action=policy_copy", "displayText": "ขอสำเนากรมธรรม์" } },
+    { "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "postback", "label": "รับชำระ/Credit", "data": "action=credit_status", "displayText": "สถานะรับชำระและวงเงิน" } },
+    { "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
+      "action": { "type": "postback", "label": "ข้อมูลคู่ค้า", "data": "action=partner_profile", "displayText": "ข้อมูลคู่ค้า" } },
+    { "bounds": { "x": 1667, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "ติดต่อเจ้าหน้าที่", "text": "ติดต่อเจ้าหน้าที่" } }
+  ]
+}
