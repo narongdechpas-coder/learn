@@ -236,6 +236,48 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 .no { color: var(--muted); }
 td select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
 @media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+
+/* ---------- Monthly report ---------- */
+.report { display: grid; gap: 18px; min-width: 0; }
+.rep-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+.rep-head h1 { font-size: 26px; margin-top: 2px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+.rep-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 13px; margin: 0; }
+.rep-meta dt { color: var(--muted); }
+.rep-meta dd { margin: 0; }
+.rep-sum ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch; }
+.rep-sec { display: grid; gap: 12px; min-width: 0; }
+.rep-sec > h2 { display: flex; align-items: center; gap: 10px; font-size: 19px; }
+.rep-sec .no { width: 26px; height: 26px; border-radius: 8px; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 14px; flex: none; }
+.delta { color: var(--muted); font-variant-numeric: tabular-nums; }
+tr.sumrow td { font-weight: 600; background: var(--surface-2); }
+.rep-foot { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+@page { size: A4; margin: 12mm; }
+@media print {
+  :root, :root[data-theme], :root:not([data-theme="light"]) {
+    --page: #FFFFFF; --surface: #FFFFFF; --surface-2: #F5F8FB; --ink: #0F2438; --muted: #56677A; --line: #D5DDE6;
+    --navy: #0E3A5B; --navy-2: #13507C; --teal: #0A7C74; --teal-soft: #DDF1EE; --amber: #A86500; --amber-soft: #FBEBD2; --red: #B9382F; --red-soft: #F8DEDB;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --grid: #E3E9EF; color-scheme: light;
+  }
+  html, body { height: auto; background: #FFFFFF; font-size: 12px; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .side, .top, .no-print, .drawer, .veil, .toast, .scope, .tip { display: none !important; }
+  .app { display: block; }
+  .content { padding: 0; gap: 14px; }
+  .kpis { grid-template-columns: repeat(4, 1fr); }
+  .content, .report, .rep-sec, .grid-2, .grid-2.even, .card { display: block; }
+  .report > *, .rep-sec > *, .grid-2 > *, .card > * + * { margin-top: 10px; }
+  .report > *:first-child, .rep-sec > *:first-child { margin-top: 0; }
+  .card { padding: 12px 14px; }
+  .kpis, .card, .tbl, tr, .rep-sum, .rep-head { break-inside: avoid; }
+  .rep-weekly { display: none; }
+  .rep-sec > h2 { break-after: avoid; }
+  .kpi .val { font-size: 20px; }
+  .kpi { padding: 10px 12px; }
+  .chart { overflow: visible; }
+  .chart svg { min-width: 0; }
+  .tbl { overflow: visible; }
+}
 </style>
 </head>
 <body>
@@ -375,8 +417,51 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
     }));
   });
 
+  /* Monthly report data per marketing owner (sample). Team totals are always sums of the owners. */
+  const limits = { 'BK-10482': 2000000, 'BK-10511': 1200000, 'AG-20317': 400000, 'AG-20455': 300000, 'BK-10620': 3500000, 'AG-20402': 600000, 'BK-10733': 1500000, 'DL-30044': 2500000, 'DL-30051': 1800000, 'DL-30077': 800000 };
+  const months = [
+    { k: 'jun', label: 'มิ.ย. 2569', short: 'มิ.ย.', g: 0.86 }, { k: 'jul', label: 'ก.ค. 2569', short: 'ก.ค.', g: 0.92 },
+    { k: 'aug', label: 'ส.ค. 2569', short: 'ส.ค.', g: 0.97 }, { k: 'sep', label: 'ก.ย. 2569', short: 'ก.ย.', g: 1.06 }
+  ];
+  const weekLabels = ['1–7', '8–14', '15–21', '22–สิ้นเดือน'];
+  const ruleW = { R1: 0.16, R2: 0.24, R3: 0.2, R4: 0.12, R5: 0.12, R6: 0.05, R7: 0.11, R8: 0 };
+  const prof = {
+    m1: { close: 0.88, sla: [88, 90, 89, 91], resp: [48, 45, 44, 42], conv: 0.41, prem: 18500, renewDue: 38, newUsers: [1, 0, 2, 1] },
+    m2: { close: 0.92, sla: [93, 94, 96, 95], resp: [31, 30, 29, 28], conv: 0.46, prem: 21400, renewDue: 55, newUsers: [2, 1, 1, 2] },
+    m3: { close: 0.8, sla: [84, 80, 83, 82], resp: [70, 82, 78, 75], conv: 0.38, prem: 26300, renewDue: 34, newUsers: [0, 1, 1, 1] }
+  };
+  const overdueBills = { jul: [], aug: [['BK-10733', 'INV-2569-0807', 41800]], sep: [['DL-30051', 'INV-2569-0918', 58200]] };
+  let seed2 = 11; const rnd2 = () => { seed2 = (seed2 * 16807) % 2147483647; return (seed2 - 1) / 2147483646; };
+  const jit = (lo, hi) => lo + rnd2() * (hi - lo);
+  const monthly = {};
+  mkts.forEach(m => {
+    monthly[m] = months.map((mo, mi) => {
+      const weeks = weekLabels.map((_, w) => catKeys.map((c, i) => {
+        let f = 5.2 * mo.g * (w === 3 ? 1.35 : 1);
+        if (c === 'renew' && w === 0) f *= 1.6;
+        return Math.round(base[m][i] * f * jit(0.85, 1.15));
+      }));
+      const acts = weeks.reduce((s, r) => s + r.reduce((a, b) => a + b, 0), 0);
+      const quoteActs = weeks.reduce((s, r) => s + r[0], 0);
+      const rules = {};
+      Object.keys(ruleW).forEach(r => {
+        const created = Math.round(acts * 0.11 * ruleW[r] * jit(0.8, 1.2));
+        rules[r] = [created, Math.min(created, Math.round(created * (r === 'R6' ? prof[m].close - 0.25 : prof[m].close) * jit(0.95, 1.05)))];
+      });
+      const quotes = Math.round(quoteActs * 0.32), won = Math.round(quotes * prof[m].conv * jit(0.9, 1.1));
+      const due = Math.round(prof[m].renewDue * jit(0.9, 1.1)), offered = Math.round(due * jit(0.85, 0.95)), renewed = Math.round(offered * jit(0.82, 0.9));
+      const sumLimit = partners.filter(p => p.owner === m).reduce((s, p) => s + limits[p.id], 0);
+      const billed = Math.round(sumLimit * 0.38 * mo.g * jit(0.9, 1.1) / 100) * 100, paid = Math.round(billed * jit(0.9, 0.96) / 100) * 100;
+      return { weeks, acts, rules, sla: prof[m].sla[mi], resp: prof[m].resp[mi], newUsers: prof[m].newUsers[mi],
+        quotes, won, premium: Math.round(won * prof[m].prem * jit(0.9, 1.1) / 100) * 100, due, offered, renewed, billed, paid };
+    });
+  });
+  const tierW = { Platinum: 3, Gold: 2, Silver: 1.2, Bronze: 0.6 };
+  const creditAt = (p, mi) => Math.max(5, p.credit - [14, 11, 7, 2][mi]);
+  const activeIn = (p, mi) => mi < 3 || p.idle < 30;
+
   /* ================= State ================= */
-  const S = { role: 'm1', view: 'overview', actCat: '', actOwner: '', actQ: '', actTaskOnly: false, taskOwner: '', setTab: 'users' };
+  const S = { role: 'm1', view: 'overview', actCat: '', actOwner: '', actQ: '', actTaskOnly: false, taskOwner: '', setTab: 'users', repMonth: 3, repOwner: '' };
   const isMkt = () => mkts.includes(S.role);
   const canManage = () => S.role === 'admin' || S.role === 'mgr';
   const inScope = pid => !isMkt() || P[pid].owner === S.role;
@@ -397,6 +482,7 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
     tasks: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/>',
     partners: '<circle cx="9" cy="8" r="3"/><path d="M3 20c.7-3 3.2-5 6-5s5.3 2 6 5"/><path d="M16 4.5a3 3 0 0 1 0 6M18 15c1.8.6 3 2.4 3.4 5"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4.6V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/>',
+    report: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 17v-3M13 17v-5M16 17v-2"/>',
     scope: '<path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/>'
   };
   const svg = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ico[k] + '</svg>';
@@ -414,6 +500,7 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
       ['activity', 'Action ของคู่ค้า', '<span class="count">' + scopedActs().length + '</span>'],
       ['tasks', isMkt() ? 'งานของฉัน' : 'งานติดตาม', '<span class="count' + (late ? ' hot' : '') + '">' + open.length + '</span>'],
       ['partners', isMkt() ? 'คู่ค้าของฉัน' : 'คู่ค้า', ''],
+      ['report', 'Report รายเดือน', ''],
       ['settings', 'ตั้งค่าระบบ', '']
     ].filter(i => i[0] !== 'settings' || S.role === 'admin');
     if (S.view === 'settings' && S.role !== 'admin') S.view = 'overview';
@@ -425,9 +512,10 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
   }
   function render() {
     renderShell();
-    const v = { overview: vOverview, activity: vActivity, tasks: vTasks, partners: vPartners, settings: vSettings }[S.view];
+    const v = { overview: vOverview, activity: vActivity, tasks: vTasks, partners: vPartners, report: vReport, settings: vSettings }[S.view];
     $('view').innerHTML = v();
     if (S.view === 'overview') drawStack();
+    if (S.view === 'report') drawReport();
   }
 
   /* ================= Overview ================= */
@@ -479,13 +567,18 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
     return html + '</div>';
   }
   function drawStack() {
-    const el = $('stack'); if (!el) return;
-    const rows = series(), W = 640, H = 240, L = 34, Rr = 8, Tp = 10, B = 26;
+    drawBars('stack', series(), dayLabels, { every: 2, annotateLast: true, note: d => d === 13 ? ' (ถึง 10:30)' : '', aria: 'กราฟแท่งซ้อน จำนวน Action ของคู่ค้ารายวัน 14 วัน แยกตามเมนู' });
+  }
+  /* Stacked bars by menu category: one scale, 2px gaps between segments, rounded top, hover tooltip per bar. */
+  function drawBars(elId, rows, labels, o) {
+    const el = $(elId); if (!el) return;
+    const W = 640, H = 240, L = 40, Rr = 8, Tp = 14, B = 26, n = rows.length;
     const tot = rows.map(r => r.reduce((a, b) => a + b, 0));
-    const max = Math.max.apply(null, tot), step = max > 60 ? 20 : 10, top = Math.ceil(max / step) * step;
-    const y = v => Tp + (H - Tp - B) * (1 - v / top), bw = (W - L - Rr) / rows.length, w = Math.min(28, bw * 0.62);
+    const max = Math.max.apply(null, tot);
+    const step = [10, 20, 50, 100, 200, 500].find(st => max / st <= 6) || 1000, top = Math.ceil(max / step) * step;
+    const y = v => Tp + (H - Tp - B) * (1 - v / top), bw = (W - L - Rr) / n, w = Math.min(o.barMax || 28, bw * 0.62);
     let g = '';
-    for (let v = 0; v <= top; v += step) g += '<line class="gridline" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    for (let v = 0; v <= top; v += step) g += '<line class="gridline" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + nf(v) + '</text>';
     rows.forEach((r, d) => {
       const x = L + bw * d + (bw - w) / 2; let acc = 0;
       const lastIdx = r.reduce((li, v, i) => v > 0 ? i : li, -1);
@@ -498,19 +591,20 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
           g += '<path d="M' + x + ' ' + y0 + 'V' + (y0 - h + rr) + 'Q' + x + ' ' + (y0 - h) + ' ' + (x + rr) + ' ' + (y0 - h) + 'H' + (x + w - rr) + 'Q' + (x + w) + ' ' + (y0 - h) + ' ' + (x + w) + ' ' + (y0 - h + rr) + 'V' + y0 + 'Z" style="fill:' + cats[catKeys[i]].c + '"/>';
         } else g += '<rect x="' + x + '" y="' + (y0 - h) + '" width="' + w + '" height="' + h + '" style="fill:' + cats[catKeys[i]].c + '"/>';
       });
-      if (d % 2 === 1 || d === 13) g += '<text x="' + (x + w / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + dayLabels[d] + '</text>';
+      if ((d + 1) % (o.every || 1) === 0 || d === n - 1) g += '<text x="' + (x + w / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + labels[d] + '</text>';
+      if (o.labelAll) g += '<text x="' + (x + w / 2) + '" y="' + (y(tot[d]) - 6) + '" text-anchor="middle" style="fill:var(--ink);font-weight:600">' + nf(tot[d]) + '</text>';
       g += '<rect class="hit" data-d="' + d + '" x="' + (L + bw * d) + '" y="' + Tp + '" width="' + bw + '" height="' + (H - Tp - B) + '"/>';
     });
-    g += '<text x="' + (L + bw * 13 + bw / 2) + '" y="' + (y(tot[13]) - 6) + '" text-anchor="middle" style="fill:var(--ink);font-weight:600">' + tot[13] + '</text>';
-    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="กราฟแท่งซ้อน จำนวน Action ของคู่ค้ารายวัน 14 วัน แยกตามเมนู">' + g + '</svg><div class="tip" id="tip" hidden></div>';
-    const tip = $('tip');
+    if (o.annotateLast) g += '<text x="' + (L + bw * (n - 1) + bw / 2) + '" y="' + (y(tot[n - 1]) - 6) + '" text-anchor="middle" style="fill:var(--ink);font-weight:600">' + tot[n - 1] + '</text>';
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + o.aria + '">' + g + '</svg><div class="tip" hidden></div>';
+    const tip = el.querySelector('.tip');
     el.querySelectorAll('.hit').forEach(h => {
       const show = () => {
         const d = +h.dataset.d, r = rows[d];
-        tip.innerHTML = '<b>' + dayLabels[d] + (d === 13 ? ' (ถึง 10:30)' : '') + '</b>' + catKeys.map((c, i) => '<div class="row"><span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].short + '</span><span>' + r[i] + '</span></div>').join('') + '<div class="row tot"><span>รวม</span><span>' + tot[d] + '</span></div>';
+        tip.innerHTML = '<b>' + labels[d] + (o.note ? o.note(d) : '') + '</b>' + catKeys.map((c, i) => '<div class="row"><span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].short + '</span><span>' + nf(r[i]) + '</span></div>').join('') + '<div class="row tot"><span>รวม</span><span>' + nf(tot[d]) + '</span></div>';
         tip.hidden = false;
         const box = el.getBoundingClientRect(), hb = h.getBoundingClientRect();
-        let left = hb.left - box.left + hb.width / 2 + 12; if (left + 170 > box.width) left = hb.left - box.left - 170;
+        let left = hb.left - box.left + el.scrollLeft + hb.width / 2 + 12; if (left + 170 > box.width + el.scrollLeft) left = hb.left - box.left + el.scrollLeft - 170;
         tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '8px';
       };
       h.addEventListener('mouseenter', show); h.addEventListener('click', show);
@@ -570,6 +664,115 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
       '</tbody></table></div>';
   }
   const meter = v => '<span class="meter' + (v >= 90 ? ' bad' : v >= 80 ? ' warn' : '') + '" aria-hidden="true"><i style="width:' + v + '%"></i></span>';
+
+  /* ================= Monthly report ================= */
+  const repOwners = () => isMkt() ? [S.role] : (S.repOwner ? [S.repOwner] : mkts);
+  const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const baht = v => '฿' + nf(v);
+  function agg(mi) {
+    const os = repOwners(), rows = os.map(m => monthly[m][mi]);
+    const weeks = weekLabels.map((_, w) => catKeys.map((_, i) => sum(rows, r => r.weeks[w][i])));
+    const rules = {}; Object.keys(ruleW).forEach(r => { rules[r] = [sum(rows, x => x.rules[r][0]), sum(rows, x => x.rules[r][1])]; });
+    const created = sum(Object.values(rules), v => v[0]), closed = sum(Object.values(rules), v => v[1]);
+    const per = os.map(m => { const x = monthly[m][mi]; const c = sum(Object.values(x.rules), v => v[0]), d = sum(Object.values(x.rules), v => v[1]); return { m, created: c, closed: d, sla: x.sla, resp: x.resp, carry: c - d }; });
+    const ps = partners.filter(p => os.includes(p.owner));
+    return { os, ps, weeks, rules, created, closed, per,
+      acts: sum(rows, r => r.acts), catTot: catKeys.map((_, i) => sum(weeks, w => w[i])),
+      active: ps.filter(p => activeIn(p, mi)).length, newUsers: sum(rows, r => r.newUsers),
+      sla: Math.round(sum(per, x => x.sla * x.created) / Math.max(1, created)), resp: Math.round(sum(per, x => x.resp * x.created) / Math.max(1, created)),
+      quotes: sum(rows, r => r.quotes), won: sum(rows, r => r.won), premium: sum(rows, r => r.premium),
+      due: sum(rows, r => r.due), offered: sum(rows, r => r.offered), renewed: sum(rows, r => r.renewed),
+      billed: sum(rows, r => r.billed), paid: sum(rows, r => r.paid),
+      overdue: (overdueBills[months[mi].k] || []).filter(b => ps.some(p => p.id === b[0])),
+      hot: ps.filter(p => creditAt(p, mi) >= 80).sort((a, b) => creditAt(b, mi) - creditAt(a, mi)) };
+  }
+  function delta(cur, prev, unit) {
+    if (!prev) return '';
+    const d = unit === 'pt' ? cur - prev : Math.round((cur - prev) / prev * 100);
+    const sym = d > 0 ? '▲' : d < 0 ? '▼' : '•';
+    return '<span class="delta">' + sym + ' ' + Math.abs(d) + (unit === 'pt' ? ' จุด' : '%') + ' จาก ' + months[S.repMonth - 1].short + '</span>';
+  }
+  function topPartners(A, mi) {
+    const shares = [];
+    A.os.forEach(m => {
+      const own = A.ps.filter(p => p.owner === m), w = own.map(p => activeIn(p, mi) ? p.line * 1.2 + tierW[p.tier] : 0), tw = w.reduce((a, b) => a + b, 0);
+      own.forEach((p, i) => shares.push({ p, n: Math.round(monthly[m][mi].acts * w[i] / tw) }));
+    });
+    return shares.sort((a, b) => b.n - a.n).slice(0, 5);
+  }
+  function vReport() {
+    const mi = S.repMonth, mo = months[mi], A = agg(mi), B = agg(mi - 1);
+    const scopeTxt = A.os.length > 1 ? 'ทีม Marketing ทั้งหมด (' + A.os.length + ' คน) · คู่ค้า ' + A.ps.length + ' ราย' : users[A.os[0]].name + ' · คู่ค้า ' + A.ps.length + ' ราย';
+    const topCat = catKeys[A.catTot.indexOf(Math.max.apply(null, A.catTot))];
+    const overdueSum = sum(A.overdue, b => b[2]);
+    const inFrame = window.self !== window.top;
+    const kpi = (lbl, val, sub) => '<div class="kpi"><span class="lbl">' + lbl + '</span><span class="val">' + val + '</span><span class="sub">' + sub + '</span></div>';
+    const totalRow = A.os.length > 1;
+    const top = topPartners(A, mi);
+    return '<div class="head no-print"><div><h1>Report รายเดือน</h1><p>สรุปการใช้งาน LINE OA ผลงานติดตาม ผลลัพธ์ทางธุรกิจ และการเงินของคู่ค้า</p></div>' +
+      '<div class="filters"><select id="repMonth" aria-label="เดือน">' + months.slice(1).map((m, i) => '<option value="' + (i + 1) + '"' + (mi === i + 1 ? ' selected' : '') + '>' + m.label + '</option>').join('') + '</select>' +
+      (isMkt() ? '' : '<select id="repOwner" aria-label="Marketing"><option value="">ทีม Marketing ทั้งหมด</option>' + mkts.map(m => '<option value="' + m + '"' + (S.repOwner === m ? ' selected' : '') + '>' + users[m].name + '</option>').join('') + '</select>') +
+      (inFrame ? '' : '<button type="button" class="btn" id="repPrint">พิมพ์ / บันทึก PDF</button>') + '</div></div>' +
+      (inFrame ? '<p class="muted no-print" style="font-size:13px">หน้านี้เปิดอยู่ในตัวแสดง Artifact ซึ่งสั่งพิมพ์ไม่ได้ เปิดจากลิงก์ githack หรือไฟล์ backoffice.html ใน zip แล้วกด “พิมพ์ / บันทึก PDF”</p>' : '') +
+      '<article class="report">' +
+      '<header class="rep-head"><div><span class="eyebrow">Partner Desk · รายงานประจำเดือน</span><h1>สรุปผลการดำเนินงาน ' + mo.label + '</h1></div>' +
+      '<dl class="rep-meta"><dt>ขอบเขต</dt><dd>' + scopeTxt + '</dd><dt>ช่วงข้อมูล</dt><dd>1–' + (mo.k === 'sep' ? '30' : '31') + ' ' + mo.label + '</dd><dt>ออกโดย</dt><dd>' + users[S.role].name + ' (' + users[S.role].role + ')</dd><dt>วันที่ออก</dt><dd>2 ต.ค. 2569</dd></dl></header>' +
+      '<section class="card rep-sum"><h2>บทสรุป</h2><ul>' +
+      '<li>คู่ค้าใช้ LINE OA <b>' + nf(A.acts) + ' ครั้ง</b> ' + (A.acts >= B.acts ? 'เพิ่มขึ้น' : 'ลดลง') + ' ' + Math.abs(pct(A.acts - B.acts, B.acts)) + '% จาก ' + months[mi - 1].short + ' เมนูที่ใช้มากที่สุดคือ' + cats[topCat].label + '</li>' +
+      '<li>ระบบสร้างงานติดตาม ' + nf(A.created) + ' งาน ปิดได้ <b>' + nf(A.closed) + ' งาน (' + pct(A.closed, A.created) + '%)</b> ทัน SLA ' + A.sla + '% ตอบกลับเฉลี่ย ' + A.resp + ' นาที</li>' +
+      '<li>ใบเสนอราคาจาก LINE OA ปิดการขายได้ <b>' + A.won + ' ราย</b> เบี้ยรวม ' + baht(A.premium) + ' และต่ออายุสำเร็จ ' + A.renewed + ' จาก ' + A.due + ' ราย (' + pct(A.renewed, A.due) + '%)</li>' +
+      '<li>สิ้นเดือนมีคู่ค้าใช้วงเงินเกิน 80% <b>' + A.hot.length + ' ราย</b>' + (A.overdue.length ? ' และบิลเกินกำหนด ' + baht(overdueSum) : ' ไม่มีบิลเกินกำหนด') + '</li>' +
+      '</ul></section>' +
+
+      '<section class="rep-sec"><h2><span class="no">1</span>การใช้งาน LINE OA</h2><div class="kpis">' +
+      kpi('Action ทั้งเดือน', nf(A.acts), delta(A.acts, B.acts)) +
+      kpi('คู่ค้าที่ใช้งาน', A.active + '<small> / ' + A.ps.length + ' ราย</small>', A.active < A.ps.length ? 'ไม่ใช้งาน ' + (A.ps.length - A.active) + ' ราย' : 'ใช้งานครบทุกราย') +
+      kpi('ผู้ใช้ LINE ใหม่', A.newUsers + '<small> คน</small>', 'ผูกบัญชีกับรหัสคู่ค้าในเดือนนี้') +
+      kpi('เฉลี่ยต่อคู่ค้า', nf(Math.round(A.acts / Math.max(1, A.active))) + '<small> ครั้ง</small>', 'เฉพาะคู่ค้าที่ใช้งาน') +
+      '</div><div class="grid-2"><div class="card"><h3>Action รายสัปดาห์ แยกตามเมนู</h3><div class="legend">' + catKeys.map(c => '<span class="cat" style="--c:' + cats[c].c + '"><i></i>' + cats[c].label + '</span>').join('') + '</div><div class="chart" id="repChart"></div>' +
+      '<div class="tbl rep-weekly"><table><thead><tr><th>สัปดาห์ (วันที่)</th>' + catKeys.map(c => '<th class="r">' + cats[c].short + '</th>').join('') + '<th class="r">รวม</th></tr></thead><tbody>' +
+      A.weeks.map((r, w) => '<tr><td>' + weekLabels[w] + '</td>' + r.map(v => '<td class="r">' + nf(v) + '</td>').join('') + '<td class="r"><b>' + nf(r.reduce((a, b) => a + b, 0)) + '</b></td></tr>').join('') +
+      '<tr class="sumrow"><td>รวม</td>' + A.catTot.map(v => '<td class="r">' + nf(v) + '</td>').join('') + '<td class="r">' + nf(A.acts) + '</td></tr></tbody></table></div></div>' +
+      '<div class="card"><h3>คู่ค้าที่ใช้งานมากที่สุด</h3><div class="tbl"><table><thead><tr><th>#</th><th>คู่ค้า</th><th class="r">Action</th></tr></thead><tbody>' +
+      top.map((t, i) => '<tr><td>' + (i + 1) + '</td><td>' + t.p.name + '<div class="muted mono">' + t.p.id + (A.os.length > 1 ? ' · ' + users[t.p.owner].name : '') + '</div></td><td class="r">' + nf(t.n) + '</td></tr>').join('') +
+      '</tbody></table></div></div></div></section>' +
+
+      '<section class="rep-sec"><h2><span class="no">2</span>ผลงานติดตามของ Marketing</h2>' +
+      '<div class="tbl"><table><thead><tr><th>Marketing</th><th class="r">งานที่สร้าง</th><th class="r">ปิดได้</th><th class="r">อัตราปิด</th><th class="r">ทัน SLA</th><th class="r">ตอบกลับเฉลี่ย</th><th class="r">ค้างไปเดือนถัดไป</th></tr></thead><tbody>' +
+      A.per.map(x => '<tr><td><span class="me">' + av(x.m, true) + users[x.m].name + '</span></td><td class="r">' + x.created + '</td><td class="r">' + x.closed + '</td><td class="r">' + pct(x.closed, x.created) + '%</td><td class="r">' + x.sla + '%</td><td class="r">' + x.resp + ' นาที</td><td class="r">' + x.carry + '</td></tr>').join('') +
+      (totalRow ? '<tr class="sumrow"><td>รวมทีม</td><td class="r">' + A.created + '</td><td class="r">' + A.closed + '</td><td class="r">' + pct(A.closed, A.created) + '%</td><td class="r">' + A.sla + '%</td><td class="r">' + A.resp + ' นาที</td><td class="r">' + (A.created - A.closed) + '</td></tr>' : '') +
+      '</tbody></table></div>' +
+      '<div class="tbl"><table><thead><tr><th>กฎ</th><th>สร้างงานเมื่อ</th><th class="r">งานที่สร้าง</th><th class="r">ปิดได้</th><th class="r">อัตราปิด</th></tr></thead><tbody>' +
+      rules.map(r => '<tr><td class="mono">' + r.id + '</td><td>' + r.when + (A.rules[r.id][0] ? '' : ' <span class="muted">(ปิดใช้)</span>') + '</td><td class="r">' + A.rules[r.id][0] + '</td><td class="r">' + A.rules[r.id][1] + '</td><td class="r">' + (A.rules[r.id][0] ? pct(A.rules[r.id][1], A.rules[r.id][0]) + '%' : '–') + '</td></tr>').join('') +
+      '</tbody></table></div></section>' +
+
+      '<section class="rep-sec"><h2><span class="no">3</span>ผลลัพธ์ทางธุรกิจ</h2><div class="kpis">' +
+      kpi('ใบเสนอราคาจาก LINE OA', nf(A.quotes), delta(A.quotes, B.quotes)) +
+      kpi('ปิดการขายได้', nf(A.won) + '<small> ราย</small>', 'อัตราแปลง ' + pct(A.won, A.quotes) + '%') +
+      kpi('เบี้ยที่เกิดจาก LINE OA', baht(A.premium), delta(A.premium, B.premium)) +
+      kpi('อัตราต่ออายุ', pct(A.renewed, A.due) + '%', delta(pct(A.renewed, A.due), pct(B.renewed, B.due), 'pt')) +
+      '</div><div class="tbl"><table><thead><tr><th>งานต่ออายุ</th><th class="r">ครบกำหนด</th><th class="r">เสนอราคาแล้ว</th><th class="r">ต่ออายุสำเร็จ</th><th class="r">อัตราต่ออายุ</th></tr></thead><tbody>' +
+      A.os.map(m => { const x = monthly[m][mi]; return '<tr><td><span class="me">' + av(m, true) + users[m].name + '</span></td><td class="r">' + x.due + '</td><td class="r">' + x.offered + '</td><td class="r">' + x.renewed + '</td><td class="r">' + pct(x.renewed, x.due) + '%</td></tr>'; }).join('') +
+      (totalRow ? '<tr class="sumrow"><td>รวมทีม</td><td class="r">' + A.due + '</td><td class="r">' + A.offered + '</td><td class="r">' + A.renewed + '</td><td class="r">' + pct(A.renewed, A.due) + '%</td></tr>' : '') +
+      '</tbody></table></div></section>' +
+
+      '<section class="rep-sec"><h2><span class="no">4</span>การเงินและวงเงินคู่ค้า</h2><div class="kpis">' +
+      kpi('ยอดวางบิล', baht(A.billed), delta(A.billed, B.billed)) +
+      kpi('ตัดชำระแล้ว', baht(A.paid), pct(A.paid, A.billed) + '% ของยอดวางบิล') +
+      kpi('ค้างชำระ (ยังไม่ครบกำหนด)', baht(A.billed - A.paid - overdueSum), 'ยกไปเดือนถัดไป') +
+      '<div class="kpi' + (overdueSum ? ' alert' : '') + '"><span class="lbl">บิลเกินกำหนด</span><span class="val">' + baht(overdueSum) + '</span><span class="sub">' + (A.overdue.length ? A.overdue.length + ' บิล' : 'ไม่มี') + '</span></div>' +
+      '</div><div class="grid-2 even"><div class="card"><h3>คู่ค้าที่ใช้วงเงินเกิน 80% ณ สิ้นเดือน</h3>' +
+      (A.hot.length ? '<div class="tbl"><table><thead><tr><th>คู่ค้า</th><th class="r">วงเงิน</th><th>ใช้ไป</th></tr></thead><tbody>' + A.hot.map(p => '<tr><td>' + p.name + '<div class="muted mono">' + p.id + (A.os.length > 1 ? ' · ' + users[p.owner].name : '') + '</div></td><td class="r">' + baht(limits[p.id]) + '</td><td class="num">' + meter(creditAt(p, mi)) + creditAt(p, mi) + '%</td></tr>').join('') + '</tbody></table></div>' : '<p class="muted">ไม่มีคู่ค้าที่ใช้วงเงินเกิน 80%</p>') +
+      '</div><div class="card"><h3>บิลเกินกำหนด ณ สิ้นเดือน</h3>' +
+      (A.overdue.length ? '<div class="tbl"><table><thead><tr><th>คู่ค้า</th><th>เลขที่บิล</th><th class="r">ยอด</th></tr></thead><tbody>' + A.overdue.map(b => '<tr><td>' + P[b[0]].name + '</td><td class="mono">' + b[1] + '</td><td class="r">' + baht(b[2]) + '</td></tr>').join('') + '</tbody></table></div>' : '<p class="muted">ไม่มีบิลเกินกำหนด</p>') +
+      '</div></div></section>' +
+      '<footer class="rep-foot">ข้อมูลตัวอย่างสมมติ · สร้างจากระบบหลังบ้าน Partner Desk · ' + mo.label + '</footer>' +
+      '</article>';
+  }
+  function drawReport() {
+    drawBars('repChart', agg(S.repMonth).weeks, weekLabels, { labelAll: true, barMax: 64, aria: 'กราฟแท่งซ้อน จำนวน Action รายสัปดาห์ แยกตามเมนู' });
+  }
 
   /* ================= Settings (Admin) ================= */
   function vSettings() {
@@ -654,6 +857,7 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
     const tk = e.target.closest('[data-task]'); if (tk) { taskDrawer(tk.dataset.task); return; }
     const pt = e.target.closest('[data-partner]'); if (pt) { partnerDrawer(pt.dataset.partner); return; }
     if (e.target.closest('[data-close]') || e.target === $('veil')) { closeDrawer(); return; }
+    if (e.target.closest('#repPrint')) { window.print(); return; }
     const tab = e.target.closest('[data-tab]'); if (tab) { S.setTab = tab.dataset.tab; render(); return; }
     if (e.target.closest('#vChart') || e.target.closest('#vTable')) {
       const tbl = e.target.closest('#vTable') !== null;
@@ -667,11 +871,13 @@ td select { background: var(--surface-2); border: 1px solid var(--line); border-
   });
   document.addEventListener('change', e => {
     const id = e.target.id;
-    if (id === 'roleSel') { S.role = e.target.value; S.actOwner = ''; S.taskOwner = ''; closeDrawer(); render(); toast('สลับเป็นมุมมอง ' + users[S.role].role + ' · ' + users[S.role].name); }
+    if (id === 'roleSel') { S.role = e.target.value; S.actOwner = ''; S.taskOwner = ''; S.repOwner = ''; closeDrawer(); render(); toast('สลับเป็นมุมมอง ' + users[S.role].role + ' · ' + users[S.role].name); }
     else if (id === 'fCat') { S.actCat = e.target.value; render(); }
     else if (id === 'fOwner') { S.actOwner = e.target.value; render(); }
     else if (id === 'fTask') { S.actTaskOnly = e.target.checked; render(); }
     else if (id === 'fTaskOwner') { S.taskOwner = e.target.value; render(); }
+    else if (id === 'repMonth') { S.repMonth = +e.target.value; render(); }
+    else if (id === 'repOwner') { S.repOwner = e.target.value; render(); }
     else if (e.target.dataset.assign) {
       const p = P[e.target.dataset.assign], to = e.target.value;
       const moved = tasks.filter(t => t.pid === p.id && t.st !== 'done');
