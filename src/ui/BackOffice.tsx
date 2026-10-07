@@ -323,7 +323,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <dt>{t('usageCode')}</dt><dd>{usageText(c.vehicle.usage, lang)}</dd>
             <dt>{t('plate')}</dt><dd>{c.customer.plate} · {c.customer.province}</dd>
             <dt>{t('chassis')}</dt><dd className="num">{c.customer.chassis}</dd>
-            <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang)}</dd>
+            <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang)}{c.vehicle.suggestedSI && <div className="hint">{t('siAdjusted', { pct: `${c.vehicle.sumInsured > c.vehicle.suggestedSI ? '+' : ''}${(((c.vehicle.sumInsured - c.vehicle.suggestedSI) / c.vehicle.suggestedSI) * 100).toFixed(1)}`, v: fmtBaht(c.vehicle.suggestedSI, lang) })}</div>}</dd>
             {c.pkg?.repair && (<><dt>{t('coverage')}</dt><dd>{t(c.pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage')} · {t('deductible')} {c.pkg.deductible ? fmtBaht(c.pkg.deductible, lang) : t('none')}</dd></>)}
             <dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('waitingQuote')}</dd>
             <dt>{t('startDate')}</dt><dd>{c.customer.startDate}</dd>

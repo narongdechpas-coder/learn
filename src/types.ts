@@ -49,6 +49,8 @@ export interface Vehicle {
   modelId: string;
   year: number;
   sumInsured: number;
+  /** The catalogue's suggested value when the customer adjusted it. */
+  suggestedSI?: number;
   usage: UsageCode;
   /** A car that is not in the catalogue, typed in by the customer (quote request only). */
   custom?: { brand: string; model: string };

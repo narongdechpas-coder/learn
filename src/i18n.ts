@@ -4,6 +4,12 @@ import type { SlaKey, SlaState } from './lib/sla';
 
 const th = {
   usageCode: 'รหัสรถ',
+  chosenSI: 'ทุนประกันที่เลือก',
+  siAdjust: 'ปรับทุนได้ ±5% ตามรุ่นย่อย',
+  siReset: 'ใช้ทุนแนะนำ {v}',
+  siLess: 'ลดทุน 5,000 บาท',
+  siMore: 'เพิ่มทุน 5,000 บาท',
+  siAdjusted: 'ลูกค้าปรับ {pct}% จากทุนแนะนำ {v}',
   usageLead: 'เลือกลักษณะการใช้รถตามรหัสในตารางกรมธรรม์ ระบบจะแสดงเฉพาะยี่ห้อและรุ่นที่ตรงกับรหัสนี้',
   otherCode: 'อื่นๆ',
   otherCodeHint: 'รถรับจ้าง/พาณิชย์ หรือรหัสอื่น ขอใบเสนอราคา',
@@ -331,6 +337,12 @@ type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
   usageCode: 'Vehicle code',
+  chosenSI: 'Chosen sum insured',
+  siAdjust: 'Adjust by up to ±5% for your trim level',
+  siReset: 'Use suggested {v}',
+  siLess: 'Lower by 5,000 THB',
+  siMore: 'Raise by 5,000 THB',
+  siAdjusted: 'Customer moved it {pct}% from the suggested {v}',
   usageLead: 'Pick how the car is used, by its policy code. Only brands and models registered under that code are shown.',
   otherCode: 'Other',
   otherCodeHint: 'Commercial use or another code: request a quote',

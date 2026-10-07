@@ -581,3 +581,19 @@ table.data tr.total td { font-weight: 700; border-bottom: 0; }
 .policy-doc dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .pd-foot { margin-top: 10px; font-size: 0.75rem; letter-spacing: 0.04em; }
 .src-self { color: var(--good); font-weight: 600; }
+
+/* ---------- sum insured adjust ---------- */
+.si-main { flex: 1 1 320px; min-width: 0; }
+.si-diff { margin-left: 10px; font-size: 0.85rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; vertical-align: middle; font-family: var(--f-body); }
+.si-diff.up { background: var(--info-bg); color: var(--info); }
+.si-diff.down { background: var(--warn-bg); color: var(--warn); }
+.si-adjust { margin-top: 12px; max-width: 460px; display: grid; gap: 6px; }
+.si-adjust-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.86rem; font-weight: 600; color: var(--ink-2); }
+.si-adjust-row { display: flex; align-items: center; gap: 10px; }
+.si-adjust-row input[type='range'] { flex: 1; padding: 0; border: 0; background: transparent; accent-color: var(--accent); min-width: 0; }
+.step-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 1.1rem; font-weight: 700; cursor: pointer; display: grid; place-items: center; flex: none; color: var(--ink); }
+.step-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.si-scale { display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--muted); padding: 0 42px; }
+.si-scale span { white-space: nowrap; }
+@media (max-width: 560px) { .si-scale { padding: 0; font-size: 0.72rem; gap: 8px; } }

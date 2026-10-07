@@ -13,6 +13,7 @@ import {
   brandsFor,
   modelById,
   modelsOf,
+  siRange,
   suggestedSumInsured,
   vehicleText,
   yearsOf,
@@ -115,13 +116,19 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [cYear, setCYear] = useState(0);
   const [cCode, setCCode] = useState<UsageCode>('110');
   const [quoteErr, setQuoteErr] = useState<string | null>(null);
+  const [siPick, setSiPick] = useState<{ key: string; v: number } | null>(null);
 
   const picked = modelId ? modelById(modelId) : undefined;
   const ready = !!(code && brandId && picked && year);
   // Later steps are only reachable once the car is fully chosen.
   const model = picked ?? MODELS[0];
   const usage: UsageCode = custom ? cCode : code || '110';
-  const si = ready ? suggestedSumInsured(model, year) : 0;
+  const suggested = ready ? suggestedSumInsured(model, year) : 0;
+  const carKey = `${modelId}-${year}`;
+  const range = siRange(suggested);
+  const si = ready && siPick?.key === carKey ? Math.min(range.max, Math.max(range.min, siPick.v)) : suggested;
+  const setSi = (v: number) => setSiPick({ key: carKey, v: Math.min(range.max, Math.max(range.min, Math.round(v / 1000) * 1000)) });
+  const siPct = suggested ? ((si - suggested) / suggested) * 100 : 0;
   const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si) : []), [ready, model, usage, year, si]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
@@ -130,7 +137,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const source = pkg ? (self ? 'self' : 'package') : 'quote';
   const vehicle: Vehicle = custom
     ? { brandId: 'other', modelId: CUSTOM_MODEL_ID, year: cYear, sumInsured: quoteSI, usage, custom: { brand: cBrand.trim(), model: cModel.trim() } }
-    : { brandId, modelId, year, sumInsured: si, usage };
+    : { brandId, modelId, year, sumInsured: si, usage, ...(si !== suggested ? { suggestedSI: suggested } : {}) };
   const carName = custom || ready ? vehicleText(vehicle) : '';
   const cmi = cmiPremium(usage);
   const brands = code ? brandsFor(code) : [];
@@ -318,10 +325,30 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
 
           {ready ? (
             <div className="si-box reveal" key={`${modelId}-${year}-${code}`}>
-              <div>
-                <div className="eyebrow">{t('suggestedSI', { year: CURRENT_YEAR })}</div>
-                <div className="si-value num"><CountUp value={si} format={(n) => fmtBaht(n, lang)} /></div>
+              <div className="si-main">
+                <div className="eyebrow">{t(si === suggested ? 'suggestedSI' : 'chosenSI', { year: CURRENT_YEAR })}</div>
+                <div className="si-value num">
+                  <CountUp value={si} format={(n) => fmtBaht(n, lang)} />
+                  {si !== suggested && <span className={`si-diff ${siPct > 0 ? 'up' : 'down'}`}>{siPct > 0 ? '+' : ''}{siPct.toFixed(1)}%</span>}
+                </div>
                 <div className="hint">{t('siNote', { price: fmtBaht(model.newPrice, lang) })}</div>
+                <div className="si-adjust">
+                  <div className="si-adjust-head">
+                    <label htmlFor="si-slider">{t('siAdjust')}</label>
+                    {si !== suggested && (
+                      <button type="button" className="link" onClick={() => setSiPick(null)}>{t('siReset', { v: fmtBaht(suggested, lang) })}</button>
+                    )}
+                  </div>
+                  <div className="si-adjust-row">
+                    <button type="button" className="step-btn" aria-label={t('siLess')} disabled={si <= range.min} onClick={() => setSi(si - 5000)}>−</button>
+                    <input id="si-slider" type="range" min={range.min} max={range.max} step={1000} value={si} onChange={(e) => setSi(Number(e.target.value))} aria-valuetext={fmtBaht(si, lang)} />
+                    <button type="button" className="step-btn" aria-label={t('siMore')} disabled={si >= range.max} onClick={() => setSi(si + 5000)}>+</button>
+                  </div>
+                  <div className="si-scale num">
+                    <span>{fmtBaht(range.min, lang)} (−5%)</span>
+                    <span>{fmtBaht(range.max, lang)} (+5%)</span>
+                  </div>
+                </div>
               </div>
               <div className="car-meta">
                 <span className="chip"><BrandIcon id={brandId} size={18} /> {brandById(brandId).name} {model.name} · {year}</span>
@@ -1036,18 +1063,23 @@ function DocTile({ caseId, k, meta, label, disabled, onFile }: { caseId: string;
   );
 }
 
-/** Counts up to `value` once on mount (instant when the viewer prefers reduced motion). */
+/** Counts up from 0 on mount, then glides between later values (instant when the viewer prefers reduced motion). */
 function CountUp({ value, format, ms = 700 }: { value: number; format: (n: number) => string; ms?: number }) {
   const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [n, setN] = useState(reduce ? value : 0);
   const raf = useRef(0);
+  const shown = useRef(reduce ? value : 0);
   useEffect(() => {
     if (reduce) return setN(value);
+    const from = shown.current;
+    const dur = from === 0 ? ms : 250;
     const start = performance.now();
     const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / ms);
+      const p = Math.min(1, (now - start) / dur);
       const eased = 1 - Math.pow(1 - p, 3);
-      setN(p < 1 ? Math.round((value * eased) / 1000) * 1000 : value);
+      const v = p < 1 ? Math.round((from + (value - from) * eased) / 1000) * 1000 : value;
+      shown.current = v;
+      setN(v);
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);

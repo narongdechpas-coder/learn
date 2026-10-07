@@ -110,6 +110,13 @@ export function suggestedSumInsured(model: CarModel, year: number): number {
   return Math.floor((model.newPrice * factor) / 10000) * 10000;
 }
 
+/** Customers may move the suggested sum insured by this much either way (trim levels differ). */
+export const SI_FLEX = 0.05;
+export const siRange = (suggested: number) => ({
+  min: Math.ceil((suggested * (1 - SI_FLEX)) / 1000) * 1000,
+  max: Math.floor((suggested * (1 + SI_FLEX)) / 1000) * 1000,
+});
+
 export const vehicleLabel = (modelId: string, year: number) => {
   const md = modelById(modelId);
   return `${brandById(md.brandId).name} ${md.name} ${year}`;
