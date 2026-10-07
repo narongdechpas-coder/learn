@@ -295,6 +295,52 @@ tr.fresh td{background:var(--accent-soft)}
 @media (max-width:760px){.flow{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:620px){.topbar{position:static}.topbar-in{padding:10px 16px;gap:8px}.tabs{margin-left:0;width:100%}.agent-pill .nm{display:none}
   main{padding-inline:16px}.item{grid-template-columns:auto minmax(0,1fr)}.item > div:last-child{grid-column:2;text-align:left!important}.idres .conf{margin-left:0;text-align:left}}
+/* variant toggle */
+.var-pick{display:flex;gap:0;flex-wrap:wrap}
+.var-pick button{border:1px solid var(--line);background:var(--surface);padding:4px 10px;font-size:12px;color:var(--muted);margin-left:-1px}
+.var-pick button:first-child{border-radius:7px 0 0 7px;margin-left:0}.var-pick button:last-child{border-radius:0 7px 7px 0}
+.var-pick button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);position:relative;z-index:1;font-weight:600}
+.scen .vars{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+/* KYC + mapping */
+.kyc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+.kyc .field input{font-family:var(--f-mono)}
+@media (max-width:620px){.kyc{grid-template-columns:minmax(0,1fr)}}
+.mapblk{margin:14px 16px 0;border:1px solid var(--good);background:var(--good-soft);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.mapgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;font-size:13px}
+.mapgrid span{display:block;font-size:11px;color:var(--muted)}
+.mapgrid b{font-family:var(--f-mono);font-weight:500;overflow-wrap:anywhere}
+.phone-cmp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.phone-cmp s{color:var(--faint)}
+@media (max-width:620px){.mapgrid{grid-template-columns:minmax(0,1fr)}}
+/* back office */
+.bo-ws{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:14px;align-items:start}
+@media (max-width:1180px){.bo-ws{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bo-ws .col-act{grid-column:1/-1}}
+@media (max-width:760px){.bo-ws{grid-template-columns:minmax(0,1fr)}}
+.bo-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;border-radius:var(--r);background:var(--gold-soft);color:var(--ink);font-size:13px}
+.q-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.q-item.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.q-item .mono{font-size:11.5px;color:var(--muted)}
+.tl{list-style:none;margin:0;padding:12px 14px;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:8px 0;font-size:13px}
+.tl li+li{border-top:1px dashed var(--line)}
+.tl .when{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.tl .by{font-size:11px;color:var(--faint);display:block}
+.tl li.new{animation:pop .3s ease-out}
+.checklist{list-style:none;margin:0;padding:8px 14px;display:flex;flex-direction:column}
+.checklist li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;padding:8px 0;font-size:13px;color:var(--faint)}
+.checklist li+li{border-top:1px solid var(--line)}
+.checklist .ck{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;margin-top:2px}
+.checklist li.done{color:var(--ink)} .checklist li.done .ck{background:var(--good);border-color:var(--good);color:var(--surface)}
+.checklist li.next{color:var(--ink);font-weight:600} .checklist li.next .ck{border-color:var(--accent)}
+.checklist li.wait .ck{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+.checklist .who{font-size:11px;font-weight:500;color:var(--muted)}
+.stars{color:var(--gold);letter-spacing:2px;font-size:16px}
+.pipe-ro{display:flex;flex-wrap:wrap;gap:0;padding:12px 14px}
+.pipe-ro span{flex:1 1 auto;text-align:center;border:1px solid var(--line);padding:5px 6px;font-size:11.5px;color:var(--faint);margin-left:-1px;background:var(--surface)}
+.pipe-ro span:first-child{border-radius:7px 0 0 7px;margin-left:0}.pipe-ro span:last-child{border-radius:0 7px 7px 0}
+.pipe-ro span.past{background:var(--accent-soft);color:var(--accent)}
+.pipe-ro span.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);position:relative;z-index:1}
+.pipe-ro span.on.wait{background:var(--warn);border-color:var(--warn);color:var(--surface)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -310,7 +356,7 @@ tr.fresh td{background:var(--accent-soft)}
       <button class="tab" role="tab" data-view="arch" aria-selected="false">Architecture</button>
       <button class="tab" role="tab" data-view="dash" aria-selected="false">Supervisor</button>
     </nav>
-    <div class="agent-pill"><span class="avatar">พร</span><span class="nm">พรทิพย์ (Agent #A-217)</span><span class="dot" id="agentDot"></span><span id="agentState">Ready</span></div>
+    <div class="agent-pill"><span class="avatar" id="agentAv">พร</span><span class="nm" id="agentName">พรทิพย์ (Agent #A-217)</span><span class="dot" id="agentDot"></span><span id="agentState">Ready</span></div>
   </div>
 </header>
 
@@ -319,12 +365,12 @@ tr.fresh td{background:var(--accent-soft)}
   <section class="view" id="view-launcher">
     <div class="intro">
       <div>
-        <span class="eyebrow">Demo script · 5 scenarios</span>
+        <span class="eyebrow">Demo script · 7 scenarios</span>
         <h1>รับสายครั้งเดียว เห็นลูกค้าครบ 360° แล้วเปิด Ticket ได้ทันที</h1>
-        <p>จำลองการรับเรื่องจากโทรศัพท์ LINE OA และ Facebook ของประกันภัย ABC ทุกครั้งที่มีสายหรือแชทเข้า CRM จะถามข้อมูลจาก CDP แล้วแสดงเป็น Pop-up ทันที เมื่อจบการสนทนา ข้อมูลจะไหลกลับเข้า CDP เพื่อใช้ในรอบถัดไป</p>
+        <p>จำลองการรับเรื่องจากโทรศัพท์ LINE OA และ Facebook ของประกันภัย ABC ทุกครั้งที่มีสายหรือแชทเข้า CRM จะถามข้อมูลจาก CDP แล้วแสดงเป็น Pop-up ทันที ถ้าเบอร์ไม่ตรงจะยืนยันตัวตนก่อน เมื่อจบการสนทนา ข้อมูลไหลกลับเข้า CDP และส่วนงานที่รับเรื่องจะดำเนินการจนปิด Ticket</p>
       </div>
       <div class="legend-row">
-        <span class="chip acc">ผู้ถือกรมธรรม์ ×3</span><span class="chip info">ลูกค้าใหม่ ×1</span><span class="chip warn">คู่กรณี ×1</span>
+        <span class="chip acc">ผู้ถือกรมธรรม์ ×5</span><span class="chip info">ลูกค้าใหม่ ×1</span><span class="chip warn">คู่กรณี ×1</span>
       </div>
     </div>
     <div class="scen-grid" id="scenGrid"></div>
@@ -335,6 +381,7 @@ tr.fresh td{background:var(--accent-soft)}
     <div class="presenter">
       <span class="eyebrow">Scenario</span>
       <div class="scen-pick" id="scenPick"></div>
+      <div class="var-pick" id="varPick" hidden></div>
       <div class="steps" id="steps"></div>
       <div class="pres-actions">
         <button class="btn sm" id="btnReset" type="button">เริ่มใหม่</button>
@@ -359,11 +406,11 @@ tr.fresh td{background:var(--accent-soft)}
     <h3 style="font-size:17px;margin-bottom:10px">ลำดับข้อมูลเมื่อมีสายเข้า</h3>
     <ol class="flow">
       <li><b>สาย / แชทเข้า</b>CTI ได้เบอร์โทร (ANI), LINE ได้ UID, Facebook ได้ PSID แล้วส่งเข้าคิวตาม IVR หรือ Keyword</li>
-      <li><b>Identity Resolution</b>CRM ส่ง Identifier ให้ CDP จับคู่แบบ Deterministic (เบอร์, LINE UID, เลขบัตร) หรือ Probabilistic (Cookie, Device)</li>
+      <li><b>Identity Resolution</b>CRM ส่ง Identifier ให้ CDP จับคู่แบบ Deterministic (เบอร์, LINE UID) หรือ Probabilistic (Cookie) ถ้าเบอร์ไม่ตรงหรือซ่อนเบอร์ Agent ยืนยันด้วยเลขบัตร ปชช. + วันเกิด แล้ว Map กับ Customer ID</li>
       <li><b>Screen Pop</b>CDP คืน Profile 360, กรมธรรม์, เคลม, Journey, Sentiment และ NBA แล้วแสดงเป็น Pop-up ก่อน Agent กดรับ</li>
-      <li><b>เปิด Ticket</b>Agent เลือกหมวด CRM คำนวณ SLA และ Assign ทีม ระบบ AI ช่วยสรุปบทสนทนา</li>
-      <li><b>Wrap-up</b>บันทึกผล Disposition, Consent (PDPA) และผลตอบรับ NBA</li>
-      <li><b>เขียนกลับเข้า CDP</b>ส่ง Event, อัปเดต Segment และสั่ง Journey ต่อ เช่น LINE แจ้งสถานะ หรือแบบสำรวจ CSAT</li>
+      <li><b>เปิด Ticket & Assign</b>Agent เลือกหมวด CRM คำนวณ SLA และส่งต่อส่วนงานตาม Routing rule ระบบ AI ช่วยสรุปบทสนทนา</li>
+      <li><b>Wrap-up & เขียนกลับเข้า CDP</b>บันทึก Disposition, Consent (PDPA), ผล NBA แล้วส่ง Event อัปเดต Segment และสั่ง Journey ต่อ</li>
+      <li><b>ส่วนงานรับเรื่อง & ปิด Ticket</b>Underwriting, Claims หรือทีมจัดส่งทำงานต่อใน CRM ขอเอกสารเพิ่มได้ (SLA หยุดนับ) บันทึกผล ปิด Ticket แจ้งลูกค้าและ Agent แล้วส่ง CSAT</li>
     </ol>
   </section>
 
@@ -380,7 +427,7 @@ tr.fresh td{background:var(--accent-soft)}
     </div>
     <div class="panel" style="margin-top:14px">
       <div class="panel-h"><h3>Ticket ล่าสุด & Escalation</h3><span class="chip" id="liveCount">0 จาก Demo</span></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Ticket</th><th>ลูกค้า</th><th>ช่องทาง</th><th>หมวด</th><th>Priority</th><th>ทีม</th><th class="num">SLA คงเหลือ</th><th>สถานะ</th></tr></thead><tbody id="tktBody"></tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Ticket</th><th>ลูกค้า</th><th>ช่องทาง</th><th>หมวด</th><th>Priority</th><th>ทีม / ส่วนงาน</th><th class="num">SLA คงเหลือ</th><th>สถานะ</th></tr></thead><tbody id="tktBody"></tbody></table></div>
     </div>
   </section>
 </main>
@@ -568,18 +615,226 @@ const S=[
     journeys:[['≤ 2 ชม.','งาน Callback ของ Supervisor'],['โอนเงินแล้ว','Messenger แจ้งยอดโอน + ขอโทษอีกครั้ง'],['+3 วัน','แบบสำรวจ CSAT/NPS · ถ้า ≤ 6 เปิด Ticket อัตโนมัติ']]}}
 ];
 
-const STEPS=['สาย/แชทเข้า','CDP Pop-up','จัดการ & Ticket','Wrap-up & CDP Sync'];
+/* ===== Step 5: ส่วนงานรับเรื่อง & ปิด Ticket (ฉบับย่อของ Scenario 1–5) ===== */
+const BO_SHORT=[
+ {dept:'Claims – Motor Survey',user:'คุณธีรวัฒน์ (SV-114)',ini:'ธว',ola:'ถึงที่เกิดเหตุ 30 นาที · ปิดงานสำรวจ 1 วัน',created:'07/10 09:12',
+  actions:[{at:'07/10 09:14',t:'รับเรื่อง & มอบหมายพนักงานสำรวจ',note:'คุณอำนาจ (ใกล้สุด 4.2 กม.) · ETA 22 นาที',status:'In progress'},
+   {at:'07/10 09:38',t:'บันทึกผลสำรวจที่เกิดเหตุ',note:'ภาพ 12 ภาพ · กันชนหลัง + ไฟท้าย · คู่กรณียอมรับผิด',status:'In progress'},
+   {at:'07/10 10:05',t:'ออกใบเคลมเข้าอู่ในเครือ',note:'อู่ บางนาการช่าง · ตั้งเรื่องเรียกร้องคู่กรณี (Recovery)',status:'Resolved'}],
+  resolution:{code:'Claim registered – sent to garage',note:'สำรวจเสร็จ ออกใบเคลม CLM-2569-00871 เข้าอู่ในเครือ และตั้งเรื่อง Recovery กับบริษัทประกันคู่กรณี'},
+  notify:[['LINE','ส่งใบเคลม + นัดหมายเข้าอู่ให้คุณสมชาย'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ที่เปิดไว้ปิดแล้ว']],
+  events:[['claim.survey.completed','ภาพ 12 ภาพ · ประเมินความเสียหาย ฿38,500'],['claim.recovery.opened','เรียกร้องคู่กรณี 3ขข 5678']],csat:5},
+ {dept:'Sales – Renewal Desk',user:'คุณศิริพร (RN-208)',ini:'ศพ',ola:'ส่งใบเสนอราคา 4 ชม. · ออกกรมธรรม์ 1 วัน',created:'07/10 12:06',
+  actions:[{at:'07/10 12:10',t:'รับเรื่อง & ส่งใบเสนอราคา',note:'QT-2569-55120 ฿3,650 ส่งทาง LINE Flex',status:'In progress'},
+   {at:'07/10 15:12',t:'ลูกค้าชำระเงิน',note:'PromptPay ฿3,650 · ใบเสร็จ RC-2569-77630',status:'In progress',by:'customer'},
+   {at:'07/10 15:30',t:'ออกกรมธรรม์ปีใหม่ + สลักหลังน้ำท่วม',note:'HM-2569-0088127 · e-Policy ส่งทาง LINE',status:'Resolved'}],
+  resolution:{code:'Renewed with rider',note:'ต่ออายุประกันบ้านพร้อมเพิ่มความคุ้มครองน้ำท่วม เบี้ยรวม ฿3,650'},
+  notify:[['LINE','e-Policy ฉบับใหม่ถึงคุณนภา'],['Agent','แจ้งพรทิพย์ (A-217): ต่ออายุสำเร็จ']],
+  events:[['policy.renewed','HM-2569-0088127 · ฿3,650'],['payment.received','RC-2569-77630']],csat:5},
+ {dept:'Telesales – Health',user:'คุณอภิชาติ (TS-077)',ini:'อช',ola:'โทรกลับภายใน 2 ชม.',created:'07/10 14:01',
+  actions:[{at:'07/10 14:46',t:'โทรกลับลูกค้า',note:'ภายใน 45 นาที · อธิบายแผน 2 และการผ่อนรายเดือน',status:'In progress'},
+   {at:'07/10 15:05',t:'ลูกค้าตัดสินใจซื้อ',note:'ABC Health Smart แผน 2 · ผ่อนบัตรเครดิต ฿1,575/เดือน',status:'In progress'},
+   {at:'07/10 15:20',t:'ส่งต่อออกกรมธรรม์ (Policy Issuance)',note:'HL-2569-0318822 · คุ้มครองเริ่ม 08/10/2569',status:'Resolved'}],
+  resolution:{code:'Won – policy issued',note:'ปิดการขายแผน 2 ภายในวันเดียวจาก Lead ที่ CDP จับได้บนเว็บ'},
+  notify:[['LINE','ต้อนรับลูกค้าใหม่ + e-Policy'],['Agent','แจ้งพรทิพย์ (A-217): Lead ปิดการขายแล้ว']],
+  events:[['lead.won','฿18,900/ปี · ช่องทาง Voice'],['customer.onboarded','CDP-00318822 → Customer']],csat:5},
+ {dept:'Claims – Third Party',user:'คุณนันทนา (TP-019)',ini:'นท',ola:'1 วันทำการ',created:'07/10 14:12',
+  actions:[{at:'07/10 14:30',t:'รับเรื่อง & ตรวจสถานะอู่',note:'อู่ยืนยันนัดรับรถ 14/10',status:'In progress'},
+   {at:'07/10 14:32',t:'รอเอกสารสมุดบัญชีจากคู่กรณี',note:'ส่งลิงก์อัปโหลดทาง SMS · SLA หยุดนับระหว่างรอ',status:'Pending customer',pause:true},
+   {at:'08/10 09:05',t:'คู่กรณีอัปโหลดสมุดบัญชี',note:'ธนาคารกสิกรไทย · ชื่อตรงกับผู้เสียหาย',status:'In progress',by:'customer'},
+   {at:'08/10 13:00',t:'โอนค่าขาดประโยชน์',note:'฿6,000 (12 วัน × ฿500)',status:'Resolved'}],
+  resolution:{code:'Paid – loss of use',note:'จ่ายค่าขาดประโยชน์ใช้รถให้คู่กรณีครบ ฿6,000'},
+  notify:[['SMS','แจ้งยอดโอน ฿6,000 ให้คุณอรทัย'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ปิดแล้ว']],
+  events:[['claim.tp.paid','CLM-2569-00412-L · ฿6,000']],csat:4},
+ {dept:'Claims – Health (Fast-track)',user:'คุณปกรณ์ (CH-045)',ini:'ปก',ola:'Urgent · 24 ชม.',created:'07/10 14:08',
+  actions:[{at:'07/10 14:50',t:'Supervisor โทรยืนยันกับลูกค้า',note:'คุณวรรณา โทรภายใน 42 นาที · ลูกค้ารับทราบ',status:'In progress'},
+   {at:'07/10 16:20',t:'อนุมัติเคลม Fast-track',note:'CLM-H-2569-0233 · อนุมัติเต็มจำนวน ฿68,400',status:'In progress'},
+   {at:'08/10 10:00',t:'Finance โอนเงิน + บันทึกส่วนลดต่ออายุ 10%',note:'PromptPay ผูกบัตร ปชช. · ส่วนลดผูกกับ HL-2565-0145209',status:'Resolved'}],
+  resolution:{code:'Complaint resolved – paid',note:'โอนเงินเคลมภายใน 20 ชม. หลังร้องเรียน และให้ส่วนลดต่ออายุ 10% ปิด Ticket เดิม 2 รายการด้วย'},
+  notify:[['Messenger','แจ้งยอดโอน + ขออภัยคุณกฤษณ์'],['Agent','แจ้งพรทิพย์ (A-217): เรื่องร้องเรียนปิดแล้ว']],
+  events:[['claim.paid','CLM-H-2569-0233 · ฿68,400'],['retention.offer.applied','ส่วนลด 10% · ต่ออายุ 10/01/2570']],csat:4}
+];
+BO_SHORT.forEach((b,i)=>S[i].bo=b);
+S[0].pick='Voice';S[1].pick='LINE';S[2].pick='Voice';S[3].pick='Voice';S[4].pick='Facebook';
+
+/* ===== Scenario 6: ลูกค้าเดิม แต่เบอร์ไม่ตรง → Customer ID Mapping ===== */
+const S6_TICKET={id:'TK-2569-104270',cat:'Policy Service',pri:'Medium',sla:480,slaLabel:'ออกหนังสือรับรองการชำระเบี้ย',team:'Policy Service',link:'HL-2566-0087321 · MT-2568-0087321',status:1};
+S.push({ id:6, pick:'Mapping', channel:'voice', type:'policyholder', kyc:true, title:'ลูกค้าเดิม แต่เบอร์ไม่ตรง (Customer ID Mapping)',
+  who:'คุณวิไลวรรณ สุขประเสริฐ · เปลี่ยนเบอร์ใหม่ หรือซ่อนเบอร์', route:'IVR กด 4 บริการกรมธรรม์ → Policy Service Queue', wait:'00:26',
+  variantList:[['changed','เปลี่ยนเบอร์ใหม่'],['private','ซ่อนเบอร์ (Private)']],
+  notes:['เบอร์ไม่ตรงกับโปรไฟล์ใด CDP จึงยังไม่เปิดข้อมูลลูกค้า','Agent ขอเลขบัตร ปชช. + วันเกิด แล้ว Map กับ Customer ID (Exact match)','เปลี่ยนเบอร์: ผูกเบอร์ใหม่ + แจ้งเตือนช่องทางเดิมกันสวมรอย · ซ่อนเบอร์: ผูกเฉพาะ Interaction'],
+  identity2:{status:'kyc',method:'ยืนยันด้วยเลขบัตร ปชช. + วันเกิด · Exact match',conf:100},
+  kycData:{idFull:'3-1012-01234-56-7',idMasked:'3-1012-xxxxx-xx-7',dob:'1985-04-12',dobTh:'12/04/2528',oldPhone:'086-xxx-1122',email:'wil***@gmail.com'},
+  profile:{name:'คุณวิไลวรรณ สุขประเสริฐ',ini:'วส',meta:'หญิง · 41 ปี · ลาดพร้าว กรุงเทพฯ',cdp:'CDP-00087321',since:'ลูกค้าตั้งแต่ 2561 (8 ปี)',clv:'฿265,000',pref:'Voice, Email',consent:'PDPA ✓ · Marketing ✗',segments:[['Multi-policy','acc'],['Contact outdated','warn'],['Tax season','info']]},
+  policies:[
+    {p:'motor',name:'ประกันรถยนต์ชั้น 1',no:'MT-2568-0087321',d:'Mazda CX-5 · 5กก 2290 กรุงเทพมหานคร',st:'Active',exp:'30/06/2570',prem:'฿19,800'},
+    {p:'health',name:'ABC Health Smart แผน 2',no:'HL-2566-0087321',d:'IPD ฿3,000,000/ปี',st:'Active',exp:'15/01/2570',prem:'฿21,600'}],
+  claims:[], tickets:[{no:'TK-2568-061120',name:'ขอหนังสือรับรองเบี้ยปี 2567',st:'Resolved',when:'10/01/2568'}],
+  journey:[
+    ['07/10 10:02','Email','เปิดอีเมล "เตรียมเอกสารลดหย่อนภาษีปี 2569"'],
+    ['20/09 11:40','SMS','SMS แจ้งต่ออายุส่งไม่สำเร็จ (เบอร์เดิมปิดบริการ)'],
+    ['15/08 08:10','Outbound call','โทรหาเบอร์เดิมไม่ติด 2 ครั้ง'],
+    ['30/06 09:12','Billing','ชำระเบี้ยรถยนต์ ฿19,800'],
+    ['15/01 09:00','Billing','ชำระเบี้ยสุขภาพ ฿21,600']],
+  senti:{label:'ปกติ',v:0.1,cls:''}, churn:{v:22,cls:'good',label:'ต่ำ'},
+  nba:{title:'ผูก LINE OA + รับเอกสารอัตโนมัติ',kind:'Service',prop:69,price:'ฟรี',
+    script:'"ให้ดิฉันส่งลิงก์ผูก LINE OA ไหมคะ ปีหน้าหนังสือรับรองเบี้ยจะส่งเข้า LINE อัตโนมัติ ไม่ต้องโทรมาค่ะ"'},
+  ticket:{...S6_TICKET,sub:'ขอหนังสือรับรองเบี้ย',ai:''},
+  bo:{dept:'Policy Service',user:'คุณเยาวลักษณ์ (PS-102)',ini:'ยล',ola:'1 วันทำการ',created:'07/10 14:20',
+    actions:[{at:'07/10 14:40',t:'รับเรื่อง & ตรวจยอดเบี้ยปี 2569',note:'สุขภาพ ฿21,600 ลดหย่อนได้ ≤ ฿25,000',status:'In progress'},
+     {at:'07/10 15:10',t:'ออกหนังสือรับรองการชำระเบี้ย',note:'ลงนามอิเล็กทรอนิกส์ · ใช้ยื่นภาษีกับกรมสรรพากรได้',status:'In progress'},
+     {at:'07/10 15:15',t:'ส่งเอกสารทางอีเมลที่ยืนยันแล้ว',note:'wil***@gmail.com · เปิดอ่านแล้ว 15:31',status:'Resolved'}],
+    resolution:{code:'Document issued',note:'ออกหนังสือรับรองการชำระเบี้ยประกันสุขภาพปี 2569 และส่งทางอีเมล'},
+    notify:[['Email','หนังสือรับรองการชำระเบี้ย (PDF มีรหัสผ่าน)'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ปิดแล้ว']],
+    events:[['document.issued','หนังสือรับรองเบี้ย 2569 · ฿21,600']],csat:5},
+  variants:{
+    changed:{from:'095-xxx-7788',mapMode:'changed',
+      identity:{status:'unknown',method:'ไม่พบ ANI 095-xxx-7788 ในฐานลูกค้า → ต้องยืนยันตัวตนก่อน',conf:0},
+      transcript:[
+        ['sys','CTI · ANI 095-xxx-7788 ไม่พบใน CRM/CDP → เปิดฟอร์มยืนยันตัวตน'],
+        ['a','ABC ประกันภัย สวัสดีค่ะ ดิฉันพรทิพย์ ขอทราบชื่อด้วยค่ะ'],
+        ['c','วิไลวรรณค่ะ เป็นลูกค้าเดิม แต่เพิ่งเปลี่ยนเบอร์ใหม่ อยากขอหนังสือรับรองเบี้ยไปลดหย่อนภาษีค่ะ'],
+        ['a','เพื่อความปลอดภัยของข้อมูล ขอเลขบัตรประชาชนและวันเดือนปีเกิดด้วยค่ะ'],
+        ['c','3-1012-xxxxx-xx-7 (ระบบปิดบังอัตโนมัติ) เกิด 12 เมษายน 2528 ค่ะ'],
+        ['a','ยืนยันตัวตนเรียบร้อยค่ะ ขออนุญาตตั้งเบอร์ 095-xxx-7788 เป็นเบอร์หลักแทนเบอร์เดิมนะคะ จะมี SMS ยืนยันส่งไปค่ะ'],
+        ['c','ได้ค่ะ'],
+        ['a','หนังสือรับรองเบี้ยประกันสุขภาพปี 2569 จะส่งเข้าอีเมลภายใน 1 วันทำการค่ะ']],
+      ticket:{...S6_TICKET,sub:'ขอหนังสือรับรองเบี้ย + อัปเดตเบอร์ติดต่อ',
+        ai:'ลูกค้าเดิมโทรจากเบอร์ใหม่ 095-xxx-7788 ยืนยันตัวตนด้วยเลขบัตร ปชช. + วันเกิด Map กับ CDP-00087321 แล้ว ตั้งเบอร์ใหม่เป็นเบอร์หลัก (ส่ง SMS ยืนยัน + แจ้งอีเมลเดิม) ขอหนังสือรับรองการชำระเบี้ยสุขภาพปี 2569 ส่งทางอีเมล'},
+      sync:{events:[['identity.verified','KYC: บัตร ปชช. + วันเกิด · Exact match · ไม่เก็บเลขบัตรเต็มใน log'],['identity.mapped','ANI 095-xxx-7788 → CDP-00087321'],['contact.updated','มือถือหลัก 086-xxx-1122 → 095-xxx-7788 · SMS ยืนยันแล้ว'],['ticket.created','TK-2569-104270 · Policy Service · Medium']],
+        before:[['Multi-policy','acc'],['Contact outdated','warn'],['Tax season','info']], after:[['Multi-policy','acc'],['Contact verified','good'],['Tax season','info']],
+        journeys:[['ทันที','SMS ยืนยันเบอร์ใหม่ + แจ้งเตือนอีเมลเดิม (กันสวมรอย)'],['≤ 1 วันทำการ','อีเมลหนังสือรับรองการชำระเบี้ย'],['+1 วัน','SMS ชวนผูก LINE OA เพื่อรับเอกสารอัตโนมัติ']]}},
+    private:{from:'ไม่แสดงหมายเลข',mapMode:'private',
+      identity:{status:'withheld',method:'ผู้โทรซ่อนหมายเลข (Private) → ต้องยืนยันตัวตนก่อน',conf:0},
+      transcript:[
+        ['sys','CTI · ไม่แสดงหมายเลข → เปิดฟอร์มยืนยันตัวตน'],
+        ['a','ABC ประกันภัย สวัสดีค่ะ ดิฉันพรทิพย์ ขอทราบชื่อด้วยค่ะ'],
+        ['c','วิไลวรรณค่ะ โทรจากเบอร์ที่ทำงาน อยากขอหนังสือรับรองเบี้ยไปลดหย่อนภาษีค่ะ'],
+        ['a','สายนี้ไม่แสดงหมายเลข เพื่อความปลอดภัยขอเลขบัตรประชาชนและวันเดือนปีเกิดค่ะ'],
+        ['c','3-1012-xxxxx-xx-7 (ระบบปิดบังอัตโนมัติ) เกิด 12 เมษายน 2528 ค่ะ'],
+        ['a','ยืนยันตัวตนเรียบร้อยค่ะ เบอร์ในระบบ 086-xxx-1122 ยังใช้อยู่ไหมคะ'],
+        ['c','เลิกใช้แล้วค่ะ'],
+        ['a','ดิฉันจะส่งลิงก์อัปเดตเบอร์ไปที่อีเมลที่ลงทะเบียนไว้นะคะ ส่วนหนังสือรับรองส่งเข้าอีเมลภายใน 1 วันทำการค่ะ']],
+      ticket:{...S6_TICKET,sub:'ขอหนังสือรับรองเบี้ย (สายไม่แสดงหมายเลข)',
+        ai:'ลูกค้าเดิมโทรแบบไม่แสดงหมายเลข ยืนยันตัวตนด้วยเลขบัตร ปชช. + วันเกิด บันทึก Interaction เข้า CDP-00087321 (ไม่มีเบอร์ให้ผูก) เบอร์เดิมเลิกใช้ ส่งลิงก์อัปเดตเบอร์ทางอีเมล ขอหนังสือรับรองการชำระเบี้ยสุขภาพปี 2569'},
+      sync:{events:[['identity.verified','KYC: บัตร ปชช. + วันเกิด · Exact match · ไม่เก็บเลขบัตรเต็มใน log'],['interaction.linked','ANI: withheld → CDP-00087321 (ไม่ผูกเบอร์)'],['contact.update.requested','ลิงก์อัปเดตเบอร์ทางอีเมล · หมดอายุ 72 ชม.'],['ticket.created','TK-2569-104270 · Policy Service · Medium']],
+        before:[['Multi-policy','acc'],['Contact outdated','warn'],['Tax season','info']], after:[['Multi-policy','acc'],['Contact outdated','warn'],['Update link sent','info']],
+        journeys:[['ทันที','อีเมลลิงก์อัปเดตเบอร์ (ยืนยันด้วย OTP ทางอีเมล)'],['≤ 1 วันทำการ','อีเมลหนังสือรับรองการชำระเบี้ย'],['+3 วัน ถ้ายังไม่อัปเดต','อีเมลเตือนอีกครั้ง · Agent ถามซ้ำเมื่อโทรเข้า']]}}
+  }
+});
+
+/* ===== Scenario 7: ส่งต่อส่วนงาน & ปิด Ticket (3 เรื่อง) ===== */
+S.push({ id:7, pick:'ส่งต่อ', type:'policyholder', title:'ส่งต่อส่วนงาน แล้วปิด Ticket',
+  who:'Contact Center เปิดเรื่อง → ส่วนงานรับเรื่อง → บันทึกผล → ปิด Ticket',
+  variantList:[['uw','สลักหลัง → Underwriting'],['health','เคลมสุขภาพ → Claims'],['delivery','ติดตามเล่ม → จัดส่ง']],
+  notes:['เลือกเรื่องได้ 3 แบบ: สลักหลังกรมธรรม์, เคลมสุขภาพ, ติดตามเล่มกรมธรรม์','ฝั่งส่วนงานเห็นข้อมูลลูกค้าจาก CDP และสรุปจาก Contact Center ไม่ต้องถามซ้ำ','ระหว่างรอลูกค้าส่งเอกสาร SLA หยุดนับ เมื่อปิดเรื่องจะแจ้งลูกค้า แจ้ง Agent และส่ง CSAT'],
+  variants:{
+   uw:{channel:'line', from:'LINE: Pong.Prasert', route:'Rich menu "แก้ไขกรมธรรม์" → Policy Service Chat', wait:'00:07',
+    identity:{status:'matched',method:'Deterministic · LINE UID ผูกด้วย LINE Login',conf:100},
+    profile:{name:'คุณประเสริฐ วงศ์สวัสดิ์',ini:'ปว',meta:'ชาย · 52 ปี · เมืองขอนแก่น',cdp:'CDP-00055410',since:'ลูกค้าตั้งแต่ 2560 (9 ปี)',clv:'฿318,000',pref:'LINE',consent:'PDPA ✓ · Marketing ✓',segments:[['Gold','gold'],['Motor loyal','acc'],['Life event: รถใหม่','info']]},
+    policies:[{p:'motor',name:'ประกันรถยนต์ชั้น 1',no:'MT-2569-0055410',d:'Toyota Fortuner 2.8 (คันเดิม) · ขก 4512 ขอนแก่น',st:'Active',exp:'01/02/2570',prem:'฿27,900'}],
+    claims:[], tickets:[{no:'TK-2568-090311',name:'สอบถามการเพิ่มผู้ขับขี่',st:'Resolved',when:'12/11/2568'}],
+    journey:[['07/10 09:20','LINE OA','กด Rich menu "แก้ไขกรมธรรม์"'],['05/10 18:00','Website','คำนวณเบี้ย Toyota Fortuner Legender 2026'],['01/10 12:30','Partner dealer','ดีลเลอร์พันธมิตรแจ้งออกรถใหม่ (Consent ✓)'],['12/11 14:22','Voice','สอบถามการเพิ่มผู้ขับขี่'],['01/02 08:00','Billing','ต่ออายุอัตโนมัติ ฿27,900']],
+    senti:{label:'ดี',v:0.5,cls:'good'}, churn:{v:10,cls:'good',label:'ต่ำ'},
+    nba:{title:'Roadside Plus สำหรับรถใหม่',kind:'Upsell',prop:58,price:'+฿690/ปี',script:'"รถใหม่ขับทางไกลบ่อย เพิ่ม Roadside Plus ลากรถฟรี 200 กม. เพียง 690 บาทต่อปีค่ะ"'},
+    transcript:[['sys','LINE · ผูกตัวตนอัตโนมัติจาก LINE UID'],
+      ['c','ออกรถใหม่ครับ Fortuner Legender ป้ายแดง อยากย้ายประกันไปคันใหม่ แล้วเพิ่มลูกชายเป็นผู้ขับขี่ด้วย'],
+      ['a','ยินดีด้วยค่ะคุณประเสริฐ เรื่องเปลี่ยนรถต้องให้ฝ่าย Underwriting พิจารณาเบี้ย ดิฉันเปิดเรื่องส่งต่อให้นะคะ รบกวนส่งสำเนาทะเบียนรถและใบขับขี่ลูกชายในแชทนี้ค่ะ'],
+      ['c','[ส่งรูป 2 ไฟล์]'],
+      ['a','ได้รับครบแล้วค่ะ Underwriting จะแจ้งเบี้ยส่วนต่างภายใน 2 วันทำการผ่าน LINE นี้ ติดตามสถานะได้ที่เมนู "เรื่องของฉัน" ค่ะ']],
+    ticket:{id:'TK-2569-104281',cat:'Policy Service',sub:'สลักหลัง: เปลี่ยนรถ + เพิ่มผู้ขับขี่',pri:'Medium',sla:2880,slaLabel:'Underwriting พิจารณา & แจ้งเบี้ยส่วนต่าง',team:'Underwriting – Motor',link:'MT-2569-0055410',status:1,
+      ai:'ลูกค้า Gold ขอสลักหลังกรมธรรม์ MT-2569-0055410 ย้ายความคุ้มครองไปรถใหม่ Toyota Fortuner Legender 2026 (ป้ายแดง) และเพิ่มบุตรชายเป็นผู้ขับขี่ แนบสำเนาทะเบียนรถและใบขับขี่แล้ว ส่ง Underwriting พิจารณาเบี้ยส่วนต่าง'},
+    sync:{events:[['interaction.completed','LINE · 5 ข้อความ · sentiment +0.5'],['ticket.created','TK-2569-104281 · สลักหลัง · Medium'],['document.received','ทะเบียนรถ + ใบขับขี่ (2 ไฟล์)'],['ticket.assigned','Underwriting – Motor · OLA 2 วันทำการ']],
+      before:[['Gold','gold'],['Motor loyal','acc'],['Life event: รถใหม่','info']], after:[['Gold','gold'],['Motor loyal','acc'],['Endorsement pending','warn']],
+      journeys:[['ทันที','LINE: เลข Ticket + ติดตามสถานะในเมนู "เรื่องของฉัน"'],['เมื่อ UW แจ้งเบี้ย','LINE Flex ลิงก์ชำระส่วนต่าง'],['ปิด Ticket','ส่ง e-Endorsement + CSAT']]},
+    bo:{dept:'Underwriting – Motor',user:'คุณกิตติ ศักดิ์ดี (UW-031)',ini:'กศ',ola:'2 วันทำการ',created:'07/10 09:35',full:true,
+      queue:[['TK-2569-104190','คุณมานพ · เพิ่มอุปกรณ์ตกแต่ง','Low'],['TK-2569-104102','คุณศศิธร · เปลี่ยนเป็นชั้น 1','Medium'],['TK-2569-103877','บจก. สยามโลจิสติกส์ · รถ 12 คัน','High']],
+      actions:[{at:'07/10 10:05',t:'รับเรื่อง (Accept)',note:'อ่านสรุปจาก Contact Center · เอกสารแนบ 2 ไฟล์',status:'In progress'},
+       {at:'07/10 10:40',t:'ตรวจรถกับกรมการขนส่งทางบก (DLT)',note:'ป้ายแดง 0123 ขอนแก่น · Fortuner 2.8 Legender 2026 · ราคา ฿1,689,000',status:'In progress'},
+       {at:'07/10 10:52',t:'ขอรูปรถ 4 ด้าน + เลขไมล์จากลูกค้า',note:'ส่งคำขอทาง LINE · SLA หยุดนับระหว่างรอลูกค้า',status:'Pending customer',pause:true},
+       {at:'08/10 08:15',t:'ลูกค้าส่งรูปผ่าน LINE',note:'5 รูป · AI ตรวจไม่พบความเสียหายเดิม · SLA นับต่อ',status:'In progress',by:'customer'},
+       {at:'08/10 09:30',t:'พิจารณาเบี้ยส่วนต่าง',note:'ทุนประกันใหม่ ฿1,550,000 · ผู้ขับขี่อายุ 24 ปี · เบี้ยเพิ่ม ฿3,200 (ตามวันคงเหลือ)',status:'In progress'},
+       {at:'08/10 11:05',t:'ลูกค้าชำระส่วนต่างผ่านลิงก์ LINE',note:'PromptPay ฿3,200 · ใบเสร็จ RC-2569-77812',status:'In progress',by:'customer'},
+       {at:'08/10 11:20',t:'ออกสลักหลัง END-2569-004512',note:'เปลี่ยนรถ + ระบุผู้ขับขี่ 2 คน · มีผล 08/10/2569',status:'Resolved'}],
+      resolution:{code:'Endorsement issued',note:'ออกสลักหลัง END-2569-004512 ย้ายความคุ้มครองไป Fortuner Legender 2026 และเพิ่มผู้ขับขี่ เก็บเบี้ยส่วนต่าง ฿3,200 แล้ว'},
+      notify:[['LINE','e-Endorsement + บัตรประกันใหม่ถึงคุณประเสริฐ'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ที่เปิดไว้ปิดแล้ว'],['Dealer','แจ้งดีลเลอร์พันธมิตรว่ารถคันนี้มีประกันแล้ว']],
+      events:[['policy.endorsed','END-2569-004512 · +฿3,200'],['payment.received','RC-2569-77812']],csat:5}},
+   health:{channel:'voice', from:'081-990-2345', route:'IVR กด 2 เคลม → Claims Health Queue', wait:'00:22',
+    identity:{status:'matched',method:'Deterministic · ANI ตรงกับเบอร์มือถือหลัก',conf:100},
+    profile:{name:'คุณมาลี ทองคำ',ini:'มท',meta:'หญิง · 57 ปี · หาดใหญ่ สงขลา',cdp:'CDP-00122019',since:'ลูกค้าตั้งแต่ 2559 (10 ปี)',clv:'฿412,000',pref:'Voice',consent:'PDPA ✓ · Marketing ✓',segments:[['Gold','gold'],['Health senior','acc'],['Claim active','warn']]},
+    policies:[{p:'health',name:'ABC Health Smart แผน 3',no:'HL-2563-0122019',d:'IPD ฿5,000,000/ปี · ห้อง ฿6,000',st:'Active',exp:'01/03/2570',prem:'฿48,600'}],
+    claims:[{p:'health',name:'เคลม IPD – ผ่าตัดต้อกระจก',no:'CLM-H-2569-0301',d:'฿42,750 · รพ.เอกชน หาดใหญ่ (สำรองจ่าย)',st:'เปิดเรื่องวันนี้',when:'ยื่น 07/10/2569',warn:true}],
+    tickets:[],
+    journey:[['07/10 08:55','ABC Connect App','อัปโหลดใบเสร็จ 3 ไฟล์ในแอป'],['04/10 16:30','Hospital network','ออกจาก รพ. (ข้อมูลจาก รพ. เครือข่าย)'],['02/10 07:40','Voice','สอบถามสิทธิ์ก่อนผ่าตัด'],['01/03 08:00','Billing','ต่ออายุ ฿48,600'],['11/12 10:15','LINE OA','อ่านบทความ "เคลมไม่ต้องสำรองจ่าย"']],
+    senti:{label:'ปกติ',v:0.1,cls:''}, churn:{v:15,cls:'good',label:'ต่ำ'},
+    nba:{title:'ลงทะเบียน Fax Claim ครั้งหน้า',kind:'Service',prop:74,price:'ฟรี',script:'"ครั้งหน้าแสดงบัตร ABC ที่ รพ. เครือข่ายได้เลย ไม่ต้องสำรองจ่ายค่ะ ส่งรายชื่อ รพ. ในหาดใหญ่ทาง SMS ให้ไหมคะ"'},
+    transcript:[['sys','CTI · Screen pop จาก CDP · 0.19 วินาที'],
+      ['c','ผ่าตัดต้อกระจกที่ รพ. หาดใหญ่ สำรองจ่ายไป 42,750 บาท อัปโหลดใบเสร็จในแอปแล้วค่ะ'],
+      ['a','เห็นใบเสร็จ 3 ไฟล์แล้วค่ะคุณมาลี ดิฉันเปิดเคลม CLM-H-2569-0301 และส่งต่อทีม Claims Health ค่ะ'],
+      ['a','ตอนนี้ยังขาดใบรับรองแพทย์ฉบับจริงนะคะ ทีมเคลมจะส่งข้อความแจ้งวิธีส่งให้ค่ะ'],
+      ['c','ได้ค่ะ นานไหมคะ'],
+      ['a','พิจารณาภายใน 5 วันทำการหลังเอกสารครบค่ะ ติดตามสถานะในแอปได้เลยค่ะ']],
+    ticket:{id:'TK-2569-104288',cat:'Claim',sub:'เคลมสุขภาพสำรองจ่าย (IPD)',pri:'Medium',sla:7200,slaLabel:'Claims Health พิจารณา & โอนเงิน',team:'Claims – Health',link:'HL-2563-0122019 → CLM-H-2569-0301',status:1,
+      ai:'ลูกค้า Gold ยื่นเคลมสำรองจ่าย IPD ผ่าตัดต้อกระจก ฿42,750 (รพ.เอกชน หาดใหญ่) อัปโหลดใบเสร็จ 3 ไฟล์ในแอปแล้ว ยังขาดใบรับรองแพทย์ เปิดเคลม CLM-H-2569-0301 ส่ง Claims Health'},
+    sync:{events:[['interaction.completed','Voice · 03:40 นาที · sentiment +0.1'],['claim.opened','CLM-H-2569-0301 · ฿42,750'],['ticket.created','TK-2569-104288 · Claim · Medium'],['ticket.assigned','Claims – Health · OLA 5 วันทำการ']],
+      before:[['Gold','gold'],['Health senior','acc']], after:[['Gold','gold'],['Health senior','acc'],['Claim active','warn']],
+      journeys:[['ทันที','SMS เลขเคลม + ลิงก์ติดตามสถานะ'],['เมื่อขอเอกสาร','LINE/SMS ลิงก์ส่งใบรับรองแพทย์'],['ปิด Ticket','SMS ยอดโอน + CSAT']]},
+    bo:{dept:'Claims – Health',user:'คุณปกรณ์ ใจเย็น (CH-045)',ini:'ปจ',ola:'5 วันทำการ (คปภ. ≤ 15 วัน)',created:'07/10 09:25',full:true,
+      queue:[['TK-2569-104230','คุณสมศรี · OPD กายภาพ','Low'],['TK-2569-104262','คุณกฤษณ์ · Fast-track (ร้องเรียน)','Urgent'],['TK-2569-104011','คุณชัยวัฒน์ · IPD ผ่าตัดไส้ติ่ง','Medium']],
+      actions:[{at:'07/10 10:10',t:'รับเรื่อง (Accept)',note:'เปิดเคลม CLM-H-2569-0301 · ใบเสร็จ 3 ไฟล์จากแอป',status:'In progress'},
+       {at:'07/10 10:35',t:'ตรวจใบเสร็จและสิทธิ์ความคุ้มครอง',note:'OCR ใบเสร็จ · ค่าห้อง/ค่าผ่าตัดอยู่ในวงเงิน · ไม่อยู่ในระยะรอคอย',status:'In progress'},
+       {at:'07/10 10:40',t:'ขอใบรับรองแพทย์ฉบับจริง',note:'ส่งลิงก์ทาง SMS · SLA หยุดนับระหว่างรอลูกค้า',status:'Pending customer',pause:true},
+       {at:'08/10 14:20',t:'ลูกค้าส่งใบรับรองแพทย์ทางแอป',note:'ภาพชัด · ลายมือชื่อแพทย์ครบ · SLA นับต่อ',status:'In progress',by:'customer'},
+       {at:'09/10 11:00',t:'Medical review อนุมัติ',note:'แพทย์ที่ปรึกษา: ตรงข้อบ่งชี้ · อนุมัติ ฿42,750 เต็มจำนวน',status:'In progress'},
+       {at:'10/10 14:00',t:'Finance โอนเงิน',note:'PromptPay ผูกเลขบัตร ปชช. · ฿42,750',status:'Resolved'}],
+      resolution:{code:'Claim paid',note:'อนุมัติและจ่ายเคลม IPD ผ่าตัดต้อกระจก ฿42,750 ภายใน 3 วันทำการหลังเอกสารครบ'},
+      notify:[['SMS','แจ้งยอดโอน ฿42,750 ให้คุณมาลี'],['Email','หนังสือแจ้งผลพิจารณาเคลม (PDF)'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ปิดแล้ว']],
+      events:[['claim.approved','CLM-H-2569-0301 · ฿42,750'],['payment.disbursed','PromptPay · 10/10 14:00']],csat:5}},
+   delivery:{channel:'voice', from:'089-321-6677', route:'IVR กด 4 บริการกรมธรรม์ → Policy Service Queue', wait:'00:35',
+    identity:{status:'matched',method:'Deterministic · ANI ตรงกับเบอร์ที่ซื้อออนไลน์',conf:100},
+    profile:{name:'คุณสุดารัตน์ แสงทอง',ini:'สส',meta:'หญิง · 29 ปี · เมืองเชียงราย',cdp:'CDP-00341207',since:'ลูกค้าใหม่ 16/09/2569',clv:'฿14,500',pref:'Voice, LINE',consent:'PDPA ✓ · Marketing ✓',segments:[['New customer','info'],['Onboarding','acc'],['Delivery issue','warn']]},
+    policies:[{p:'motor',name:'ประกันรถยนต์ชั้น 2+',no:'MT-2569-0341207',d:'Honda City e:HEV · 1กข 8890 เชียงราย',st:'Active · เล่มยังไม่ถึง',exp:'16/09/2570',prem:'฿8,900',warn:true}],
+    claims:[], tickets:[],
+    journey:[['07/10 13:15','Website','ค้นหา "ยังไม่ได้รับกรมธรรม์"'],['30/09 10:00','Logistics','EMS EB123456789TH ตีกลับ: ที่อยู่ไม่ครบ'],['17/09 09:00','Logistics','ส่งเล่มกรมธรรม์ทาง EMS'],['16/09 20:45','Website','ซื้อออนไลน์ · ชำระบัตรเครดิต'],['16/09 20:30','Facebook Ads','คลิกโฆษณาประกันชั้น 2+']],
+    senti:{label:'กังวล',v:-0.2,cls:'warn'}, churn:{v:30,cls:'warn',label:'ปานกลาง'},
+    nba:{title:'ผูก LINE OA รับ e-Policy',kind:'Onboarding',prop:83,price:'ฟรี',script:'"ระหว่างรอเล่ม ดิฉันส่ง e-Policy เข้า LINE ให้ใช้แทนได้ทันที และต่อไปเอกสารทุกฉบับจะส่งเข้า LINE ค่ะ"'},
+    transcript:[['sys','CTI · Screen pop จาก CDP · 0.20 วินาที'],
+      ['c','ซื้อประกันรถมา 3 อาทิตย์แล้วยังไม่ได้เล่มกรมธรรม์เลยค่ะ'],
+      ['a','ขออภัยค่ะคุณสุดารัตน์ ตรวจแล้ว EMS ตีกลับเพราะที่อยู่ไม่มีเลขห้อง กรมธรรม์คุ้มครองแล้วนะคะ ดิฉันส่ง e-Policy ทาง LINE ให้ใช้ได้ทันทีค่ะ'],
+      ['c','ที่อยู่ใหม่เป็นคอนโด ห้อง 305 นะคะ'],
+      ['a','รับทราบค่ะ ส่งต่อทีมจัดส่งให้ยืนยันที่อยู่และส่งเล่มใหม่ทาง Kerry ภายใน 3 วันทำการค่ะ']],
+    ticket:{id:'TK-2569-104295',cat:'Policy Service',sub:'ติดตามเล่มกรมธรรม์ / จัดส่งใหม่',pri:'Medium',sla:4320,slaLabel:'ส่งเล่มใหม่ถึงลูกค้า',team:'Policy Issuance & Delivery',link:'MT-2569-0341207 · EMS EB123456789TH',status:1,
+      ai:'ลูกค้าใหม่ยังไม่ได้รับเล่มกรมธรรม์ MT-2569-0341207 (ซื้อ 16/09) EMS ตีกลับเพราะที่อยู่ไม่มีเลขห้อง ส่ง e-Policy ทาง LINE แล้ว ลูกค้าแจ้งห้อง 305 ส่งต่อทีมจัดส่งยืนยันที่อยู่และส่งใหม่'},
+    sync:{events:[['interaction.completed','Voice · 03:05 นาที · sentiment −0.2 → +0.3'],['document.sent','e-Policy ทาง LINE'],['address.change.requested','เพิ่มเลขห้อง 305 · รอยืนยัน'],['ticket.created','TK-2569-104295 · Policy Service · Medium']],
+      before:[['New customer','info'],['Onboarding','acc']], after:[['New customer','info'],['Onboarding','acc'],['Delivery issue','warn']],
+      journeys:[['ทันที','LINE: e-Policy + ลิงก์ยืนยันที่อยู่'],['ส่งเล่มแล้ว','SMS เลขพัสดุ Kerry'],['ปิด Ticket','CSAT + ต่อ Onboarding journey']]},
+    bo:{dept:'Policy Issuance & Delivery',user:'คุณจิราพร (PD-012)',ini:'จพ',ola:'3 วันทำการ',created:'07/10 13:30',full:true,
+      queue:[['TK-2569-104205','คุณวีระ · ขอเล่มสำรอง','Low'],['TK-2569-104150','คุณอนุชา · แก้ชื่อในกรมธรรม์','Low'],['TK-2569-104090','EMS ตีกลับ 4 ราย (Batch)','Medium']],
+      actions:[{at:'07/10 13:50',t:'รับเรื่อง (Accept)',note:'เห็น e-Policy ส่งแล้วจาก Contact Center',status:'In progress'},
+       {at:'07/10 14:05',t:'ตรวจสถานะพัสดุ',note:'EMS EB123456789TH ตีกลับ 30/09 · เหตุผล: ไม่มีเลขห้อง',status:'In progress'},
+       {at:'07/10 14:10',t:'ยืนยันที่อยู่ใหม่กับลูกค้า',note:'ส่งแบบฟอร์มยืนยันที่อยู่ทาง LINE · SLA หยุดนับระหว่างรอลูกค้า',status:'Pending customer',pause:true},
+       {at:'07/10 18:40',t:'ลูกค้ายืนยันที่อยู่',note:'ห้อง 305 อาคาร B · อัปเดต Core + CDP',status:'In progress',by:'customer'},
+       {at:'08/10 10:00',t:'พิมพ์เล่มใหม่ + ส่ง Kerry',note:'KEX-TH-88213450 · ETA 10/10',status:'In progress'},
+       {at:'10/10 11:42',t:'ลูกค้าได้รับเล่ม',note:'Kerry: ส่งสำเร็จ · ลายเซ็นผู้รับ',status:'Resolved'}],
+      resolution:{code:'Delivered – re-sent',note:'แก้ที่อยู่ (เพิ่มเลขห้อง) ส่งเล่มกรมธรรม์ใหม่ทาง Kerry ลูกค้าได้รับ 10/10/2569'},
+      notify:[['SMS','เลขพัสดุ + แจ้งส่งสำเร็จให้คุณสุดารัตน์'],['Agent','แจ้งพรทิพย์ (A-217): Ticket ปิดแล้ว']],
+      events:[['address.updated','Core Policy + CDP · ห้อง 305'],['document.delivered','KEX-TH-88213450']],csat:4}}
+  }
+});
+
+const STEPS=['สาย/แชทเข้า','CDP Pop-up','จัดการ & Ticket','Wrap-up & CDP Sync','ส่วนงานรับเรื่อง & ปิด Ticket'];
 const STATUS=['New','In progress','Escalated','Resolved'];
-const st={view:'launcher',sc:0,step:0,searched:false,sub:'pol',tStatus:1,summary:'',convoShown:0,nba:null,created:[]};
+const st={view:'launcher',sc:0,variant:null,bo:0,boClosed:false,step:0,searched:false,sub:'pol',tStatus:1,summary:'',convoShown:0,nba:null,created:[]};
 let timers=[];
 const $=s=>document.querySelector(s);
 const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[]};
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const sc=()=>S[st.sc];
+const scOf=(i,v)=>{const s=S[i];if(!s.variants)return s;const k=v&&s.variants[v]?v:s.variantList[0][0];return {...s,...s.variants[k]};};
+const sc=()=>scOf(st.sc,st.variant);
 const chip=([t,c])=>`<span class="chip ${c||''}">${t}</span>`;
 const chBadge=ch=>`<span class="ch-badge ${CH[ch].cls}">${CH[ch].icon}${CH[ch].short}</span>`;
 const idChip=s=>{const i=s.identity2&&st.searched?s.identity2:s.identity;
-  return {matched:`<span class="chip good">Matched · ${i.conf}%</span>`,anonymous:`<span class="chip info">Anonymous → Probable · ${i.conf}%</span>`,unknown:`<span class="chip">ไม่พบในฐานลูกค้า</span>`,thirdparty:`<span class="chip warn">Third-party · ${i.conf}%</span>`}[i.status]};
+  return {matched:`<span class="chip good">Matched · ${i.conf}%</span>`,anonymous:`<span class="chip info">Anonymous → Probable · ${i.conf}%</span>`,unknown:`<span class="chip">ไม่พบในฐานลูกค้า</span>`,withheld:`<span class="chip">ไม่แสดงหมายเลข</span>`,kyc:`<span class="chip good">Verified · บัตร ปชช. + วันเกิด</span>`,thirdparty:`<span class="chip warn">Third-party · ${i.conf}%</span>`}[i.status]};
 
 /* ===== Views ===== */
 function setView(v){st.view=v;document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
@@ -590,32 +845,38 @@ function setView(v){st.view=v;document.querySelectorAll('.tab').forEach(b=>b.set
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 
 function renderLauncher(){
-  $('#scenGrid').innerHTML=S.map((s,i)=>`<article class="scen">
-    <div class="scen-top"><span class="scen-num">SCENARIO ${i+1}</span>${chBadge(s.channel)}</div>
+  $('#scenGrid').innerHTML=S.map((s0,i)=>{const s=scOf(i);return `<article class="scen">
+    <div class="scen-top"><span class="scen-num">SCENARIO ${i+1}</span>${s0.variants&&!s0.channel?'<span class="chips">'+[...new Set(s0.variantList.map(v=>s0.variants[v[0]].channel))].map(chBadge).join('')+'</span>':chBadge(s.channel)}</div>
     <h3>${s.title}</h3>
-    <div class="chips">${chip([TYPE[s.type].label,TYPE[s.type].cls])}<span class="chip">${s.ticket.cat}</span></div>
+    <div class="chips">${chip([TYPE[s.type].label,TYPE[s.type].cls])}${s0.variants?s0.variantList.map(v=>chip([v[1],''])).join(''):`<span class="chip">${s.ticket.cat}</span>`}</div>
     <div class="who">${s.who}</div>
     <ul>${s.notes.map(n=>`<li>${n}</li>`).join('')}</ul>
-    <div class="foot"><span class="mono muted">${s.ticket.pri} · SLA ${fmtSla(s.ticket.sla)}</span><button class="btn sm primary" data-go="${i}" type="button">เริ่ม Demo →</button></div>
-  </article>`).join('');
-  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{startScenario(+b.dataset.go);setView('desk')});
+    <div class="foot">${s0.variants?`<span class="mono muted">${s0.variantList.length} แบบ</span><div class="vars">${s0.variantList.map(v=>`<button class="btn sm primary" data-go="${i}" data-var="${v[0]}" type="button">${v[1]} →</button>`).join('')}</div>`:`<span class="mono muted">${s.ticket.pri} · SLA ${fmtSla(s.ticket.sla)}</span><button class="btn sm primary" data-go="${i}" type="button">เริ่ม Demo →</button>`}</div>
+  </article>`}).join('');
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{startScenario(+b.dataset.go,b.dataset.var);setView('desk')});
 }
-const fmtSla=m=>m>=60?(m%60?`${Math.floor(m/60)} ชม. ${m%60} น.`:`${m/60} ชม.`):`${m} นาที`;
+const fmtSla=m=>m>=1440?`${m/1440} วัน`:m>=60?(m%60?`${Math.floor(m/60)} ชม. ${m%60} น.`:`${m/60} ชม.`):`${m} นาที`;
 
 /* ===== Agent desktop ===== */
-function startScenario(i){clearTimers();Object.assign(st,{sc:i,step:0,searched:false,sub:'pol',tStatus:S[i].ticket.status,summary:'',convoShown:0,nba:null});
+function startScenario(i,v){clearTimers();const vv=S[i].variants?(v&&S[i].variants[v]?v:S[i].variantList[0][0]):null;
+  Object.assign(st,{sc:i,variant:vv,bo:0,boClosed:false,step:0,searched:false,sub:'pol',tStatus:scOf(i,vv).ticket.status,summary:'',convoShown:0,nba:null});
   $('#modalHost').innerHTML='';renderDesk();renderToast();}
 function renderPresenter(){
-  $('#scenPick').innerHTML=S.map((s,i)=>`<button type="button" aria-pressed="${i===st.sc}" data-pick="${i}" title="${s.title}">${i+1} · ${CH[s.channel].short}</button>`).join('');
+  $('#scenPick').innerHTML=S.map((s,i)=>`<button type="button" aria-pressed="${i===st.sc}" data-pick="${i}" title="${s.title}">${i+1} · ${s.pick}</button>`).join('');
   document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>startScenario(+b.dataset.pick));
+  const s0=S[st.sc],vp=$('#varPick');vp.hidden=!s0.variants;
+  vp.innerHTML=s0.variants?s0.variantList.map(v=>`<button type="button" data-var="${v[0]}" aria-pressed="${v[0]===st.variant}">${v[1]}</button>`).join(''):'';
+  vp.querySelectorAll('[data-var]').forEach(b=>b.onclick=()=>startScenario(st.sc,b.dataset.var));
   $('#steps').innerHTML=STEPS.map((t,i)=>`<span class="step ${i<st.step?'done':i===st.step?'now':''}"><b>${i+1}</b>${t}</span>`).join('');
   const nb=$('#btnNext');
-  nb.textContent=['รับสาย →','เปิด Workspace →','จบ & Wrap-up →','Scenario ถัดไป →'][st.step];
+  const bo=sc().bo;
+  nb.textContent=['รับสาย →','เปิด Workspace →','จบ & Wrap-up →','ส่งต่อส่วนงาน →',st.boClosed?'Scenario ถัดไป →':st.bo<bo.actions.length?'ทำขั้นถัดไป →':'ปิด Ticket →'][st.step];
   nb.disabled=st.step===1&&sc().identity2&&!st.searched;
-  $('#agentDot').className='dot'+(st.step>0&&st.step<3?' busy':'');
-  $('#agentState').textContent=st.step===0?'Ready':st.step<3?'On '+CH[sc().channel].short:'Wrap-up';
+  $('#agentDot').className='dot'+(st.step>0&&st.step<3||st.step===4&&!st.boClosed?' busy':'');
+  $('#agentState').textContent=st.step===0?'Ready':st.step<3?'On '+CH[sc().channel].short:st.step===3?'Wrap-up':'Back Office';
+  $('#agentAv').textContent=st.step===4?bo.ini:'พร';$('#agentName').textContent=st.step===4?bo.user+' · '+bo.dept:'พรทิพย์ (Agent #A-217)';
 }
-$('#btnNext').onclick=()=>{ if(st.step===0)accept(); else if(st.step===1)openWorkspace(); else if(st.step===2)wrapUp(); else startScenario((st.sc+1)%S.length);};
+$('#btnNext').onclick=()=>{ if(st.step===0)accept(); else if(st.step===1)openWorkspace(); else if(st.step===2)wrapUp(); else if(st.step===3)openBackOffice(); else if(!st.boClosed)boNext(); else startScenario((st.sc+1)%S.length);};
 $('#btnReset').onclick=()=>startScenario(st.sc);
 
 function renderToast(){
@@ -628,7 +889,7 @@ function renderToast(){
     <div class="toast-f"><button class="btn" type="button" id="tDecline">ปฏิเสธ</button><button class="btn good" type="button" id="tAccept">${s.channel==='voice'?'รับสาย':'รับแชท'}</button></div></div>`;
   $('#tAccept').onclick=accept; $('#tDecline').onclick=()=>{$('#toastHost').innerHTML='';};
 }
-function accept(){st.step=1;$('#toastHost').innerHTML='';renderPresenter();startCallTimer();renderModalCDP();}
+function accept(){st.step=1;$('#toastHost').innerHTML='';renderDesk();startCallTimer();renderModalCDP();}
 
 let callSec=0;
 function startCallTimer(){callSec=0;const t=setInterval(()=>{callSec++;const el=$('#callTimer');if(el)el.textContent=mmss(callSec)},1000);timers.push(t);}
@@ -636,6 +897,7 @@ const mmss=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padSta
 
 function cdpBody(s){
   const unknown=s.identity2&&!st.searched;
+  if(unknown&&s.kyc) return kycForm(s);
   if(unknown) return `<div class="idres"><span class="avatar" style="background:var(--surface-2);color:var(--muted)">?</span><div><h2>${s.from}</h2><div class="muted">${s.identity.method}</div></div><div class="conf">${idChip(s)}</div></div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
       <div><span class="eyebrow">ค้นหาคู่กรณี / บุคคลภายนอก</span><p class="muted" style="margin:.3em 0 0">ถามผู้ติดต่อว่าโทรเกี่ยวกับเคลมไหน แล้วค้นด้วยทะเบียนรถหรือเลขเคลม</p></div>
@@ -644,7 +906,7 @@ function cdpBody(s){
       <div class="mini"><div class="row"><span class="muted">ไม่ใช่คู่กรณี?</span><button class="btn sm" type="button" disabled>สร้างเป็น Prospect ใหม่</button></div></div>
     </div>`;
   const p=s.profile, i=s.identity2&&st.searched?s.identity2:s.identity;
-  return `<div class="idres"><span class="avatar">${p.ini}</span><div style="min-width:0"><h2>${p.name}</h2><div class="muted">${p.meta}</div><div class="chips" style="margin-top:6px">${chip([TYPE[s.type].label,TYPE[s.type].cls])}${p.segments.map(chip).join('')}</div></div>
+  return `${s.kyc?mappingBlock(s):''}<div class="idres"><span class="avatar">${p.ini}</span><div style="min-width:0"><h2>${p.name}</h2><div class="muted">${p.meta}</div><div class="chips" style="margin-top:6px">${chip([TYPE[s.type].label,TYPE[s.type].cls])}${p.segments.map(chip).join('')}</div></div>
     <div class="conf"><div>${idChip(s)}</div><div class="muted" style="font-size:12px;margin-top:4px">${i.method}</div><div class="mono muted" style="font-size:11px;margin-top:2px">${p.cdp}</div></div></div>
   <div class="kv"><div><span>ความสัมพันธ์</span><b>${p.since}</b></div><div><span>Customer Lifetime Value</span><b>${p.clv}</b></div><div><span>Consent</span><b>${p.consent}</b></div></div>
   <div class="modal-b">
@@ -662,6 +924,29 @@ function cdpBody(s){
     </section>
   </div>`;
 }
+function kycForm(s){const k=s.kycData;
+  return `<div class="idres"><span class="avatar" style="background:var(--surface-2);color:var(--muted)">?</span><div><h2>${s.from}</h2><div class="muted">${s.identity.method}</div></div><div class="conf">${idChip(s)}</div></div>
+  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div><span class="eyebrow">ยืนยันตัวตนเพื่อ Map กับ Customer ID</span><p class="muted" style="margin:.3em 0 0">ผู้โทรแจ้งว่าเป็นลูกค้าเดิม ขอเลขบัตรประชาชนและวันเกิดเพื่อค้นหา Customer ID ระบบจะยังไม่แสดงข้อมูลลูกค้าจนกว่าจะยืนยันสำเร็จ</p></div>
+    <form class="kyc" id="kycForm">
+      <div class="field"><label for="kycId">เลขบัตรประชาชน</label><input id="kycId" inputmode="numeric" value="${k.idFull}" autocomplete="off"></div>
+      <div class="field"><label for="kycDob">วันเกิด</label><input id="kycDob" type="date" value="${k.dob}"></div>
+      <button class="btn primary" type="submit">ยืนยันตัวตน & ค้นหา Customer ID</button>
+    </form>
+    <div class="mini">
+      <div class="row"><span class="muted">ข้อมูลไม่ตรง</span>${chip(['ถามเลขกรมธรรม์ / ทะเบียนรถเพิ่ม',''])}</div>
+      <div class="row"><span class="muted">ยืนยันผิด 3 ครั้ง</span>${chip(['ล็อก & ส่งต่อ Supervisor','crit'])}</div>
+      <div class="row"><span class="muted">PDPA</span>${chip(['เลขบัตรเต็มไม่ถูกบันทึกใน log / transcript','info'])}</div>
+    </div>
+  </div>`;}
+function mappingBlock(s){const k=s.kycData,p=s.profile,chg=s.mapMode==='changed';
+  return `<div class="mapblk"><div class="nba-row"><span class="eyebrow">Customer ID Mapping</span>${chip(['Verified · Exact match 100%','good'])}</div>
+    <div class="mapgrid"><div><span>เลขบัตรประชาชน</span><b>${k.idMasked} ✓</b></div><div><span>วันเกิด</span><b>${k.dobTh} ✓</b></div><div><span>Customer ID</span><b>${p.cdp}</b></div></div>
+    ${chg?`<div class="phone-cmp"><span class="muted">เบอร์ในโปรไฟล์</span><s class="mono">${k.oldPhone}</s><span>→</span><span class="muted">เบอร์ที่โทรเข้า</span><b class="mono">${s.from}</b></div>
+    <label class="consent" for="mapPhone" style="background:var(--surface)"><input type="checkbox" id="mapPhone" checked style="margin-top:3px"><span>ผูกเบอร์ใหม่ ${s.from} เข้ากับ Customer ID เป็นเบอร์หลัก (ลูกค้ายืนยันทางวาจา)<br><span class="muted" style="font-size:12px">ระบบส่ง SMS ยืนยันไปเบอร์ใหม่ และแจ้งเตือนไปอีเมลเดิม ${k.email} เพื่อป้องกันการสวมรอย</span></span></label>`
+    :`<div class="phone-cmp"><span class="muted">เบอร์ที่โทรเข้า</span><b>ไม่แสดงหมายเลข</b><span>→</span><span>ผูกเฉพาะ Interaction นี้กับ Customer ID (ไม่มีเบอร์ให้ผูก)</span></div>
+    <div class="muted" style="font-size:12px">เบอร์ในโปรไฟล์ ${k.oldPhone} ส่ง SMS ไม่สำเร็จตั้งแต่ 09/2569 · แนะนำให้ลูกค้าอัปเดตเบอร์ผ่านลิงก์ทางอีเมลหลังวางสาย</div>`}
+  </div>`;}
 function openItems(s){
   const c=s.claims.filter(x=>x.st!=='Closed').map(x=>`<div class="row"><div><b>${x.name}</b><div class="mono muted">${x.no}</div></div>${chip([x.st,x.crit?'crit':'warn'])}</div>`);
   const t=s.tickets.filter(x=>x.st==='Open').map(x=>`<div class="row"><div><b>${x.name}</b><div class="mono muted">${x.no} · ${x.when}</div></div>${chip(['Open','warn'])}</div>`);
@@ -681,14 +966,18 @@ function nbaCard(s,compact){
   </div>`;
 }
 function renderModalCDP(){
-  const s=sc();
+  const s=sc(),body=$('#cdpBody');
+  if(body){body.innerHTML=cdpBody(s);$('#mOpen').disabled=!!(s.identity2&&!st.searched);bindCdpForm();return;}
   $('#modalHost').innerHTML=`<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="CDP Customer Pop-up">
     <div class="modal-h"><div class="title"><span class="cdp-mark">CDP</span>Customer 360 Pop-up ${chBadge(s.channel)}</div><span class="muted mono" style="font-size:12px">ตอบกลับใน 0.21 วินาที · <span id="callTimer">${mmss(callSec)}</span></span></div>
     <div id="cdpBody">${cdpBody(s)}</div>
     <div class="modal-f"><span class="muted" style="font-size:12px">ข้อมูลจาก CDP (Profile, Journey, NBA) + Core Policy/Claims</span><button class="btn primary" type="button" id="mOpen" ${s.identity2&&!st.searched?'disabled':''}>เปิด Workspace & สร้าง Ticket →</button></div>
   </div></div>`;
   $('#mOpen').onclick=openWorkspace;
-  const f=$('#tpForm'); if(f) f.onsubmit=e=>{e.preventDefault();st.searched=true;renderModalCDP();renderPresenter();};
+  bindCdpForm();
+}
+function bindCdpForm(){
+  const f=$('#tpForm')||$('#kycForm'); if(f) f.onsubmit=e=>{e.preventDefault();st.searched=true;renderModalCDP();renderPresenter();};
 }
 
 function openWorkspace(){st.step=2;$('#modalHost').innerHTML='';renderDesk();playConvo();startSla();}
@@ -696,6 +985,7 @@ function openWorkspace(){st.step=2;$('#modalHost').innerHTML='';renderDesk();pla
 function renderDesk(){
   renderPresenter();
   const s=sc(), ws=$('#ws');
+  if(st.step===4){renderBackOffice();return;}
   if(st.step<2){
     ws.innerHTML=`<div class="panel" style="grid-column:1/-1"><div class="idle"><div><span class="eyebrow">${st.step===0?'Agent พร้อมรับสาย':'กำลังดู CDP Pop-up'}</span><h3>${st.step===0?`มี${CH[s.channel].verb} · ${s.from}`:'ตรวจข้อมูลลูกค้าก่อนเริ่มสนทนา'}</h3><p style="max-width:52ch;margin:.4em auto 0">${st.step===0?'กด "รับสาย" บนการแจ้งเตือนมุมขวาบน หรือกด "ขั้นถัดไป" เพื่อเปิด Pop-up ข้อมูลลูกค้าจาก CDP':'Pop-up แสดงข้อมูลลูกค้า 360° ก่อนเริ่มคุย'}</p>
     ${st.step===1?'<p><button class="btn primary" type="button" id="reopen">เปิด Pop-up อีกครั้ง</button></p>':''}</div></div></div>`;
@@ -765,7 +1055,7 @@ function playConvo(){const s=sc();
     c.insertAdjacentHTML('beforeend',msgHtml(s.transcript[st.convoShown-1],s,true));c.scrollTop=c.scrollHeight;},1100);
   timers.push(t);}
 let slaLeft=0;
-const slaText=sec=>sec>=3600?`${Math.floor(sec/3600)}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`:mmss(sec);
+const slaText=sec=>sec>=86400?`${Math.floor(sec/86400)} วัน ${String(Math.floor(sec%86400/3600)).padStart(2,'0')}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`:sec>=3600?`${Math.floor(sec/3600)}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`:mmss(sec);
 function startSla(){const tot=sc().ticket.sla*60;slaLeft=tot;
   const t=setInterval(()=>{slaLeft=Math.max(0,slaLeft-1);const el=$('#slaTimer');if(!el)return;el.textContent=slaText(slaLeft);
     const pct=slaLeft/tot*100;const m=$('#slaMeter');m.querySelector('i').style.width=pct+'%';m.className='meter '+(pct>50?'good':pct>20?'warn':'crit');},1000);timers.push(t);}
@@ -774,7 +1064,7 @@ function startSla(){const tot=sc().ticket.sla*60;slaLeft=tot;
 function wrapUp(){
   const s=sc(),t=s.ticket;clearTimers();st.step=3;renderPresenter();
   if(st.tStatus<1)st.tStatus=1;
-  const rec={id:t.id,name:st.sc===2?'คุณธนพล':s.profile.name,ch:CH[s.channel].short,cat:t.cat,pri:($('#fPri')||{}).value||t.pri,team:t.team,sla:slaText(slaLeft||t.sla*60),status:STATUS[st.tStatus]};
+  const rec={dept:s.bo.dept,id:t.id,name:st.sc===2?'คุณธนพล':s.profile.name,ch:CH[s.channel].short,cat:t.cat,pri:($('#fPri')||{}).value||t.pri,team:t.team,sla:slaText(slaLeft||t.sla*60),status:STATUS[st.tStatus]};
   st.created=st.created.filter(x=>x.id!==rec.id);st.created.unshift(rec);
   const ev=s.sync.events;
   const payload={event:ev[0][0],profile_id:s.profile.cdp.replace('ANON-7f3a91','00318822'),channel:s.channel,ticket_id:t.id,category:t.cat,priority:rec.pri,agent:'A-217',duration_sec:callSec||348,nba:{offer:s.nba.title,response:st.nba||(s.nba.hold?'deferred':'not_offered')},ts:'2026-10-07T14:0'+(st.sc+1)+':12+07:00'};
@@ -786,13 +1076,75 @@ function wrapUp(){
       <section><span class="eyebrow">2 · Segment ที่เปลี่ยน</span><div class="seg-move"><div class="muted" style="font-size:12px">ก่อน</div><div class="chips">${s.sync.before.map(chip).join('')}</div><div class="arrow">↓ อัปเดตแบบ Real-time</div><div class="muted" style="font-size:12px">หลัง</div><div class="chips">${s.sync.after.map(chip).join('')}</div></div></section>
       <section><span class="eyebrow">3 · Journey ที่ถูกสั่งต่อ</span>${s.sync.journeys.map(j=>`<div class="jr"><span class="when">${j[0]}</span><span>${j[1]}</span></div>`).join('')}</section>
     </div>
-    <div class="modal-f"><button class="btn" type="button" id="goDash">ดูใน Supervisor Dashboard</button><button class="btn primary" type="button" id="goNext">Scenario ถัดไป →</button></div>
+    <div class="modal-f"><div class="chips"><button class="btn" type="button" id="goDash">ดูใน Supervisor Dashboard</button><button class="btn" type="button" id="goNext">ข้ามไป Scenario ถัดไป</button></div><button class="btn primary" type="button" id="goBo">ส่งต่อ ${s.bo.dept} → ดูฝั่งผู้รับเรื่อง</button></div>
   </div></div>`;
   $('#goDash').onclick=()=>{$('#modalHost').innerHTML='';setView('dash')};
   $('#goNext').onclick=()=>startScenario((st.sc+1)%S.length);
+  $('#goBo').onclick=openBackOffice;
   ev.forEach((e,i)=>{const el=document.querySelector(`[data-ev="${i}"]`);
     if(reduced){el.className='ev sent';return;}
     timers.push(setTimeout(()=>el.className='ev sending',i*550));timers.push(setTimeout(()=>el.className='ev sent',i*550+450));});
+}
+
+/* ===== Step 5: Back Office — ส่วนงานรับเรื่อง & ปิด Ticket ===== */
+const BO_PIPE=['Assigned','In progress','Pending customer','Resolved','Closed'];
+const stCls={New:'info',Assigned:'','In progress':'acc','Pending customer':'warn',Resolved:'good',Closed:'good'};
+function openBackOffice(){clearTimers();st.step=4;st.bo=0;st.boClosed=false;$('#modalHost').innerHTML='';renderDesk();window.scrollTo({top:0});}
+function boNext(){const b=sc().bo;
+  if(st.bo<b.actions.length){st.bo++;renderDesk();return;}
+  st.boClosed=true;const r=st.created.find(x=>x.id===sc().ticket.id);if(r){r.status='Closed';r.team=b.dept;r.sla='—';}
+  renderDesk();}
+function boState(b){if(st.boClosed)return 'Closed';return st.bo?b.actions[st.bo-1].status:'Assigned';}
+function renderBackOffice(){
+  renderPresenter();
+  const s=sc(),b=s.bo,t=s.ticket,cur=boState(b),paused=cur==='Pending customer',n=b.actions.length;
+  const usedPending=b.actions.some(a=>a.pause);
+  const pipe=BO_PIPE.filter(x=>x!=='Pending customer'||usedPending);
+  const ci=pipe.indexOf(cur);
+  const tl=[[b.created,'Contact Center · พรทิพย์ (A-217)',`สร้าง Ticket จาก ${CH[s.channel].short} · ${t.sub}`,'New'],[b.created,'Routing rule',`ส่งเข้าคิว ${b.dept} อัตโนมัติ (หมวด ${t.cat})`,'Assigned'],
+    ...b.actions.slice(0,st.bo).map(a=>[a.at,a.by==='customer'?'ลูกค้า':b.user,`<b>${a.t}</b> · ${a.note}`,a.status]),
+    ...(st.boClosed?[[b.actions[n-1].at,b.user,`<b>บันทึกผล & ปิด Ticket</b> · ${b.resolution.code}`,'Closed']]:[])];
+  const name=st.sc===2?'คุณธนพล':s.profile.name;
+  const queue=[[t.id,`${name} · ${t.sub}`,t.pri,true],...(b.queue||[['TK-2569-104118','งานค้างในคิว','Low'],['TK-2569-104077','งานค้างในคิว','Medium']])];
+  $('#ws').innerHTML=`<div style="grid-column:1/-1">
+  <div class="bo-banner"><span class="cdp-mark">BACK OFFICE</span><span>มุมมองส่วนงาน <b>${b.dept}</b> · ${b.user}</span><span class="muted">Ticket ที่ Contact Center ส่งต่อมาจะเข้าคิวนี้พร้อมข้อมูลลูกค้าจาก CDP</span></div>
+  <div class="bo-ws">
+   <div class="panel col-q"><div class="panel-h"><h3>คิวงาน</h3><span class="chip">${queue.length} เรื่อง</span></div>
+     ${queue.map(q=>`<div class="q-item ${q[3]?'on':''}"><span class="mono">${q[0]}</span>${chip([q[2],q[2]==='Urgent'?'crit':q[2]==='High'?'warn':q[2]==='Low'?'':'info'])}<span style="grid-column:1/-1">${q[1]}</span></div>`).join('')}
+     <div class="kv" style="border-bottom:0;grid-template-columns:minmax(0,1fr)"><div><span>OLA ของส่วนงาน</span><b>${b.ola}</b></div></div></div>
+   <div class="panel col-tk">
+     <div class="panel-h"><h3>Ticket <span class="mono muted" style="font-weight:400;font-size:13px">${t.id}</span></h3>${chip([cur,stCls[cur]])}</div>
+     <div class="kv"><div><span>ลูกค้า</span><b>${name}</b><span class="mono">${s.profile.cdp}</span></div><div><span>เปิดโดย</span><b>Contact Center</b><span>${CH[s.channel].short} · ${b.created}</span></div><div><span>หมวด</span><b>${t.cat}</b><span>${t.sub}</span></div></div>
+     <div class="pipe-ro">${pipe.map((x,i)=>`<span class="${i===ci?'on'+(paused?' wait':''):i<ci?'past':''}">${x}</span>`).join('')}</div>
+     <div class="sla"><div><span class="eyebrow">SLA / OLA · ${b.ola}</span><div style="margin-top:4px">${st.boClosed?chip(['ปิดภายใน SLA ✓','good']):paused?chip(['SLA หยุดนับ · รอลูกค้า','warn']):chip(['กำลังนับ SLA','acc'])}</div></div><div class="muted" style="font-size:12px;max-width:34ch">เวลาที่รอลูกค้าส่งเอกสารไม่นับรวมใน SLA ของส่วนงาน</div></div>
+     <div class="panel-b" style="border-bottom:1px solid var(--line)"><span class="eyebrow">สรุปจาก Contact Center</span><p style="margin:.4em 0 0;font-size:13px">${st.summary||t.ai}</p></div>
+     <div class="panel-h" style="border-bottom:0;padding-bottom:0"><h3>Timeline</h3><span class="muted" style="font-size:12px">ลูกค้าและ Agent เห็นสถานะเดียวกัน</span></div>
+     <ul class="tl">${tl.map((e,i)=>`<li class="${i===tl.length-1&&st.bo?'new':''}"><span class="when">${e[0]}</span><span>${e[2]}<span class="by">${e[1]} · ${e[3]}</span></span></li>`).join('')}</ul>
+   </div>
+   <div class="panel col-act">
+     <div class="panel-h"><h3>ขั้นตอนของส่วนงาน</h3><span class="muted mono" style="font-size:12px">${Math.min(st.bo,n)}/${n}</span></div>
+     <ul class="checklist">${b.actions.map((a,i)=>{const done=i<st.bo,next=i===st.bo&&!st.boClosed,wait=done&&i===st.bo-1&&a.pause;
+       return `<li class="${wait?'done wait':done?'done':next?'next':''}"><span class="ck">${wait?'!':done?'✓':''}</span><span>${a.t}${a.by==='customer'?' <span class="who">· ลูกค้า</span>':''}${done?`<span class="sub" style="display:block;font-weight:400;color:var(--muted);font-size:12px">${a.at} · ${a.note}</span>`:''}</span></li>`}).join('')}
+       <li class="${st.boClosed?'done':st.bo===n?'next':''}"><span class="ck">${st.boClosed?'✓':''}</span><span>บันทึกผล & ปิด Ticket</span></li></ul>
+     ${st.boClosed?boClosedPanel(s):`<div class="ticket-foot"><span class="muted" style="font-size:12px">${paused?'รอลูกค้าตอบกลับ: กดเพื่อจำลองว่าลูกค้าส่งเอกสารแล้ว':'ทุกขั้นบันทึกลง Timeline อัตโนมัติ'}</span><button class="btn primary" type="button" id="boNext">${st.bo<n?'ทำขั้นถัดไป: '+b.actions[st.bo].t:'บันทึกผล & ปิด Ticket'}</button></div>`}
+   </div>
+  </div></div>`;
+  const nb=$('#boNext');if(nb)nb.onclick=boNext;
+  const g=$('#boDash');if(g)g.onclick=()=>setView('dash');
+  const gn=$('#boNextSc');if(gn)gn.onclick=()=>startScenario((st.sc+1)%S.length);
+}
+function boClosedPanel(s){const b=s.bo;
+  const ev=[['ticket.resolved',`${s.ticket.id} · ${b.resolution.code}`],...b.events,['ticket.closed',`ปิดโดย ${b.user}`],['csat.received',`${b.csat}/5`]];
+  return `<div class="form" style="border-top:1px solid var(--line)">
+    <div class="field"><label for="boCode">Resolution code</label><select id="boCode"><option selected>${b.resolution.code}</option><option>Cancelled by customer</option><option>Duplicate</option></select></div>
+    <div class="field"><label for="boRoot">สาเหตุหลัก</label><select id="boRoot"><option selected>ตามคำขอลูกค้า</option><option>ข้อผิดพลาดภายใน</option><option>บุคคลภายนอก</option></select></div>
+    <div class="field full"><label for="boNote">บันทึกผล</label><textarea id="boNote">${b.resolution.note}</textarea></div></div>
+  <div class="panel-b" style="display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line)">
+    <div><span class="eyebrow">แจ้งผล</span><div class="mini" style="margin-top:6px">${b.notify.map(n=>`<div class="row"><span>${n[1]}</span>${chip([n[0],n[0]==='Agent'?'acc':'info'])}</div>`).join('')}</div></div>
+    <div><span class="eyebrow">Event ที่ส่งเข้า CDP</span><div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">${ev.map(e=>`<div class="ev sent"><span class="st"></span><div><code>${e[0]}</code><span class="d">${e[1]}</span></div></div>`).join('')}</div></div>
+    <div class="nba-row"><span>CSAT จากลูกค้า <span class="stars" aria-label="${b.csat} จาก 5">${'★'.repeat(b.csat)}${'☆'.repeat(5-b.csat)}</span></span>${chip(['CSAT ≤ 2 → Reopen อัตโนมัติ',''])}</div>
+  </div>
+  <div class="ticket-foot"><button class="btn" type="button" id="boDash">ดูใน Supervisor Dashboard</button><button class="btn primary" type="button" id="boNextSc">Scenario ถัดไป →</button></div>`;
 }
 
 /* ===== Architecture ===== */
@@ -802,7 +1154,7 @@ function renderArch(){
     ${items.map((t,i)=>`<text x="${x+14}" y="${y+48+i*20}" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans Thai,sans-serif">• ${t}</text>`).join('')}</g>`;
   const arr=(x1,y1,x2,y2,c,dash,label,lx,ly)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--${c})" stroke-width="2" ${dash?'stroke-dasharray="6 5"':''} marker-end="url(#ah-${c})"/>${label?`<text x="${lx}" y="${ly}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace" text-anchor="middle">${label}</text>`:''}`;
   const mk=c=>`<marker id="ah-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--${c})"/></marker>`;
-  $('#archWrap').innerHTML=`<svg viewBox="0 0 1160 520" role="img" aria-label="แผนภาพสถาปัตยกรรม CRM เชื่อม CDP">
+  $('#archWrap').innerHTML=`<svg viewBox="0 0 1160 580" role="img" aria-label="แผนภาพสถาปัตยกรรม CRM เชื่อม CDP">
   <defs>${mk('accent')}${mk('gold')}${mk('faint')}</defs>
   <text x="30" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">CHANNELS</text>
   <text x="250" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">ENGAGEMENT</text>
@@ -813,14 +1165,17 @@ function renderArch(){
   ${box(30,250,170,80,'Facebook',['Messenger API','PSID · Keyword'])}
   ${box(30,370,170,100,'Digital touchpoints',['Website / App','Facebook Ads','Premium calculator'])}
   ${box(250,50,250,180,'Omnichannel CRM',['Routing / ACD / Priority queue','Agent Desktop + Pop-up','Ticket · SLA · Escalation','AI summary · Knowledge base','Wrap-up · Disposition'],'accent-soft')}
-  ${box(250,260,250,90,'Supervisor & QA',['Real-time dashboard','Speech analytics / CSAT'])}
+  ${box(250,262,250,110,'Back Office (ส่วนงาน)',['Underwriting · Claims','Policy Issuance & Delivery','Finance · Work queue + OLA'],'surface-2')}
+  ${box(250,400,250,90,'Supervisor & QA',['Real-time dashboard','Speech analytics / CSAT'])}
+  ${arr(375,232,375,260,'accent',false,'assign / status',440,250)}
+  ${arr(500,292,558,292,'gold',true,'',0,0)}
   ${box(560,50,290,290,'CDP (Customer Data Platform)',['Identity Resolution','  Deterministic + Probabilistic','Unified Profile 360°','Segments (Real-time)','Scoring: Churn · Propensity · Lead','Next Best Action engine','Consent & PDPA vault','Journey Orchestration','Third-party profiles (คู่กรณี)'],'gold-soft')}
   ${box(900,50,230,90,'Policy Admin (Core)',['กรมธรรม์ · เบี้ย · ต่ออายุ'])}
   ${box(900,160,230,90,'Claims System',['เคลม · คู่กรณี · อู่ในเครือ'])}
   ${box(900,270,230,70,'Billing / Payment',['PromptPay · บัตร'])}
   ${box(560,380,570,90,'Outbound actions (จาก Journey)',['LINE Flex · SMS · Email · Messenger · Callback task · Ads audience'])}
   ${arr(200,90,248,110,'accent')}${arr(200,190,248,160,'accent')}${arr(200,290,248,200,'accent')}
-  <path d="M200 440 H530 V300 H556" fill="none" stroke="var(--faint)" stroke-width="2" marker-end="url(#ah-faint)"/><text x="380" y="432" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace" text-anchor="middle">web/app events</text>
+  <path d="M115 470 V540 H535 V330 H556" fill="none" stroke="var(--faint)" stroke-width="2" marker-end="url(#ah-faint)"/><text x="330" y="532" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace" text-anchor="middle">web/app events</text>
   ${arr(500,110,558,110,'accent',false,'lookup',529,100)}
   ${arr(558,150,502,150,'accent',false,'profile+NBA',529,168)}
   ${arr(500,200,558,225,'gold',true,'events',522,232)}
