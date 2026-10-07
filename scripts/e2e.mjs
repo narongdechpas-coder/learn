@@ -1,0 +1,176 @@
+// End-to-end check of the main journeys against the built dist/index.html.
+// Usage: npm run build && npm test   (SHOTS=dir to also save screenshots)
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFileSync, mkdirSync } from 'node:fs';
+import assert from 'node:assert/strict';
+
+const html = readFileSync('dist/index.html');
+const server = createServer((_, res) => {
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+  res.end(html);
+}).listen(0);
+const url = `http://127.0.0.1:${server.address().port}/`;
+const shots = process.env.SHOTS;
+if (shots) mkdirSync(shots, { recursive: true });
+
+const executablePath = process.env.CHROMIUM_PATH || undefined; // e.g. /opt/pw-browsers/chromium
+const browser = await chromium.launch({ executablePath });
+const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+const errors = [];
+const watch = (p) => {
+  p.on('pageerror', (e) => errors.push(e.message));
+  p.on('console', (m) => m.type() === 'error' && !/fonts\.g/.test(m.text()) && !/ERR_/.test(m.text()) && errors.push(m.text()));
+};
+
+const jpg = (name, size = 2048) => ({ name, mimeType: 'image/jpeg', buffer: Buffer.alloc(size, 0xff) });
+let step = 0;
+const log = (s) => console.log(`  ${++step}. ${s}`);
+
+const customer = await ctx.newPage();
+watch(customer);
+await customer.goto(url + '#customer');
+const office = await ctx.newPage();
+watch(office);
+await office.goto(url + '#backoffice');
+await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
+log('customer and back-office tabs open');
+
+// ---- Path A: choose a package (Class 1) ----
+await customer.bringToFront();
+await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await customer.getByRole('heading', { name: /แพ็กเกจสำหรับ Toyota Yaris Ativ 2022/ }).waitFor();
+const cards = customer.locator('.pkg-card');
+assert.ok((await cards.count()) >= 6, 'expected several packages');
+await customer.getByRole('radio', { name: 'ชั้น 1' }).click();
+if (shots) await customer.screenshot({ path: `${shots}/1-packages.png`, fullPage: true });
+await cards.first().getByRole('button', { name: 'เลือกแพ็กเกจนี้', exact: true }).click();
+assert.equal(await customer.locator('#f-firstName').inputValue(), 'สมชาย', 'form is prefilled');
+// validation
+await customer.locator('#f-phone').fill('123');
+await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
+await customer.getByText('เบอร์มือถือต้องมี 10 หลัก').waitFor();
+await customer.locator('#f-phone').fill('0812345678');
+await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
+const refA = (await customer.locator('.ref-big').innerText()).trim();
+assert.match(refA, /^ABC-\d{4}-\d{4}$/);
+log(`package case submitted: ${refA}`);
+
+// back office tab gets a realtime toast + bell
+await office.locator('.toast', { hasText: refA }).waitFor({ timeout: 5000 });
+log('back office received realtime toast');
+
+// email to customer and staff
+const emails = await customer.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')).emails.map((e) => e.template));
+assert.ok(emails.includes('custReceived') && emails.includes('staffNewCase'));
+log('confirmation + staff emails generated');
+
+// customer uploads documents: 6 required for Class 1
+await customer.getByRole('button', { name: 'ติดตามคำขอ / แนบเอกสาร', exact: true }).click();
+const tiles = customer.locator('.uploads .doc-tile');
+assert.equal(await tiles.count(), 6, 'Class 1 asks for 6 documents');
+const inputs = customer.locator('.uploads input[type=file]');
+await inputs.nth(0).setInputFiles({ name: 'front.png', mimeType: 'image/png', buffer: Buffer.alloc(100) });
+await customer.getByText('รับเฉพาะไฟล์ .jpg').waitFor();
+await inputs.nth(0).setInputFiles(jpg('big.jpg', 3 * 1024 * 1024 + 10));
+await customer.getByRole('alert').filter({ hasText: 'big.jpg' }).waitFor();
+log('rejects .png and files over 3MB');
+for (let i = 0; i < 6; i++) {
+  await inputs.nth(i).setInputFiles(jpg(`doc${i}.jpg`));
+  await customer.locator('.uploads .doc-tile.has').nth(i).waitFor();
+}
+await customer.getByText('เอกสารครบแล้ว').waitFor();
+if (shots) await customer.screenshot({ path: `${shots}/2-track.png`, fullPage: true });
+log('all 6 documents uploaded');
+
+// back office: accept → docs review → issue
+await office.bringToFront();
+await office.locator('#bo-q').fill(refA);
+await office.locator('.case-row', { hasText: refA }).click();
+await office.getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'ตรวจเอกสาร' }).waitFor();
+assert.equal(await office.locator('.case-detail .doc-thumb img').count(), 6, 'staff sees uploaded images');
+await office.getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor();
+log('back office accepted and issued the policy');
+await customer.bringToFront();
+await customer.getByText(/ออกกรมธรรม์แล้ว เลขที่/).waitFor({ timeout: 5000 });
+log('customer tab updated to issued');
+
+// ---- Path B: no package → quote request (Class 2+, 2 docs) ----
+await customer.getByRole('tab', { name: 'ซื้อประกัน' }).click();
+await customer.getByRole('button', { name: 'เริ่มคำขอใหม่', exact: true }).click().catch(() => {});
+await customer.getByRole('radio', { name: 'Mazda' }).click();
+await customer.locator('#car-model').selectOption('mazda-mx-5');
+await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await customer.getByText('ยังไม่มีแพ็กเกจสำเร็จรูปสำหรับรถคันนี้').waitFor();
+await customer.getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
+await customer.locator('#q-type').selectOption('T2P');
+await customer.getByRole('button', { name: /ถัดไป/ }).click();
+await customer.getByRole('button', { name: 'ส่งคำขอเสนอราคา', exact: true }).click();
+const refB = (await customer.locator('.ref-big').innerText()).trim();
+log(`quote request submitted: ${refB}`);
+
+await office.bringToFront();
+await office.locator('#bo-q').fill(refB);
+await office.locator('.case-row', { hasText: refB }).click();
+await office.getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
+await office.locator(`#qp-${refB}`).fill('9990');
+await office.getByRole('button', { name: 'ส่งใบเสนอราคา', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'เสนอราคาแล้ว' }).waitFor();
+if (shots) await office.screenshot({ path: `${shots}/3-backoffice.png` });
+log('back office sent quote');
+
+await customer.bringToFront();
+await customer.getByRole('button', { name: 'ติดตามคำขอ / แนบเอกสาร', exact: true }).click();
+await customer.getByText('ใบเสนอราคาพร้อมแล้ว').waitFor({ timeout: 5000 });
+await customer.getByRole('button', { name: 'ยืนยันซื้อ', exact: true }).click();
+const inputsB = customer.locator('.uploads input[type=file]');
+assert.equal(await inputsB.count(), 2, 'Class 2+ asks for 2 documents, no car photos');
+await inputsB.nth(0).setInputFiles(jpg('reg.jpg'));
+await customer.locator('.uploads .doc-tile.has').first().waitFor();
+await inputsB.nth(1).setInputFiles(jpg('id.jpg'));
+await customer.getByText('เอกสารครบแล้ว').waitFor();
+log('customer accepted quote and uploaded 2 documents');
+
+await office.bringToFront();
+await office.locator('.case-detail .pill', { hasText: 'ตรวจเอกสาร' }).waitFor({ timeout: 5000 });
+await office.getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor();
+log('quote case issued');
+
+// ---- Dashboard + language ----
+await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await office.getByRole('heading', { name: 'Performance Report' }).waitFor();
+const kpi = await office.locator('.kpi-value').first().innerText();
+assert.ok(Number(kpi.replace(/\D/g, '')) > 0, 'dashboard shows issued policies');
+assert.ok((await office.locator('.chart .bar').count()) > 5, 'production chart has bars');
+assert.equal(await office.locator('.funnel li').count(), 6);
+if (shots) await office.screenshot({ path: `${shots}/4-dashboard.png`, fullPage: true });
+await office.getByRole('radio', { name: 'EN' }).click();
+await office.getByText('Policies issued', { exact: true }).waitFor();
+await office.getByRole('button', { name: 'Customer', exact: true }).waitFor();
+log('dashboard renders and switches to English');
+
+await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
+await office.locator('.mail-row', { hasText: refB }).first().waitFor();
+log('mailbox lists the emails');
+
+if (shots) {
+  await office.emulateMedia({ colorScheme: 'dark' });
+  await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await office.screenshot({ path: `${shots}/5-dashboard-dark.png`, fullPage: true });
+  const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await phone.goto(url + '#customer');
+  await phone.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+  await phone.screenshot({ path: `${shots}/6-phone.png`, fullPage: true });
+  const overflow = await phone.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  assert.equal(overflow, false, 'no horizontal scroll on phone');
+  await phone.goto(url + '#dashboard');
+  await phone.screenshot({ path: `${shots}/7-phone-dash.png`, fullPage: true });
+}
+
+assert.deepEqual(errors, [], 'no console errors');
+console.log('\nAll checks passed');
+await browser.close();
+server.close();
