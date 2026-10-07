@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Case, CoverageType, Source, Stage } from '../types';
-import { BRANDS, STAFF, staffById, vehicleLabel } from '../data/vehicles';
+import { BRANDS, STAFF, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES } from '../data/packages';
 import { COVERAGE_LABEL, SLA_LABEL, STAGE_LABEL, fmtBaht, fmtCompactBaht, fmtDate, fmtDateTime, fmtMinutes, fmtNum, useT } from '../i18n';
 import { useStore } from '../store';
@@ -309,7 +309,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
                 <li key={c.id}>
                   <button type="button" className="overdue-row" onClick={() => onOpenCase(c.id)}>
                     <span className="num ref">{c.id}</span>
-                    <span className="muted">{vehicleLabel(c.vehicle.modelId, c.vehicle.year)}</span>
+                    <span className="muted">{vehicleText(c.vehicle)}</span>
                     <span className="muted">{staffById(c.assignee)?.[lang] ?? '—'}</span>
                     <SlaChip r={r!} />
                   </button>

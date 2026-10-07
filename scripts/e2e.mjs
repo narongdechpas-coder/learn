@@ -51,6 +51,10 @@ await seeBtn.click();
 await customer.getByRole('heading', { name: /แพ็กเกจสำหรับ Toyota Yaris Ativ 2022/ }).waitFor();
 const cards = customer.locator('.pkg-card');
 assert.ok((await cards.count()) >= 6, 'expected several packages');
+const cols = await customer.locator('.pkg-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+assert.equal(cols, 4, 'packages in 4 columns on desktop');
+const ctaY = (await customer.locator('.quote-cta.top').boundingBox()).y;
+assert.ok(ctaY < (await cards.first().boundingBox()).y, 'quote bar sits above the packages');
 await customer.getByRole('radio', { name: 'ชั้น 1' }).click();
 if (shots) await customer.screenshot({ path: `${shots}/1-packages.png`, fullPage: true });
 await cards.first().getByRole('button', { name: 'เลือกแพ็กเกจนี้', exact: true }).click();
@@ -165,6 +169,31 @@ log('dashboard renders and switches to English');
 await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
 await office.locator('.mail-row', { hasText: refB }).first().waitFor();
 log('mailbox lists the emails');
+
+// ---- Path C: car not in the list → typed in → quote request ----
+await customer.bringToFront();
+await customer.getByRole('tab', { name: 'ซื้อประกัน' }).click();
+await customer.getByRole('button', { name: 'เริ่มคำขอใหม่', exact: true }).click().catch(() => {});
+await customer.locator('.quote-cta.subtle').getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
+await customer.getByRole('button', { name: /ถัดไป/ }).click();
+await customer.getByText('กรุณากรอกยี่ห้อ รุ่น และปีรถให้ครบ').waitFor();
+await customer.locator('#c-brand').fill('Volvo');
+await customer.locator('#c-model').fill('XC60');
+await customer.locator('#c-year').selectOption('2021');
+await customer.locator('#c-body').selectOption('suv');
+await customer.getByRole('button', { name: /ถัดไป/ }).click();
+await customer.getByText('กรุณาระบุทุนประกันที่ต้องการ').waitFor();
+await customer.locator('#q-si').fill('1500000');
+await customer.getByRole('button', { name: /ถัดไป/ }).click();
+await customer.getByText('Volvo XC60 2021').waitFor();
+await customer.getByRole('button', { name: 'ส่งคำขอเสนอราคา', exact: true }).click();
+const refC = (await customer.locator('.ref-big').innerText()).trim();
+await office.bringToFront();
+await office.locator('.mainnav .nav-backoffice').click();
+await office.locator('#bo-q').fill(refC);
+await office.locator('.case-row', { hasText: 'Volvo XC60 2021' }).click();
+await office.getByText('Not in catalogue').waitFor();
+log(`car not in catalogue sent as quote request: ${refC}`);
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });

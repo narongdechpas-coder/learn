@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Case, CoverageType, DocKey, Status } from '../types';
-import { STAFF, modelById, staffById, vehicleLabel } from '../data/vehicles';
+import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDateTime, useT, type TKey } from '../i18n';
 import {
@@ -172,7 +172,7 @@ export function BackOffice({
                       </div>
                       <div className="cr-mid">
                         <b>{c.customer.firstName} {c.customer.lastName}</b>
-                        <span className="muted">{vehicleLabel(c.vehicle.modelId, c.vehicle.year)}</span>
+                        <span className="muted">{vehicleText(c.vehicle)}</span>
                       </div>
                       <div className="cr-bot">
                         <TypeTag type={c.coverage} />
@@ -220,7 +220,7 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
 
 function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; now: number; onClose: () => void }) {
   const { t, lang } = useT();
-  const model = modelById(c.vehicle.modelId);
+  const model = modelOfVehicle(c.vehicle);
   const suggested = estimateQuote(model, c.desiredSI ?? c.vehicle.sumInsured, c.coverage);
   const [price, setPrice] = useState<number>(c.quotedPremium ?? suggested);
   const [mode, setMode] = useState<null | 'cancel' | 'reupload'>(null);
@@ -241,6 +241,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <StatusPill status={c.status} />
             <TypeTag type={c.coverage} />
             {c.addCmi && <span className="chip">{t('plusCmi')}</span>}
+            {c.vehicle.custom && <span className="pill tone-wait">{t('customCarTag')}</span>}
           </div>
         </div>
         <button type="button" className="btn ghost small" onClick={onClose} aria-label="close">×</button>
@@ -316,7 +317,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         <section>
           <h4>{t('vehicleInfo')}</h4>
           <dl className="kv">
-            <dt>{t('car')}</dt><dd>{vehicleLabel(c.vehicle.modelId, c.vehicle.year)}</dd>
+            <dt>{t('car')}</dt><dd>{vehicleText(c.vehicle)}</dd>
             <dt>{t('plate')}</dt><dd>{c.customer.plate} · {c.customer.province}</dd>
             <dt>{t('chassis')}</dt><dd className="num">{c.customer.chassis}</dd>
             <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang)}</dd>

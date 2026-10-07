@@ -43,6 +43,8 @@ export interface Vehicle {
   modelId: string;
   year: number;
   sumInsured: number;
+  /** A car that is not in the catalogue, typed in by the customer (quote request only). */
+  custom?: { brand: string; model: string; body: BodyType };
 }
 
 export interface Package {

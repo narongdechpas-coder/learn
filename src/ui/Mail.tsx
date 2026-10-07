@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DocKey, Email } from '../types';
-import { vehicleLabel } from '../data/vehicles';
+import { vehicleText } from '../data/vehicles';
 import { COVERAGE_LABEL, DOC_LABEL, EMAIL_TEXT, SLA_LABEL, fmtBaht, fmtDateTime, translate, useT } from '../i18n';
 import { useStore } from '../store';
 import { Segmented } from './common';
@@ -16,7 +16,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
     const c = s.cases.find((x) => x.id === e.caseId);
     const p: Record<string, string | number> = { ...e.params, ref: e.caseId };
     if (c) {
-      p.car = vehicleLabel(c.vehicle.modelId, c.vehicle.year);
+      p.car = vehicleText(c.vehicle);
       p.type = COVERAGE_LABEL[lang][c.coverage];
       p.source = translate(lang, c.source === 'package' ? 'srcPackage' : 'srcQuote');
     }

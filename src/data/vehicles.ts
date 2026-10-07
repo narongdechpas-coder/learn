@@ -1,4 +1,4 @@
-import type { Brand, CarModel, Staff } from '../types';
+import type { Brand, CarModel, Staff, Vehicle } from '../types';
 
 export const CURRENT_YEAR = 2026;
 
@@ -98,3 +98,14 @@ export const vehicleLabel = (modelId: string, year: number) => {
   const md = modelById(modelId);
   return `${brandById(md.brandId).name} ${md.name} ${year}`;
 };
+
+export const CUSTOM_MODEL_ID = 'custom';
+export const MIN_CUSTOM_YEAR = 1990;
+
+/** Catalogue model for a vehicle, or a stand-in built from what the customer typed. */
+export function modelOfVehicle(v: Vehicle): CarModel {
+  if (!v.custom) return modelById(v.modelId);
+  return { id: CUSTOM_MODEL_ID, brandId: v.brandId, name: v.custom.model, body: v.custom.body, yearFrom: v.year, yearTo: v.year, newPrice: 0, noPackage: true };
+}
+
+export const vehicleText = (v: Vehicle) => (v.custom ? `${v.custom.brand} ${v.custom.model} ${v.year}` : vehicleLabel(v.modelId, v.year));

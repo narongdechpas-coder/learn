@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Case, CoverageType, Customer as CustomerT, DocKey, Package } from '../types';
-import { BRANDS, CURRENT_YEAR, MODELS, PROVINCES, brandById, modelById, modelsOf, suggestedSumInsured, vehicleLabel, yearsOf } from '../data/vehicles';
+import type { BodyType, Case, CoverageType, Customer as CustomerT, DocKey, Package, Vehicle } from '../types';
+import { BRANDS, CURRENT_YEAR, CUSTOM_MODEL_ID, MIN_CUSTOM_YEAR, MODELS, PROVINCES, brandById, modelById, modelsOf, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, cmiPremium, packagesFor } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, fmtBaht, fmtDateTime, fmtSize, useT, type TKey } from '../i18n';
 import { canUpload, customerConfirm, customerDecline, docsMissing, submitCase, totalPremium, uploadDoc, useStore } from '../store';
@@ -83,6 +83,13 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [customer, setCustomer] = useState<CustomerT>(SAMPLE_CUSTOMER);
   const [errors, setErrors] = useState<Partial<Record<keyof CustomerT, string>>>({});
   const [doneId, setDoneId] = useState<string | null>(null);
+  // Car not in the list: the customer types it in and goes straight to a quote request.
+  const [custom, setCustom] = useState(false);
+  const [cBrand, setCBrand] = useState('');
+  const [cModel, setCModel] = useState('');
+  const [cYear, setCYear] = useState(0);
+  const [cBody, setCBody] = useState<BodyType>('sedan');
+  const [quoteErr, setQuoteErr] = useState<string | null>(null);
 
   const picked = modelId ? modelById(modelId) : undefined;
   const ready = !!(brandId && picked && year);
@@ -94,7 +101,11 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
   const source = pkg ? 'package' : 'quote';
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
-  const cmi = cmiPremium(model.body);
+  const vehicle: Vehicle = custom
+    ? { brandId: 'other', modelId: CUSTOM_MODEL_ID, year: cYear, sumInsured: quoteSI, custom: { brand: cBrand.trim(), model: cModel.trim(), body: cBody } }
+    : { brandId, modelId, year, sumInsured: si };
+  const carName = custom || ready ? vehicleText(vehicle) : '';
+  const cmi = cmiPremium(custom ? cBody : model.body);
 
   const pickBrand = (id: string) => {
     if (id === brandId) return;
@@ -115,9 +126,29 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   };
   const goQuote = () => {
     setPkg(null);
+    setCustom(false);
     setQuoteSI(si);
     setQuoteType('T1');
+    setQuoteErr(null);
     setStep('quote');
+  };
+  const goCustomQuote = () => {
+    setPkg(null);
+    setCustom(true);
+    setCBrand(brandId ? brandById(brandId).name : '');
+    setCModel('');
+    setCYear(0);
+    setQuoteSI(0);
+    setQuoteType('T1');
+    setQuoteErr(null);
+    setStep('quote');
+  };
+  const quoteNext = () => {
+    const needsSI = quoteType !== 'T3';
+    if (custom && (!cBrand.trim() || !cModel.trim() || !cYear)) return setQuoteErr(t('errCustomCar'));
+    if (needsSI && !(quoteSI > 0)) return setQuoteErr(t('errSI'));
+    setQuoteErr(null);
+    setStep('form');
   };
 
   const validate = () => {
@@ -136,7 +167,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
     if (!validate()) return;
     const id = submitCase({
       source,
-      vehicle: { brandId, modelId, year, sumInsured: source === 'quote' ? quoteSI || si : si },
+      vehicle: { ...vehicle, sumInsured: source === 'quote' ? quoteSI || si : si },
       coverage,
       pkg: pkg ?? undefined,
       addCmi: coverage !== 'CMI' && addCmi,
@@ -221,14 +252,18 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           <div className="actions">
             <button className="btn primary" type="button" disabled={!ready} onClick={goPackages}>{t('seePackages')} →</button>
           </div>
+          <div className="quote-cta subtle">
+            <span>{t('carNotListed')}</span>
+            <button className="btn" type="button" onClick={goCustomQuote}>{t('requestQuote')}</button>
+          </div>
         </section>
       )}
 
       {step === 'pkg' && (
-        <section className="panel">
+        <section className="panel wide">
           <div className="panel-head">
             <div>
-              <h2>{t('pkgTitle', { car: vehicleLabel(modelId, year) })}</h2>
+              <h2>{t('pkgTitle', { car: carName })}</h2>
               <p className="lead">
                 {t('sumInsured')} <b className="num">{fmtBaht(si, lang)}</b>
                 {pkgs.length > 0 && <> · {t('pkgCount', { n: pkgs.length })}</>}
@@ -246,6 +281,10 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             </div>
           ) : (
             <>
+              <div className="quote-cta top">
+                <span>{t('wantQuote')}</span>
+                <button className="btn" type="button" onClick={goQuote}>{t('requestQuote')}</button>
+              </div>
               <div className="pkg-toolbar">
                 <div className="chips-row" role="radiogroup" aria-label={t('coverage')}>
                   {(['all', ...types] as (CoverageType | 'all')[]).map((x) => (
@@ -264,10 +303,6 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                   <PackageCard key={p.id} p={p} onChoose={() => { setPkg(p); setStep('form'); }} />
                 ))}
               </div>
-              <div className="quote-cta">
-                <span>{t('wantQuote')}</span>
-                <button className="btn" type="button" onClick={goQuote}>{t('requestQuote')}</button>
-              </div>
             </>
           )}
         </section>
@@ -280,12 +315,46 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <h2>{t('quoteTitle')}</h2>
               <p className="lead">{t('quoteLead')}</p>
             </div>
-            <button className="btn ghost" type="button" onClick={() => setStep('pkg')}>← {t('back')}</button>
+            <button className="btn ghost" type="button" onClick={() => setStep(custom ? 'car' : 'pkg')}>← {t('back')}</button>
           </div>
-          <div className="si-box compact">
-            <span className="chip">{vehicleLabel(modelId, year)}</span>
-            <span className="chip">{t(BODY_KEY[model.body])}</span>
-          </div>
+          {custom ? (
+            <div className="custom-car">
+              <div className="eyebrow">{t('customCarTitle')}</div>
+              <div className="grid-2">
+                <Field htmlFor="c-brand" label={t('brand')}>
+                  <input id="c-brand" list="c-brand-list" value={cBrand} onChange={(e) => setCBrand(e.target.value)} placeholder="Toyota, Volvo, Tesla…" />
+                  <datalist id="c-brand-list">
+                    {BRANDS.map((b) => (
+                      <option key={b.id} value={b.name} />
+                    ))}
+                  </datalist>
+                </Field>
+                <Field htmlFor="c-model" label={t('model')}>
+                  <input id="c-model" value={cModel} onChange={(e) => setCModel(e.target.value)} placeholder={t('customModelPh')} />
+                </Field>
+                <Field htmlFor="c-year" label={t('year')}>
+                  <select id="c-year" value={cYear || ''} onChange={(e) => setCYear(Number(e.target.value))}>
+                    <option value="">{t('pickYear')}</option>
+                    {Array.from({ length: CURRENT_YEAR - MIN_CUSTOM_YEAR + 1 }, (_, i) => CURRENT_YEAR - i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field htmlFor="c-body" label={t('bodyType')}>
+                  <select id="c-body" value={cBody} onChange={(e) => setCBody(e.target.value as BodyType)}>
+                    {(Object.keys(BODY_KEY) as BodyType[]).map((b) => (
+                      <option key={b} value={b}>{t(BODY_KEY[b])}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          ) : (
+            <div className="si-box compact">
+              <span className="chip">{carName}</span>
+              <span className="chip">{t(BODY_KEY[model.body])}</span>
+            </div>
+          )}
           <div className="grid-2">
             <Field htmlFor="q-type" label={t('desiredType')}>
               <select id="q-type" value={quoteType} onChange={(e) => setQuoteType(e.target.value as CoverageType)}>
@@ -294,16 +363,17 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                 ))}
               </select>
             </Field>
-            <Field htmlFor="q-si" label={t('desiredSI')} hint={t('suggestedSI', { year: CURRENT_YEAR }) + ' ' + fmtBaht(si, lang)}>
-              <input id="q-si" type="number" min={0} step={10000} value={quoteSI} onChange={(e) => setQuoteSI(Number(e.target.value))} />
+            <Field htmlFor="q-si" label={t('desiredSI')} hint={custom ? t('customSIHint') : t('suggestedSI', { year: CURRENT_YEAR }) + ' ' + fmtBaht(si, lang)}>
+              <input id="q-si" type="number" min={0} step={10000} value={quoteSI || ''} onChange={(e) => setQuoteSI(Number(e.target.value))} />
             </Field>
           </div>
           <label className="check">
             <input id="q-cmi" type="checkbox" checked={addCmi} onChange={(e) => setAddCmi(e.target.checked)} />
             {t('addCmi', { price: fmtBaht(cmi, lang) })}
           </label>
+          {quoteErr && <p className="error" role="alert">{quoteErr}</p>}
           <div className="actions">
-            <button className="btn primary" type="button" onClick={() => setStep('form')}>{t('next')} →</button>
+            <button className="btn primary" type="button" onClick={quoteNext}>{t('next')} →</button>
           </div>
         </section>
       )}
@@ -321,7 +391,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             <div>
               <div className="eyebrow">{t('selected')}</div>
               <div className="summary-main">
-                <TypeTag type={coverage} /> {vehicleLabel(modelId, year)}
+                <TypeTag type={coverage} /> {carName}
                 {pkg?.repair && <span className="muted"> · {t(pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage')}</span>}
                 {coverage !== 'CMI' && addCmi && <span className="muted"> {t('plusCmi')}</span>}
               </div>
@@ -380,7 +450,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           <p className="hint">{t('doneEmail', { email: customer.email })}</p>
           <div className="actions center">
             <button className="btn primary" type="button" onClick={() => onTrack(doneId)}>{t('goTrack')}</button>
-            <button className="btn" type="button" onClick={() => { setStep('car'); setCustomer(SAMPLE_CUSTOMER()); setPkg(null); setBrandId(''); setModelId(''); setYear(0); }}>{t('newRequest')}</button>
+            <button className="btn" type="button" onClick={() => { setStep('car'); setCustomer(SAMPLE_CUSTOMER()); setPkg(null); setBrandId(''); setModelId(''); setYear(0); setCustom(false); }}>{t('newRequest')}</button>
           </div>
         </section>
       )}
@@ -476,7 +546,7 @@ function Track({ selected, setSelected, onOpenCase }: { selected: string | null;
               <li key={c.id}>
                 <button type="button" className={`mine-item${c.id === selected ? ' on' : ''}`} onClick={() => setSelected(c.id)}>
                   <span className="num ref">{c.id}</span>
-                  <span className="mine-car">{vehicleLabel(c.vehicle.modelId, c.vehicle.year)}</span>
+                  <span className="mine-car">{vehicleText(c.vehicle)}</span>
                   <StatusPill status={c.status} />
                 </button>
               </li>
@@ -497,7 +567,7 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
       <div className="panel-head">
         <div>
           <div className="eyebrow num">{c.id}</div>
-          <h2>{vehicleLabel(c.vehicle.modelId, c.vehicle.year)}</h2>
+          <h2>{vehicleText(c.vehicle)}</h2>
         </div>
         <StatusPill status={c.status} />
       </div>

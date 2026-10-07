@@ -3,7 +3,7 @@ import type { Case, Customer, CoverageType, DocKey, Email, EmailTemplate, Notifi
 import { seedCases } from './lib/seed';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
-import { CURRENT_YEAR, modelById } from './data/vehicles';
+import { CURRENT_YEAR, modelOfVehicle } from './data/vehicles';
 import { bkkParts } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
 
@@ -137,7 +137,7 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
-  return Math.round((base + (c.addCmi ? cmiPremium(modelById(c.vehicle.modelId).body) : 0)) * 100) / 100;
+  return Math.round((base + (c.addCmi ? cmiPremium(modelOfVehicle(c.vehicle).body) : 0)) * 100) / 100;
 };
 
 export const requiredDocs = (c: Case) => REQUIRED_DOCS[c.coverage];
