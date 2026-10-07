@@ -1,7 +1,7 @@
-import type { Case, CoverageType, Customer, Lead, Source, UsageCode } from '../types';
+import type { Case, CoverageType, Customer, Lead, Source, TrafficDay, UsageCode } from '../types';
 import { CURRENT_YEAR, MODELS, PROVINCES, STAFF, suggestedSumInsured } from '../data/vehicles';
 import { estimateQuote, packagesFor, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
-import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay } from './time';
+import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay, dayKey } from './time';
 import { SLA_KEYS, slaFor } from './sla';
 
 function mulberry32(seed: number) {
@@ -303,4 +303,22 @@ export function seedLeads(cases: Case[], now: number): Lead[] {
     });
   }
   return leads.sort((a, b) => b.at - a.at);
+}
+
+/** Visitors per day for the steps before submitting, scaled from the seeded requests. */
+export function seedTraffic(cases: Case[], now: number): Record<string, TrafficDay> {
+  const rnd = mulberry32(4242);
+  const perDay: Record<string, number> = {};
+  for (const c of cases) perDay[dayKey(c.createdAt)] = (perDay[dayKey(c.createdAt)] ?? 0) + 1;
+  const out: Record<string, TrafficDay> = {};
+  for (let d = startOfBkkDay(now) - 91 * DAY_MS; d <= now; d += DAY_MS) {
+    const k = dayKey(d);
+    const sub = perDay[k] ?? 0;
+    const choose = Math.round(sub * (1.25 + rnd() * 0.25) + rnd() * 2);
+    const pkg = Math.round(choose * (1.9 + rnd() * 0.5));
+    const car = Math.round(pkg * (1.1 + rnd() * 0.15));
+    const visit = Math.round(car * (2.2 + rnd() * 0.6));
+    out[k] = { visit, car, pkg, choose };
+  }
+  return out;
 }

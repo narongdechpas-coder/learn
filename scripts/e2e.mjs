@@ -144,6 +144,11 @@ assert.ok((await cards.first().innerText()).includes('฿380,000'), 'Class 1 own
 if (shots) await customer.screenshot({ path: `${shots}/1-packages.png`, fullPage: true });
 await cards.first().getByRole('button', { name: 'เลือกแพ็กเกจนี้', exact: true }).click();
 assert.equal(await customer.locator('#f-firstName').inputValue(), 'สมชาย', 'form is prefilled');
+await customer.locator('#ocr-id').setInputFiles(jpg('id-card.jpg'));
+await customer.getByText('กรอกชื่อ เลขบัตร และที่อยู่จากบัตรแล้ว').waitFor({ timeout: 5000 });
+assert.equal(await customer.locator('#f-firstName').inputValue(), 'วิภาวดี', 'name read from the ID photo');
+assert.ok((await customer.locator('#f-idCard').getAttribute('class')).includes('ocr-filled'), 'filled fields are highlighted');
+log('ID card photo fills name, ID number and address');
 // validation
 await customer.locator('#f-phone').fill('123');
 await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
@@ -184,11 +189,25 @@ const tallJpg = await shotPage.screenshot({ type: 'jpeg', quality: 60 });
 await shotPage.setViewportSize({ width: 1600, height: 200 });
 const wideJpg = await shotPage.screenshot({ type: 'jpeg', quality: 60 });
 await shotPage.close();
-for (let i = 0; i < 6; i++) {
-  const buffer = i === 0 ? tallJpg : i === 1 ? wideJpg : null;
-  await inputs.nth(i).setInputFiles(buffer ? { name: `photo-with-a-very-long-file-name-${i}.jpg`, mimeType: 'image/jpeg', buffer } : jpg(`doc${i}.jpg`));
-  await customer.locator('.uploads .doc-tile.has').nth(i).waitFor();
+assert.ok((await tiles.nth(5).getAttribute('class')).includes('has'), 'ID photo from the form is already attached');
+assert.ok((await tiles.nth(2).locator('.angle-guide').count()) === 1, 'empty photo tiles show the angle to shoot');
+for (const i of [0, 1]) {
+  await inputs.nth(i).setInputFiles({ name: `photo-with-a-very-long-file-name-${i}.jpg`, mimeType: 'image/jpeg', buffer: i === 0 ? tallJpg : wideJpg });
+  await tiles.nth(i).locator('.doc-thumb img').waitFor();
 }
+// left and right taken "on the phone"
+await customer.getByRole('button', { name: /ถ่ายด้วยมือถือ/ }).click();
+await customer.getByRole('button', { name: /จำลองการเปิดบนมือถือ/ }).click();
+await customer.getByRole('button', { name: 'ถ่ายรูป' }).click();
+await tiles.nth(2).locator('.doc-thumb img').waitFor();
+await customer.getByRole('button', { name: 'ถ่ายรูป' }).click();
+await customer.getByText('ถ่ายครบ 4 ด้านแล้ว').waitFor();
+if (shots) await customer.screenshot({ path: `${shots}/2b-phone.png` });
+await customer.locator('.phone-modal').getByRole('button', { name: 'ปิด', exact: true }).click();
+await tiles.nth(3).locator('.doc-thumb img').waitFor();
+await inputs.nth(4).setInputFiles(jpg('regbook.jpg'));
+await tiles.nth(4).locator('.doc-thumb img').waitFor();
+log('left and right photos taken through the simulated phone camera');
 for (const i of [0, 1]) {
   const tile = customer.locator('.uploads .doc-tile').nth(i);
   await tile.locator('.doc-thumb img').waitFor();
@@ -217,6 +236,22 @@ log('back office accepted and issued the policy');
 await customer.bringToFront();
 await customer.getByText(/ออกกรมธรรม์แล้ว เลขที่/).waitFor({ timeout: 5000 });
 log('customer tab updated to issued');
+// after issue: digital card, claim, renewal, referral
+await customer.locator('.digital-card', { hasText: refA === '' ? 'x' : 'ABC' }).waitFor();
+await customer.getByRole('button', { name: 'แจ้งเคลม' }).click();
+await customer.getByRole('button', { name: 'ส่งเรื่องแจ้งเคลม' }).click();
+await customer.getByText('กรุณาระบุสถานที่เกิดเหตุ').waitFor();
+await customer.locator('#claim-place').fill('ถนนวิภาวดีฯ ขาเข้า');
+await customer.getByRole('button', { name: 'ส่งเรื่องแจ้งเคลม' }).click();
+await customer.getByText(/รับเรื่องแล้ว เลขเคลม CL-\d{6}/).waitFor();
+if (shots) await customer.screenshot({ path: `${shots}/2c-claim.png` });
+await customer.locator('.claim-modal').getByRole('button', { name: 'ปิด', exact: true }).first().click();
+await office.locator('.toast', { hasText: 'แจ้งเคลม' }).waitFor({ timeout: 5000 });
+await customer.getByRole('button', { name: /ดูตัวอย่างอีเมลเตือน/ }).click();
+await customer.getByText('ส่งตัวอย่างไปที่กล่องอีเมลจำลองแล้ว').waitFor();
+assert.match(await customer.locator('.refer-row code').innerText(), /^ABC-/);
+if (shots) await customer.screenshot({ path: `${shots}/2d-issued.png`, fullPage: true });
+log('digital card, claim report (back office alerted), renewal reminder and referral code');
 
 // ---- Path B: no package → quote request (Class 2+, 2 docs) ----
 await customer.getByRole('tab', { name: 'ซื้อประกัน' }).click();
@@ -229,15 +264,18 @@ await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).clic
 await customer.getByText('ยังไม่มีแพ็กเกจสำเร็จรูปสำหรับรถคันนี้').waitFor();
 await customer.getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
 await customer.locator('#q-type').selectOption('T2P');
+await customer.getByRole('radio', { name: '13:00–17:00' }).click();
 await customer.getByRole('button', { name: /ถัดไป/ }).click();
 await customer.getByRole('button', { name: 'ส่งคำขอเสนอราคา', exact: true }).click();
 const refB = (await customer.locator('.ref-big').innerText()).trim();
+await customer.locator('.eta-chip', { hasText: 'เจ้าหน้าที่จะส่งราคาให้ภายใน' }).waitFor();
 log(`quote request submitted: ${refB}`);
 
 await office.bringToFront();
 await office.locator('#bo-q').fill(refB);
 await office.locator('.case-row', { hasText: refB }).click();
 await office.getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
+await office.getByText('โทรกลับ 13:00–17:00').waitFor();
 await office.locator(`#qp-${refB}`).fill('9990');
 await office.getByRole('button', { name: 'ส่งใบเสนอราคา', exact: true }).click();
 await office.locator('.case-detail .pill', { hasText: 'เสนอราคาแล้ว' }).waitFor();
@@ -268,7 +306,8 @@ await office.getByRole('heading', { name: 'Performance Report' }).waitFor();
 const kpi = await office.locator('.kpi-value').first().innerText();
 assert.ok(Number(kpi.replace(/\D/g, '')) > 0, 'dashboard shows issued policies');
 assert.ok((await office.locator('.chart .bar').count()) > 5, 'production chart has bars');
-assert.equal(await office.locator('.funnel li').count(), 6);
+assert.equal(await office.locator('.funnel li').count(), 10, 'funnel starts from page visits');
+assert.ok((await office.locator('.funnel li').first().innerText()).includes('เข้าชมหน้าเว็บ'));
 if (shots) await office.screenshot({ path: `${shots}/4-dashboard.png`, fullPage: true });
 await office.getByRole('radio', { name: 'EN' }).click();
 await office.getByText('Policies issued', { exact: true }).waitFor();
@@ -277,7 +316,9 @@ log('dashboard renders and switches to English');
 
 await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
 await office.locator('.mail-row', { hasText: refB }).first().waitFor();
-log('mailbox lists the emails');
+await office.locator('.mail-row', { hasText: /Time to renew|ใกล้ถึงเวลาต่ออายุ/ }).first().waitFor();
+await office.locator('.mail-row', { hasText: /Claim CL-|รับเรื่องแจ้งเคลม/ }).first().waitFor();
+log('mailbox lists the emails (incl. renewal reminder and claim receipt)');
 
 // ---- Path C: car not in the list → typed in → quote request ----
 await customer.bringToFront();

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Case, CoverageType, Customer as CustomerT, Delivery, DocKey, Package, Stage, UsageCode, Vehicle } from '../types';
+import type { CallbackSlot, Case, CoverageType, Customer as CustomerT, Delivery, DocKey, Package, Stage, UsageCode, Vehicle } from '../types';
 import {
   ALL_CODES,
   BRANDS,
@@ -20,10 +20,11 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
-import { canUpload, captureLead, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import { canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
-import { BrandIcon, FakeQr, UsageIcon } from './icons';
+import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
+import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
 
@@ -48,6 +49,7 @@ const SAMPLE_CUSTOMER = (): CustomerT => ({
 });
 
 const isSelfType = (t: CoverageType) => SELF_SERVICE_TYPES.includes(t);
+const CALLBACK_KEY: Record<CallbackSlot, TKey> = { none: 'cbNone', asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' };
 const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
 type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
@@ -110,6 +112,10 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [customer, setCustomer] = useState<CustomerT>(SAMPLE_CUSTOMER);
   const [errors, setErrors] = useState<Partial<Record<keyof CustomerT, string>>>({});
   const [doneId, setDoneId] = useState<string | null>(null);
+  const [doneAt, setDoneAt] = useState(0);
+  const [callback, setCallback] = useState<CallbackSlot>('asap');
+  const [ocrFiles, setOcrFiles] = useState<Partial<Record<DocKey, File>>>({});
+  const [ocrFilled, setOcrFilled] = useState<(keyof CustomerT)[]>([]);
   // Car not in the list (or a non-catalogue code): typed in by the customer, quote request only.
   const [custom, setCustom] = useState(false);
   const [cBrand, setCBrand] = useState('');
@@ -123,6 +129,15 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
 
   const picked = modelId ? modelById(modelId) : undefined;
   const ready = !!(code && brandId && picked && year);
+  // Steps before submitting feed the dashboard funnel (once per tab session).
+  useEffect(() => trackStep('visit'), []);
+  useEffect(() => {
+    if (ready) trackStep('car');
+  }, [ready]);
+  useEffect(() => {
+    if (step === 'pkg') trackStep('pkg');
+    if (step === 'form' || step === 'quote') trackStep('choose');
+  }, [step]);
   // Later steps are only reachable once the car is fully chosen.
   const model = picked ?? MODELS[0];
   const usage: UsageCode = custom ? cCode : code || '110';
@@ -238,7 +253,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
       addCmi: coverage !== 'CMI' && addCmi && cmi !== undefined,
       desiredSI: source === 'quote' ? quoteSI || si : undefined,
       customer: { ...customer, idCard: customer.idCard.replace(/[\s-]/g, ''), phone: customer.phone.replace(/[\s-]/g, '') },
+      callback: source === 'quote' ? callback : undefined,
     });
+    // Photos used to fill the form double as the ID card / registration book documents.
+    for (const [k, f] of Object.entries(ocrFiles) as [DocKey, File][]) if (REQUIRED_DOCS[coverage].includes(k)) void uploadDoc(id, k, f);
+    setOcrFiles({});
+    setDoneAt(Date.now());
     setDoneId(id);
     setStep(self ? 'checkout' : 'done');
   };
@@ -249,7 +269,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const input = (k: keyof CustomerT, label: TKey, opts: { type?: string; optional?: boolean; wide?: boolean; inputMode?: 'numeric' | 'tel' | 'email' } = {}) => (
     <div className={opts.wide ? 'span-2' : ''} key={k}>
       <Field htmlFor={`f-${k}`} label={<>{t(label)}{opts.optional && <span className="opt"> ({t('optional')})</span>}</>} error={errors[k]}>
-        <input id={`f-${k}`} type={opts.type ?? 'text'} inputMode={opts.inputMode} value={customer[k]} onChange={set(k)} aria-invalid={!!errors[k]} />
+        <input id={`f-${k}`} className={ocrFilled.includes(k) ? 'ocr-filled' : undefined} type={opts.type ?? 'text'} inputMode={opts.inputMode} value={customer[k]} onChange={set(k)} aria-invalid={!!errors[k]} />
       </Field>
     </div>
   );
@@ -519,6 +539,17 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             </Field>
           </div>
           {cmiToggle('q-cmi')}
+          <div className="callback-box">
+            <div className="eyebrow">{t('callbackTitle')}</div>
+            <div className="chips-row" role="radiogroup" aria-label={t('callbackTitle')}>
+              {(['asap', 'morning', 'afternoon', 'evening', 'none'] as CallbackSlot[]).map((k) => (
+                <button key={k} type="button" role="radio" aria-checked={callback === k} className={`filter-chip${callback === k ? ' on' : ''}`} onClick={() => setCallback(k)}>
+                  {t(CALLBACK_KEY[k])}
+                </button>
+              ))}
+            </div>
+            <p className="hint">{quoteEtaText(Date.now(), t, lang)}</p>
+          </div>
           {quoteErr && <p className="error" role="alert">{quoteErr}</p>}
           <div className="actions">
             <button className="btn primary" type="button" onClick={quoteNext}>{t('next')} →</button>
@@ -554,6 +585,14 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               )}
             </div>
           </div>
+          <OcrBox
+            onRead={(kind, file) => {
+              const data = OCR_SAMPLE[kind];
+              setCustomer((cu) => ({ ...cu, ...data }));
+              setOcrFilled((f) => [...new Set([...f, ...(Object.keys(data) as (keyof CustomerT)[])])]);
+              setOcrFiles((o) => ({ ...o, [kind === 'id' ? 'idcard' : 'regbook']: file }));
+            }}
+          />
           <div className="form-grid">
             {input('firstName', 'firstName')}
             {input('lastName', 'lastName')}
@@ -604,6 +643,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           <div className="done-mark" aria-hidden="true">✓</div>
           <h2>{t('doneTitle')}</h2>
           <p>{t(source === 'package' ? 'doneLeadPackage' : 'doneLeadQuote')}</p>
+          {source === 'quote' && <p className="eta-chip">⏱ {quoteEtaText(doneAt, t, lang)}</p>}
           <div className="ref-big num">{doneId}</div>
           <p className="hint">{t('doneEmail', { email: customer.email })}</p>
           <div className="actions center">
@@ -841,15 +881,11 @@ function Hero() {
         <h1>{t('heroTitle')}</h1>
         <p>{t('heroLead')}</p>
       </div>
-      <svg className="hero-illus" viewBox="0 0 220 120" aria-hidden="true">
-        <circle cx="170" cy="34" r="22" fill="var(--warm)" opacity="0.85" />
-        <path d="M0 102h220" stroke="var(--accent)" strokeWidth="3" strokeDasharray="14 10" strokeLinecap="round" opacity="0.5" />
-        <path d="M30 88V74l14-4 18-18h56l22 16 26 4v16Z" fill="var(--accent)" />
-        <path d="M66 56h22v14H52Zm28 0h22l16 14H94Z" fill="var(--surface)" opacity="0.85" />
-        <circle cx="62" cy="90" r="12" fill="var(--ink)" /><circle cx="62" cy="90" r="5" fill="var(--surface)" />
-        <circle cx="142" cy="90" r="12" fill="var(--ink)" /><circle cx="142" cy="90" r="5" fill="var(--surface)" />
-        <path d="M150 28l6 6 12-12" stroke="var(--surface)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <div className="hero-illus" aria-hidden="true">
+        <span className="hero-sun" />
+        <CarArt kind="sedan" className="hero-car" />
+        <span className="hero-road" />
+      </div>
       <ul className="trust">
         {items.map((k) => (
           <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
@@ -1236,6 +1272,15 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
         </div>
       )}
       {showPolicy && c.status === 'ISSUED' && <PolicyDoc c={c} />}
+      {c.status === 'ISSUED' && <IssuedExtras c={c} />}
+      {c.source === 'quote' && (c.status === 'NEW' || c.status === 'ACCEPTED') && (
+        <div className="callout">
+          <div>
+            <b>⏱ {quoteEtaText(c.createdAt, t, lang)}</b>
+            {c.callback && c.callback !== 'none' && <p>{t('callbackChip', { slot: t(CALLBACK_KEY[c.callback]) })}</p>}
+          </div>
+        </div>
+      )}
 
       <Uploads c={c} />
 
@@ -1289,7 +1334,9 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
   const required = REQUIRED_DOCS[c.coverage];
   const allowed = canUpload(c);
   const missing = docsMissing(c);
+  const [phone, setPhone] = useState(false);
   if (c.status === 'CANCELLED' || c.status === 'ISSUED') return null;
+  const needsPhotos = ANGLES.some((k) => required.includes(k) && !c.docs[k]);
 
   const onFile = async (key: DocKey, file: File | undefined) => {
     if (!file) return;
@@ -1311,6 +1358,14 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
       {errs.map((e) => (
         <p key={e} className="error" role="alert">{e}</p>
       ))}
+      {allowed && needsPhotos && (
+        <div className="phone-cta">
+          <CarArt kind="sedan" className="phone-cta-car" />
+          <span>{t('phoneLead')}</span>
+          <button type="button" className="btn primary small" onClick={() => setPhone(true)}>📱 {t('phoneBtn')}</button>
+        </div>
+      )}
+      {phone && <PhoneCapture c={c} onClose={() => setPhone(false)} />}
       <div className="doc-grid">
         {required.map((k) => (
           <DocTile key={k} caseId={c.id} k={k} meta={c.docs[k]} label={DOC_LABEL[lang][k]} disabled={!allowed} onFile={(f) => onFile(k, f)} />
@@ -1328,7 +1383,13 @@ function DocTile({ caseId, k, meta, label, disabled, onFile }: { caseId: string;
   return (
     <div className={`doc-tile${meta ? ' has' : ''}`}>
       <div className="doc-thumb">
-        {url && broken !== url ? <img src={url} alt={label} onError={() => setBroken(url)} /> : <span aria-hidden="true">{meta ? '✓' : '＋'}</span>}
+        {url && broken !== url ? (
+          <img src={url} alt={label} onError={() => setBroken(url)} />
+        ) : !meta && ANGLES.includes(k) ? (
+          <AngleGuide angle={k} />
+        ) : (
+          <span aria-hidden="true">{meta ? '✓' : '＋'}</span>
+        )}
       </div>
       <div className="doc-label">{label}</div>
       {meta && <div className="hint">{meta.name} · {fmtSize(meta.size)}</div>}

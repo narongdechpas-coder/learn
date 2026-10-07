@@ -273,6 +273,8 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
   switch (n.kind) {
     case 'new':
       return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) });
+    case 'claim':
+      return t('nClaim', { ref, claimNo: String(n.params?.claimNo ?? '') });
     case 'lead':
       return t('nLead', { contact: String(n.params?.contact ?? '') });
     case 'self':
@@ -312,6 +314,8 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <TypeTag type={c.coverage} />
             {c.addCmi && <span className="chip">{t('plusCmi')}</span>}
             {c.vehicle.custom && <span className="pill tone-wait">{t('customCarTag')}</span>}
+            {c.callback && c.callback !== 'none' && <span className="pill tone-info">☎ {t('callbackChip', { slot: t(({ asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' } as const)[c.callback]) })}</span>}
+            {c.claims?.length ? <span className="pill tone-bad">{t('claimsLabel')} {c.claims.length}</span> : null}
           </div>
         </div>
         <button type="button" className="btn ghost small" onClick={onClose} aria-label="close">×</button>
@@ -421,6 +425,17 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         </section>
       </div>
 
+      {c.claims && c.claims.length > 0 && (
+        <section>
+          <h4>{t('claimsLabel')}</h4>
+          <ul className="claim-list">
+            {c.claims.map((cl) => (
+              <li key={cl.no}><b className="num">{cl.no}</b> · {fmtDateTime(cl.at, lang)} · {cl.place}{cl.note ? ` · ${cl.note}` : ''}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section>
         <h4>{t('documents')} <span className="muted">({REQUIRED_DOCS[c.coverage].length - docsMissing(c).length}/{REQUIRED_DOCS[c.coverage].length})</span></h4>
         <div className="doc-grid small">
@@ -497,6 +512,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         reupload: 'lReupload',
         cancel: 'lCancel',
         note: 'lNote',
+        claim: 'lClaim',
       };
       let text = t(map[l.action] ?? 'lNote', {
         price: fmtBaht(Number(l.text ?? 0), lang),

@@ -100,7 +100,21 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const leadsIn = s.leads.filter((l) => l.at >= from && l.at <= to && (brand === 'all' || l.vehicle.brandId === brand));
   const leadConv = leadsIn.length ? leadsIn.filter((l) => l.caseId).length / leadsIn.length : 0;
   const leadOpen = leadsIn.filter((l) => !l.caseId && !l.contacted).length;
-  const funnel = FUNNEL.map((st) => ({ st, n: funnelCases.filter((c) => c.stamps[st] !== undefined).length }));
+  const caseSteps = FUNNEL.map((st) => ({ key: st as string, label: STAGE_LABEL[lang][st], n: funnelCases.filter((c) => c.stamps[st] !== undefined).length }));
+  // Visitor steps exist only as totals, so they show when no case filter is applied.
+  const unfiltered = seg === 'all' && type === 'all' && brand === 'all' && staff === 'all';
+  const traffic = Object.entries(s.traffic)
+    .filter(([d]) => d >= dayKey(from) && d <= dayKey(to))
+    .reduce((a, [, v]) => ({ visit: a.visit + v.visit, car: a.car + v.car, pkg: a.pkg + v.pkg, choose: a.choose + v.choose }), { visit: 0, car: 0, pkg: 0, choose: 0 });
+  const funnel = unfiltered
+    ? [
+        { key: 'visit', label: t('stVisit'), n: traffic.visit },
+        { key: 'car', label: t('stCar'), n: traffic.car },
+        { key: 'pkg', label: t('stPkg'), n: traffic.pkg },
+        { key: 'choose', label: t('stChoose'), n: traffic.choose },
+        ...caseSteps,
+      ]
+    : caseSteps;
 
   const overdue = base
     .map((c) => ({ c, r: activeSla(c, now) }))
@@ -230,9 +244,9 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
               {funnel.map((f, i) => {
                 const prev = i ? funnel[i - 1].n : f.n;
                 return (
-                  <li key={f.st}>
+                  <li key={f.key} className={i < funnel.length - caseSteps.length ? 'pre' : ''}>
                     <div className="fn-label">
-                      <span>{STAGE_LABEL[lang][f.st]}</span>
+                      <span>{f.label}</span>
                       <span className="num"><b>{fmtNum(f.n, lang)}</b> <span className="muted">· {fmtNum((f.n / funnel[0].n) * 100, lang, 0)}% {t('ofStart')}</span></span>
                     </div>
                     <div className="fn-track">
@@ -248,6 +262,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
               })}
             </ol>
           )}
+          {unfiltered && <p className="hint">{t('funnelTrafficNote')}</p>}
           {seg !== 'quote' && <p className="hint">{t('funnelNote')}</p>}
         </section>
 

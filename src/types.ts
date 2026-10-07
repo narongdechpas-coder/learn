@@ -124,8 +124,30 @@ export interface Case {
   premium?: number;
   slaAlerted?: string[];
   delivery?: Delivery;
+  /** Preferred call-back slot for quote requests. */
+  callback?: CallbackSlot;
+  claims?: Claim[];
+  reminders?: { renewal: boolean; tax: boolean };
   payment?: { method: 'qr' | 'card'; at: number; last4?: string; months?: number };
   seeded?: boolean;
+}
+
+export type CallbackSlot = 'none' | 'asap' | 'morning' | 'afternoon' | 'evening';
+
+export interface Claim {
+  no: string;
+  at: number;
+  type: 'collision' | 'solo' | 'theft' | 'flood' | 'other';
+  place: string;
+  note: string;
+}
+
+/** Daily visitor counts for the steps before a request is submitted. */
+export interface TrafficDay {
+  visit: number;
+  car: number;
+  pkg: number;
+  choose: number;
 }
 
 export interface Delivery {
@@ -150,6 +172,8 @@ export interface Lead {
 }
 
 export type EmailTemplate =
+  | 'custRenewal'
+  | 'custClaim'
   | 'custLead'
   | 'custSelfIssued'
   | 'custReceived'
@@ -177,7 +201,7 @@ export interface Notification {
   id: string;
   at: number;
   caseId: string;
-  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead';
+  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead' | 'claim';
   params?: Record<string, string | number>;
   read: boolean;
 }

@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from 'react';
-import type { Case, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Source, Vehicle } from './types';
-import { seedCases, seedLeads } from './lib/seed';
+import type { CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Source, TrafficDay, Vehicle } from './types';
+import { seedCases, seedLeads, seedTraffic } from './lib/seed';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { CURRENT_YEAR } from './data/vehicles';
-import { bkkParts } from './lib/time';
+import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
 
 export const STAFF_EMAIL = 'motor-ops@abc.example';
@@ -19,15 +19,16 @@ export interface State {
   /** Requests made from this browser, newest first (the customer's "my requests"). */
   mine: string[];
   leads: Lead[];
+  traffic: Record<string, TrafficDay>;
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 3;
+const VERSION = 4;
 
 function fresh(): State {
   const now = Date.now();
   const { cases, seq } = seedCases(now);
-  return { version: VERSION, seededAt: now, seq, cases, emails: [], notifications: [], mine: [], leads: seedLeads(cases, now) };
+  return { version: VERSION, seededAt: now, seq, cases, emails: [], notifications: [], mine: [], leads: seedLeads(cases, now), traffic: seedTraffic(cases, now) };
 }
 
 function load(): State | null {
@@ -158,6 +159,7 @@ export interface SubmitInput {
   addCmi: boolean;
   desiredSI?: number;
   customer: Customer;
+  callback?: CallbackSlot;
 }
 
 export function submitCase(input: SubmitInput): string {
@@ -318,6 +320,46 @@ export function payAndIssue(id: string, delivery: Delivery, payment: { method: '
     });
     return { notifications: notify(s, 'self', id, { type: c.coverage }) };
   });
+}
+
+/** Count a visitor reaching a step before submitting (once per browser tab session). */
+const counted = new Set<string>();
+export function trackStep(step: keyof TrafficDay) {
+  const day = dayKey(Date.now());
+  const flag = `abc-step-${day}-${step}`;
+  try {
+    if (sessionStorage.getItem(flag)) return;
+    sessionStorage.setItem(flag, '1');
+  } catch {
+    if (counted.has(flag)) return;
+  }
+  counted.add(flag);
+  const base = load() ?? state;
+  const cur = base.traffic[day] ?? { visit: 0, car: 0, pkg: 0, choose: 0 };
+  commit({ ...base, traffic: { ...base.traffic, [day]: { ...cur, [step]: cur[step] + 1 } } });
+}
+
+export function fileClaim(id: string, claim: Omit<Claim, 'no' | 'at'>): string {
+  const no = `CL-${String(Math.floor(100000 + Math.random() * 900000))}`;
+  update(id, (c, s) => {
+    const now = Date.now();
+    c.claims = [{ ...claim, no, at: now }, ...(c.claims ?? [])];
+    c.log.push({ at: now, by: 'customer', action: 'claim', text: no });
+    s.emails = mail(s, 'custClaim', c, { claimNo: no });
+    return { notifications: notify(s, 'claim', id, { claimNo: no }) };
+  });
+  return no;
+}
+
+export function setReminders(id: string, reminders: { renewal: boolean; tax: boolean }) {
+  update(id, (c) => {
+    c.reminders = reminders;
+  });
+}
+
+/** Sends the renewal reminder now (the real one goes out 60/30/7 days before expiry). */
+export function sendRenewalPreview(id: string, nextPrice: number, expiry: string) {
+  update(id, (c, s) => ({ emails: mail(s, 'custRenewal', c, { price: nextPrice, expiry, policyNo: c.policyNo ?? '' }) }));
 }
 
 export interface LeadInput {
