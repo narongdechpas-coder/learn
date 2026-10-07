@@ -20,7 +20,7 @@ const head = `<title>ABC Motor Insurance Demo</title>
 <meta name="description" content="ระบบจำลองการซื้อประกันรถยนต์ ABC: หน้าลูกค้า หลังบ้าน และ Performance Dashboard">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>${css}</style>`;
 const body = `<div id="root"></div>
 <script>${js}</script>`;

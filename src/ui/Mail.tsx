@@ -14,7 +14,10 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
 
   const render = (e: Email) => {
     const c = s.cases.find((x) => x.id === e.caseId);
+    const lead = c ? undefined : s.leads.find((x) => x.id === e.caseId);
     const p: Record<string, string | number> = { ...e.params, ref: e.caseId };
+    if (lead) p.car = vehicleText(lead.vehicle);
+    if (typeof e.params.price === 'number') p.price = fmtBaht(e.params.price, lang);
     if (c) {
       p.car = vehicleText(c.vehicle);
       p.type = COVERAGE_LABEL[lang][c.coverage];
@@ -64,7 +67,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
                   <div className="mail-body">
                     <div className="muted">{t('to')}: {e.to}</div>
                     <pre>{r.body}</pre>
-                    <button type="button" className="btn small" onClick={() => onOpenCase(e.caseId)}>{t('openCase')} →</button>
+                    {e.template !== 'custLead' && <button type="button" className="btn small" onClick={() => onOpenCase(e.caseId)}>{t('openCase')} →</button>}
                   </div>
                 )}
               </li>

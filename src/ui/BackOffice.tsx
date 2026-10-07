@@ -5,6 +5,7 @@ import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDateTime, usageText, useT, type TKey } from '../i18n';
 import {
   acceptCase,
+  markLeadContacted,
   addNote,
   assignCase,
   cancelCase,
@@ -45,6 +46,8 @@ export function BackOffice({
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(30);
   const [bellOpen, setBellOpen] = useState(false);
+  const [tab, setTab] = useState<'cases' | 'leads'>('cases');
+  const openLeads = s.leads.filter((l) => !l.caseId && !l.contacted).length;
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -113,7 +116,11 @@ export function BackOffice({
                           type="button"
                           className={`notif kind-${n.kind}${n.read ? '' : ' unread'}`}
                           onClick={() => {
-                            setFocusId(n.caseId);
+                            if (n.kind === 'lead') setTab('leads');
+                            else {
+                              setTab('cases');
+                              setFocusId(n.caseId);
+                            }
                             setBellOpen(false);
                             markNotificationsRead();
                           }}
@@ -131,6 +138,14 @@ export function BackOffice({
         </div>
       </div>
 
+      <div className="subtabs bo-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'cases'} className={tab === 'cases' ? 'on' : ''} onClick={() => setTab('cases')}>{t('tabCases')}</button>
+        <button role="tab" aria-selected={tab === 'leads'} className={tab === 'leads' ? 'on' : ''} onClick={() => setTab('leads')}>
+          {t('tabLeads')} {openLeads > 0 && <span className="nav-badge num">{openLeads}</span>}
+        </button>
+      </div>
+
+      {tab === 'leads' ? <LeadsList /> : (<>
       <div className="filters">
         <label htmlFor="bo-q" className="sr-only">{t('searchCase')}</label>
         <input id="bo-q" className="search" placeholder={t('searchCase')} value={q} onChange={(e) => { setQ(e.target.value); setLimit(30); }} />
@@ -198,6 +213,57 @@ export function BackOffice({
           {focus ? <CaseDetail key={focus.id} c={focus} staffId={staffId} now={now} onClose={() => setFocusId(null)} /> : <p className="muted pad center-text">{t('selectCase')}</p>}
         </div>
       </div>
+      </>)}
+    </div>
+  );
+}
+
+function LeadsList() {
+  const { t, lang } = useT();
+  const s = useStore();
+  const [limit, setLimit] = useState(30);
+  const leads = s.leads;
+  return (
+    <div className="leads">
+      <p className="lead">{t('leadsLead')}</p>
+      <div className="table-wrap card">
+        <table className="data leads-table">
+          <thead>
+            <tr>
+              <th>{t('colCreated')}</th>
+              <th>{t('colContact')}</th>
+              <th>{t('colCar')}</th>
+              <th className="r">{t('colFrom')}</th>
+              <th>{t('colStatus')}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {leads.slice(0, limit).map((l) => (
+              <tr key={l.id}>
+                <td className="num">{fmtDateTime(l.at, lang)}</td>
+                <td className="num">{l.contact}</td>
+                <td>{vehicleText(l.vehicle)}</td>
+                <td className="r num">{fmtBaht(l.fromPrice, lang)}</td>
+                <td>
+                  {l.caseId ? (
+                    <span className="pill tone-good">{t('leadConverted')} · <span className="ref">{l.caseId}</span></span>
+                  ) : l.contacted ? (
+                    <span className="pill tone-neutral">{t('leadContacted')}</span>
+                  ) : (
+                    <span className="pill tone-wait">{t('leadNew')}</span>
+                  )}
+                </td>
+                <td>{!l.caseId && !l.contacted && <button type="button" className="btn small" onClick={() => markLeadContacted(l.id)}>{t('markContacted')}</button>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="list-foot">
+        <span className="muted">{t('showing', { n: Math.min(limit, leads.length), total: leads.length })}</span>
+        {limit < leads.length && <button className="btn small" type="button" onClick={() => setLimit((x) => x + 30)}>{t('more')}</button>}
+      </div>
     </div>
   );
 }
@@ -207,6 +273,8 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
   switch (n.kind) {
     case 'new':
       return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) });
+    case 'lead':
+      return t('nLead', { contact: String(n.params?.contact ?? '') });
     case 'self':
       return t('nSelf', { ref, type: COVERAGE_LABEL[lang][(n.params?.type as 'T2P') ?? 'T2P'] });
     case 'confirmed':
@@ -328,7 +396,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('waitingQuote')}</dd>
             <dt>{t('startDate')}</dt><dd>{c.customer.startDate}</dd>
             {c.policyNo && (<><dt>Policy</dt><dd className="num">{c.policyNo}</dd></>)}
-            {c.payment && (<><dt>{t('paidBy')}</dt><dd>{t(c.payment.method === 'qr' ? 'payQr' : 'payCard')}</dd></>)}
+            {c.payment && (<><dt>{t('paidBy')}</dt><dd>{t(c.payment.method === 'qr' ? 'payQr' : 'payCard')}{c.payment.months ? ` · ${t('paidInstall', { months: c.payment.months })}` : ''}</dd></>)}
             {c.delivery && (<><dt>{t('deliveryLabel')}</dt><dd>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</dd></>)}
           </dl>
         </section>

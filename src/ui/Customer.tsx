@@ -18,9 +18,9 @@ import {
   vehicleText,
   yearsOf,
 } from '../data/vehicles';
-import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SELF_SERVICE_TYPES, cmiPremium, packagesFor } from '../data/packages';
+import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
-import { canUpload, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import { canUpload, captureLead, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, FakeQr, UsageIcon } from './icons';
@@ -69,6 +69,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId }: { onOpenCase?: 
       ) : (
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
+      <ChatBubble />
     </div>
   );
 }
@@ -117,6 +118,8 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [cCode, setCCode] = useState<UsageCode>('110');
   const [quoteErr, setQuoteErr] = useState<string | null>(null);
   const [siPick, setSiPick] = useState<{ key: string; v: number } | null>(null);
+  const [compare, setCompare] = useState<string[]>([]);
+  const [comparing, setComparing] = useState(false);
 
   const picked = modelId ? modelById(modelId) : undefined;
   const ready = !!(code && brandId && picked && year);
@@ -132,6 +135,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si) : []), [ready, model, usage, year, si]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
+  const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
   const self = !!pkg && isSelfType(pkg.type);
   const source = pkg ? (self ? 'self' : 'package') : 'quote';
@@ -168,6 +172,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const goPackages = () => {
     setPkg(null);
     setCustom(false);
+    setCompare([]);
     setFilter('all');
     setStep('pkg');
   };
@@ -260,13 +265,14 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
     <div className="buy">
       <Steps step={step} self={self} />
 
+      {step === 'car' && <Hero />}
       {step === 'car' && (
         <section className="panel">
           <h2>{t('carTitle')}</h2>
           <p className="lead">{t('carLead')}</p>
 
           <div className="car-section">
-            <div className="section-label"><span className="section-n">1</span>{t('usageCode')}</div>
+            <div className="section-label"><span className="section-n">1</span>{t('usageQuestion')} <span className="muted section-sub">({t('usageCode')})</span></div>
             <p className="hint">{t('usageLead')}</p>
             <div className="usage-grid" role="radiogroup" aria-label={t('usageCode')}>
               {CATALOGUE_CODES.map((c) => (
@@ -418,9 +424,35 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               </div>
               <div className="pkg-grid">
                 {shown.map((p) => (
-                  <PackageCard key={p.id} p={p} onChoose={() => { setPkg(p); setStep('form'); }} />
+                  <PackageCard
+                    key={p.id}
+                    p={p}
+                    badge={p.id === badges.popular ? 'popular' : p.id === badges.value ? 'value' : undefined}
+                    compared={compare.includes(p.id)}
+                    canCompare={compare.length < 3 || compare.includes(p.id)}
+                    onCompare={() => setCompare((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id].slice(0, 3)))}
+                    onChoose={() => { setPkg(p); setStep('form'); }}
+                  />
                 ))}
               </div>
+              <LeadBox vehicle={vehicle} fromPrice={Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium).concat(pkgs[0].premium))} popularId={badges.popular} />
+              {compare.length > 0 && (
+                <div className="compare-bar" role="region" aria-label={t('compareTitle')}>
+                  <span><b>{t('compareBar', { n: compare.length })}</b> <span className="muted">· {t('compareMax')}</span></span>
+                  <span className="compare-actions">
+                    <button type="button" className="btn ghost small" onClick={() => setCompare([])}>{t('compareClear')}</button>
+                    <button type="button" className="btn primary" disabled={compare.length < 2} onClick={() => setComparing(true)}>{t('compareOpen')}</button>
+                  </span>
+                </div>
+              )}
+              {comparing && (
+                <CompareModal
+                  pkgs={compare.map((id) => pkgs.find((p) => p.id === id)!).filter(Boolean)}
+                  badges={badges}
+                  onClose={() => setComparing(false)}
+                  onChoose={(p) => { setComparing(false); setPkg(p); setStep('form'); }}
+                />
+              )}
             </>
           )}
         </section>
@@ -515,6 +547,11 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             </div>
             <div className="summary-price num">
               {pkg ? fmtBaht(Math.round((pkg.premium + (coverage !== 'CMI' && addCmi ? cmi ?? 0 : 0)) * 100) / 100, lang) : t('waitingQuote')}
+              {pkg && installmentPlan(pkg.premium) && (
+                <small className="installment">
+                  {t('installmentLine', { months: installmentPlan(pkg.premium)!.months, monthly: fmtBaht(installmentPlan(pkg.premium)!.monthly, lang) })}
+                </small>
+              )}
             </div>
           </div>
           <div className="form-grid">
@@ -579,26 +616,71 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   );
 }
 
-function PackageCard({ p, onChoose }: { p: Package; onChoose: () => void }) {
-  const { t, lang } = useT();
+const SCENARIO_KEY: Record<Scenario, TKey> = { collide: 'scCollide', solo: 'scSolo', theftFire: 'scTheftFire', flood: 'scFlood', thirdParty: 'scThirdParty' };
+
+function coverRows(p: Package, t: (k: TKey, v?: Record<string, string | number>) => string, lang: 'th' | 'en'): [string, string][] {
   const money = (n: number) => (n ? fmtBaht(n, lang) : t('notCovered'));
-  const rows: [string, string][] =
-    p.type === 'CMI'
-      ? [
-          [t('cmiMedical'), `${fmtBaht(p.medical, lang)}${t('perPerson')}`],
-          [t('cmiDeath'), `${fmtBaht(p.pa, lang)}${t('perPerson')}`],
-        ]
-      : [
-          [t('ownDamage'), money(p.ownDamage)],
-          [t('fireTheft'), money(p.fireTheft)],
-          [t('flood'), p.flood ? t('covered') : t('notCovered')],
-          [t('tpbi'), `${fmtBaht(p.tpbiPerson, lang)}${t('perPerson')}`],
-          [t('tppd'), fmtBaht(p.tppd, lang)],
-          [t('paMed'), `${fmtBaht(p.pa, lang)} / ${fmtBaht(p.medical, lang)}`],
-          [t('bail'), fmtBaht(p.bail, lang)],
-        ];
+  return p.type === 'CMI'
+    ? [
+        [t('cmiMedical'), `${fmtBaht(p.medical, lang)}${t('perPerson')}`],
+        [t('cmiDeath'), `${fmtBaht(p.pa, lang)}${t('perPerson')}`],
+      ]
+    : [
+        [t('ownDamage'), money(p.ownDamage)],
+        [t('fireTheft'), money(p.fireTheft)],
+        [t('flood'), p.flood ? t('covered') : t('notCovered')],
+        [t('tpbi'), `${fmtBaht(p.tpbiPerson, lang)}${t('perPerson')}`],
+        [t('tppd'), fmtBaht(p.tppd, lang)],
+        [t('paMed'), `${fmtBaht(p.pa, lang)} / ${fmtBaht(p.medical, lang)}`],
+        [t('bail'), fmtBaht(p.bail, lang)],
+      ];
+}
+
+function Scenarios({ type }: { type: CoverageType }) {
+  const { t } = useT();
+  if (type === 'CMI')
+    return (
+      <ul className="scenarios">
+        <li className="yes"><span className="sc-mark" aria-hidden="true">✓</span>{t('scCmi')}</li>
+      </ul>
+    );
   return (
-    <article className={`pkg-card type-${p.type}`}>
+    <ul className="scenarios">
+      {SCENARIOS.map((sc) => {
+        const yes = SCENARIO_COVER[type][sc];
+        return (
+          <li key={sc} className={yes ? 'yes' : 'no'}>
+            <span className="sc-mark" aria-hidden="true">{yes ? '✓' : '✕'}</span>
+            <span className="sr-only">{yes ? t('covered') : t('notCovered')}</span>
+            {t(SCENARIO_KEY[sc])}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function PackageCard({
+  p,
+  badge,
+  compared,
+  canCompare,
+  onCompare,
+  onChoose,
+}: {
+  p: Package;
+  badge?: 'popular' | 'value';
+  compared: boolean;
+  canCompare: boolean;
+  onCompare: () => void;
+  onChoose: () => void;
+}) {
+  const { t, lang } = useT();
+  const [open, setOpen] = useState(false);
+  const plan = installmentPlan(p.premium);
+  return (
+    <article className={`pkg-card type-${p.type}${badge ? ` has-badge badge-${badge}` : ''}${compared ? ' compared' : ''}`}>
+      {badge && <div className="pkg-ribbon">{t(badge === 'popular' ? 'badgePopular' : 'badgeValue')}</div>}
       <header>
         <TypeTag type={p.type} />
         <div className="pkg-tags">
@@ -614,18 +696,191 @@ function PackageCard({ p, onChoose }: { p: Package; onChoose: () => void }) {
         <span className="num">{fmtBaht(p.premium, lang)}</span>
         <span className="muted">{t('perYear')}</span>
       </div>
-      <div className="hint">{t('inclTax')}</div>
+      {plan ? (
+        <div className="installment">{t('installmentLine', { months: plan.months, monthly: fmtBaht(plan.monthly, lang) })}</div>
+      ) : (
+        <div className="hint">{t('inclTax')}</div>
+      )}
       {isSelfType(p.type) && <div className="self-badge">⚡ {t('selfBadge')}</div>}
-      <dl className="cover-list">
-        {rows.map(([k, v]) => (
-          <div key={k} className={v === t('notCovered') ? 'off' : ''}>
-            <dt>{k}</dt>
-            <dd className="num">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <button className="btn primary block" type="button" onClick={onChoose}>{t('choose')}</button>
+      <div className="eyebrow sc-head">{t('whenCovered')}</div>
+      <Scenarios type={p.type} />
+      <button type="button" className="link details-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        {t(open ? 'hideDetails' : 'showDetails')} {open ? '▴' : '▾'}
+      </button>
+      {open && (
+        <dl className="cover-list">
+          {coverRows(p, t, lang).map(([k, v]) => (
+            <div key={k} className={v === t('notCovered') ? 'off' : ''}>
+              <dt>{k}</dt>
+              <dd className="num">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <div className="pkg-actions">
+        <label className={`check compare-check${!canCompare ? ' disabled' : ''}`}>
+          <input id={`cmp-${p.id}`} type="checkbox" checked={compared} disabled={!canCompare} onChange={onCompare} />
+          {t('compareAdd')}
+        </label>
+        <button className="btn primary block" type="button" onClick={onChoose}>{t('choose')}</button>
+      </div>
     </article>
+  );
+}
+
+function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; badges: { popular?: string; value?: string }; onClose: () => void; onChoose: (p: Package) => void }) {
+  const { t, lang } = useT();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const cell = (ok: boolean) => <span className={ok ? 'yes' : 'no'}>{ok ? '✓' : '✕'}</span>;
+  const rows: [string, (p: Package) => React.ReactNode][] = [
+    [t('yearlyPremium'), (p) => <b className="num">{fmtBaht(p.premium, lang)}</b>],
+    [t('installment0'), (p) => { const pl = installmentPlan(p.premium); return pl ? <span className="num">{fmtBaht(pl.monthly, lang)}{t('perMonth')} × {pl.months}</span> : '—'; }],
+    [t('repairType'), (p) => (p.repair ? t(p.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')],
+    [t('deductible'), (p) => (p.type === 'CMI' ? '—' : p.deductible ? fmtBaht(p.deductible, lang) : t('none'))],
+    ...SCENARIOS.map((sc) => [t(SCENARIO_KEY[sc]), (p: Package) => cell(SCENARIO_COVER[p.type][sc])] as [string, (p: Package) => React.ReactNode]),
+    [t('ownDamage'), (p) => (p.ownDamage ? fmtBaht(p.ownDamage, lang) : '—')],
+    [t('fireTheft'), (p) => (p.fireTheft ? fmtBaht(p.fireTheft, lang) : '—')],
+    [t('tppd'), (p) => (p.tppd ? fmtBaht(p.tppd, lang) : '—')],
+  ];
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={t('compareTitle')} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{t('compareTitle')}</h3>
+          <button type="button" className="btn ghost small" onClick={onClose}>{t('close')} ✕</button>
+        </div>
+        <div className="table-wrap">
+          <table className="compare-table">
+            <thead>
+              <tr>
+                <th />
+                {pkgs.map((p) => (
+                  <th key={p.id}>
+                    <TypeTag type={p.type} />
+                    {(p.id === badges.popular || p.id === badges.value) && (
+                      <div className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</div>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([label, fn]) => (
+                <tr key={label}>
+                  <th scope="row">{label}</th>
+                  {pkgs.map((p) => (
+                    <td key={p.id}>{fn(p)}</td>
+                  ))}
+                </tr>
+              ))}
+              <tr>
+                <th />
+                {pkgs.map((p) => (
+                  <td key={p.id}><button type="button" className="btn primary small" onClick={() => onChoose(p)}>{t('choose')}</button></td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeadBox({ vehicle, fromPrice, popularId }: { vehicle: Vehicle; fromPrice: number; popularId?: string }) {
+  const { t } = useT();
+  const [contact, setContact] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [sent, setSent] = useState<string | null>(null);
+  const send = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = contact.trim();
+    const phone = v.replace(/[\s-]/g, '');
+    const isPhone = /^0\d{9}$/.test(phone);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    if (!isPhone && !isEmail) return setErr(t('leadErr'));
+    setErr(null);
+    captureLead({ contact: isPhone ? phone : v, channel: isPhone ? 'phone' : 'email', vehicle, fromPrice, popularId });
+    setSent(isPhone ? phone : v);
+  };
+  return (
+    <form className="lead-box" onSubmit={send} noValidate>
+      <div className="lead-illus" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="44" height="44"><rect x="6" y="11" width="36" height="26" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth="2" /><path d="m8 15 16 11 16-11" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><circle cx="38" cy="12" r="6" fill="var(--warm)" /></svg>
+      </div>
+      <div className="lead-text">
+        <b>{t('leadTitle')}</b>
+        <p>{t('leadLead')}</p>
+        {sent ? (
+          <p className="ok-note" role="status">✓ {t('leadDone', { contact: sent })}</p>
+        ) : (
+          <>
+            <div className="lead-row">
+              <label htmlFor="lead-contact" className="sr-only">{t('leadPlaceholder')}</label>
+              <input id="lead-contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t('leadPlaceholder')} inputMode="email" />
+              <button className="btn primary" type="submit">{t('leadSend')}</button>
+            </div>
+            {err ? <p className="error" role="alert">{err}</p> : <p className="hint">{t('leadConsent')}</p>}
+          </>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function Hero() {
+  const { t } = useT();
+  const items: TKey[] = ['trustGarages', 'trustClaim', 'trustRating', 'trustLicense'];
+  return (
+    <section className="hero">
+      <div className="hero-text">
+        <h1>{t('heroTitle')}</h1>
+        <p>{t('heroLead')}</p>
+      </div>
+      <svg className="hero-illus" viewBox="0 0 220 120" aria-hidden="true">
+        <circle cx="170" cy="34" r="22" fill="var(--warm)" opacity="0.85" />
+        <path d="M0 102h220" stroke="var(--accent)" strokeWidth="3" strokeDasharray="14 10" strokeLinecap="round" opacity="0.5" />
+        <path d="M30 88V74l14-4 18-18h56l22 16 26 4v16Z" fill="var(--accent)" />
+        <path d="M66 56h22v14H52Zm28 0h22l16 14H94Z" fill="var(--surface)" opacity="0.85" />
+        <circle cx="62" cy="90" r="12" fill="var(--ink)" /><circle cx="62" cy="90" r="5" fill="var(--surface)" />
+        <circle cx="142" cy="90" r="12" fill="var(--ink)" /><circle cx="142" cy="90" r="5" fill="var(--surface)" />
+        <path d="M150 28l6 6 12-12" stroke="var(--surface)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <ul className="trust">
+        {items.map((k) => (
+          <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
+        ))}
+      </ul>
+      <p className="trust-note">{t('trustNote')}</p>
+    </section>
+  );
+}
+
+function ChatBubble() {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="chat">
+      {open && (
+        <div className="chat-panel" role="dialog" aria-label={t('chatTitle')}>
+          <b>{t('chatTitle')}</b>
+          <p className="muted">{t('chatLead')}</p>
+          <ul>
+            <li><span className="chat-ico line" aria-hidden="true">L</span> LINE <b>@abc-demo</b></li>
+            <li><span className="chat-ico" aria-hidden="true">☎</span> <b className="num">02-000-0000</b></li>
+          </ul>
+          <p className="hint">{t('chatNote')}</p>
+        </div>
+      )}
+      <button type="button" className="chat-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 6.5a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Z" /></svg>
+        <span>{open ? t('close') : t('chatBtn')}</span>
+      </button>
+    </div>
   );
 }
 
@@ -645,9 +900,11 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
   const [email, setEmail] = useState(c.customer.email);
   const [pay, setPay] = useState<'qr' | 'card'>('qr');
   const [card, setCard] = useState({ no: '4242 4242 4242 4242', exp: '12/29', cvv: '123' });
+  const [months, setMonths] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const total = totalPremium(c) ?? 0;
+  const plan = installmentPlan(total);
   const missing = docsMissing(c);
   useEffect(() => {
     if (!missing.length) setErr(null);
@@ -665,6 +922,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
       payAndIssue(c.id, method === 'paper' ? { method, address: address.trim() } : { method, email: email.trim() }, {
         method: pay,
         last4: pay === 'card' ? card.no.replace(/\s/g, '').slice(-4) : undefined,
+        months: pay === 'card' && plan && months ? plan.months : undefined,
       });
       setBusy(false);
     }, 1400);
@@ -741,6 +999,16 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
                 </Field>
               </div>
             )}
+            {pay === 'card' && plan && (
+              <div className="option-grid plan-grid" role="radiogroup" aria-label={t('payPlan')}>
+                {[0, plan.months].map((m) => (
+                  <button key={m} type="button" role="radio" aria-checked={months === m} className={`option-card${months === m ? ' on' : ''}`} onClick={() => setMonths(m)}>
+                    <span className="radio-dot" aria-hidden="true" />
+                    <b>{m ? t('payInstall', { months: plan.months, monthly: fmtBaht(plan.monthly, lang) }) : t('payFull', { amount: fmtBaht(total, lang) })}</b>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -765,11 +1033,14 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
               <dt>{t('amountDue')}</dt>
               <dd className="num">{fmtBaht(total, lang)}</dd>
             </div>
+            {plan && (
+              <p className="installment os-plan">{t('installmentLine', { months: plan.months, monthly: fmtBaht(plan.monthly, lang) })}</p>
+            )}
           </dl>
           {missing.length > 0 && <p className="hint">{t('payNeedDocs')}</p>}
           {err && <p className="error" role="alert">{err}</p>}
           <button className={`btn primary block pay-btn${busy ? ' busy' : ''}`} type="button" disabled={busy} onClick={doPay}>
-            {busy ? <><span className="spinner" aria-hidden="true" /> {t('paying')}</> : t('payBtn', { amount: fmtBaht(total, lang) })}
+            {busy ? <><span className="spinner" aria-hidden="true" /> {t('paying')}</> : t('payBtn', { amount: pay === 'card' && plan && months ? `${fmtBaht(plan.monthly, lang)}${t('perMonth')}` : fmtBaht(total, lang) })}
           </button>
         </aside>
       </div>
@@ -790,7 +1061,7 @@ function SelfDone({ c, onRestart }: { c: Case; onRestart?: () => void }) {
           ? t('paidPaper', { no: c.delivery.trackingNo ?? '' })
           : t('paidPdf', { email: c.delivery?.email ?? c.customer.email })}
       </p>
-      <p className="hint">{t('paidBy')}: {t(c.payment?.method === 'card' ? 'payCard' : 'payQr')} · {fmtBaht(c.premium ?? 0, lang)}</p>
+      <p className="hint">{t('paidBy')}: {t(c.payment?.method === 'card' ? 'payCard' : 'payQr')}{c.payment?.months ? ` · ${t('paidInstall', { months: c.payment.months })}` : ''} · {fmtBaht(c.premium ?? 0, lang)}</p>
       <div className="actions center">
         <button className="btn" type="button" onClick={() => setShow((v) => !v)}>{t(show ? 'hidePolicy' : 'viewPolicy')}</button>
         {onRestart && <button className="btn primary" type="button" onClick={onRestart}>{t('newRequest')}</button>}

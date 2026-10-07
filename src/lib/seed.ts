@@ -1,4 +1,4 @@
-import type { Case, CoverageType, Customer, Source, UsageCode } from '../types';
+import type { Case, CoverageType, Customer, Lead, Source, UsageCode } from '../types';
 import { CURRENT_YEAR, MODELS, PROVINCES, STAFF, suggestedSumInsured } from '../data/vehicles';
 import { estimateQuote, packagesFor, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
 import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay } from './time';
@@ -260,4 +260,47 @@ export function seedCases(now: number): SeedResult {
     if (breached.length) c.slaAlerted = breached;
   }
   return { cases, seq };
+}
+
+/** Sample "send me the price" leads: some turned into the seeded cases, most did not. */
+export function seedLeads(cases: Case[], now: number): Lead[] {
+  const rnd = mulberry32(777);
+  const leads: Lead[] = [];
+  const fromPrice = (v: Case['vehicle']) => {
+    const md = MODELS.find((m) => m.id === v.modelId);
+    if (!md) return 0;
+    const p = packagesFor(md, v.usage, v.year, v.sumInsured).filter((x) => x.type !== 'CMI');
+    return p.length ? Math.min(...p.map((x) => x.premium)) : 0;
+  };
+  for (const c of cases) {
+    if (c.source === 'quote' || rnd() > 0.45) continue;
+    leads.push({
+      id: `L-S${leads.length}`,
+      at: c.createdAt - (20 + rnd() * 600) * 60_000,
+      ...(rnd() < 0.7 ? { contact: c.customer.phone, channel: 'phone' as const } : { contact: c.customer.email, channel: 'email' as const }),
+      vehicle: c.vehicle,
+      fromPrice: fromPrice(c.vehicle),
+      caseId: c.id,
+      contacted: c.createdAt - 10 * 60_000,
+    });
+  }
+  const pool = MODELS.filter((m) => !m.noPackage);
+  const open = Math.round(cases.length * 0.8);
+  for (let i = 0; i < open; i++) {
+    const at = now - rnd() * 91 * DAY_MS;
+    const md = pool[Math.floor(rnd() * pool.length)];
+    const year = md.yearTo - Math.floor(rnd() * Math.min(8, md.yearTo - md.yearFrom + 1));
+    const vehicle = { brandId: md.brandId, modelId: md.id, year, sumInsured: suggestedSumInsured(md, year), usage: md.codes[0] };
+    const email = rnd() < 0.3;
+    leads.push({
+      id: `L-O${i}`,
+      at,
+      contact: email ? `lead${i}@example.com` : `08${Math.floor(1e7 + rnd() * 9e7)}`,
+      channel: email ? 'email' : 'phone',
+      vehicle,
+      fromPrice: fromPrice({ ...vehicle } as Case['vehicle']),
+      contacted: now - at > 2 * DAY_MS && rnd() < 0.7 ? at + (1 + rnd() * 20) * 3600_000 : undefined,
+    });
+  }
+  return leads.sort((a, b) => b.at - a.at);
 }

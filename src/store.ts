@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { Case, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Notification, Package, Source, Vehicle } from './types';
-import { seedCases } from './lib/seed';
+import type { Case, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Source, Vehicle } from './types';
+import { seedCases, seedLeads } from './lib/seed';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { CURRENT_YEAR } from './data/vehicles';
@@ -18,15 +18,16 @@ export interface State {
   notifications: Notification[];
   /** Requests made from this browser, newest first (the customer's "my requests"). */
   mine: string[];
+  leads: Lead[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 2;
+const VERSION = 3;
 
 function fresh(): State {
   const now = Date.now();
   const { cases, seq } = seedCases(now);
-  return { version: VERSION, seededAt: now, seq, cases, emails: [], notifications: [], mine: [] };
+  return { version: VERSION, seededAt: now, seq, cases, emails: [], notifications: [], mine: [], leads: seedLeads(cases, now) };
 }
 
 function load(): State | null {
@@ -179,6 +180,11 @@ export function submitCase(input: SubmitInput): string {
     log: [{ at: now, by: 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
   const s: State = { ...base, seq, cases: [c, ...base.cases], mine: [id, ...base.mine] };
+  // A lead that comes back and submits counts as converted.
+  const phone = input.customer.phone.replace(/\D/g, '');
+  const email = input.customer.email.trim().toLowerCase();
+  const lead = base.leads.find((l) => !l.caseId && now - l.at < 30 * 86400000 && (l.contact.replace(/\D/g, '') === phone || l.contact.toLowerCase() === email));
+  if (lead) s.leads = base.leads.map((l) => (l === lead ? { ...l, caseId: id } : l));
   if (self) {
     // Nobody needs to act yet; the back office hears about it once it is paid.
     commit(s);
@@ -291,7 +297,7 @@ export function issuePolicy(id: string, staffId: string) {
 }
 
 /** Self service: simulated payment, then the policy is issued straight away. */
-export function payAndIssue(id: string, delivery: Delivery, payment: { method: 'qr' | 'card'; last4?: string }) {
+export function payAndIssue(id: string, delivery: Delivery, payment: { method: 'qr' | 'card'; last4?: string; months?: number }) {
   update(id, (c, s) => {
     if (c.status !== 'AWAITING_PAYMENT' || docsMissing(c).length) return;
     const now = Date.now();
@@ -312,6 +318,42 @@ export function payAndIssue(id: string, delivery: Delivery, payment: { method: '
     });
     return { notifications: notify(s, 'self', id, { type: c.coverage }) };
   });
+}
+
+export interface LeadInput {
+  contact: string;
+  channel: Lead['channel'];
+  vehicle: Vehicle;
+  fromPrice: number;
+  popularId?: string;
+}
+
+/** "Send me this price": keep the contact so the team can follow up before the customer drops off. */
+export function captureLead(input: LeadInput): string {
+  const base = load() ?? state;
+  const now = Date.now();
+  const lead: Lead = { id: `L-${uid().toUpperCase()}`, at: now, ...input };
+  const email: Email = {
+    id: uid(),
+    at: now,
+    to: input.contact,
+    audience: 'customer',
+    template: 'custLead',
+    caseId: lead.id,
+    params: { price: input.fromPrice, channel: input.channel },
+  };
+  commit({
+    ...base,
+    leads: [lead, ...base.leads],
+    emails: [email, ...base.emails].slice(0, 300),
+    notifications: notify(base, 'lead', lead.id, { contact: input.contact }),
+  });
+  return lead.id;
+}
+
+export function markLeadContacted(id: string) {
+  const base = load() ?? state;
+  commit({ ...base, leads: base.leads.map((l) => (l.id === id ? { ...l, contacted: Date.now() } : l)) });
 }
 
 export function cancelCase(id: string, reason: string, staffId: string) {

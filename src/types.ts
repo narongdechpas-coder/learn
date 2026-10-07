@@ -124,7 +124,7 @@ export interface Case {
   premium?: number;
   slaAlerted?: string[];
   delivery?: Delivery;
-  payment?: { method: 'qr' | 'card'; at: number; last4?: string };
+  payment?: { method: 'qr' | 'card'; at: number; last4?: string; months?: number };
   seeded?: boolean;
 }
 
@@ -135,7 +135,22 @@ export interface Delivery {
   trackingNo?: string;
 }
 
+/** Someone who asked for the price to be sent to them before filling in the full form. */
+export interface Lead {
+  id: string;
+  at: number;
+  contact: string;
+  channel: 'phone' | 'email';
+  vehicle: Vehicle;
+  /** Cheapest package shown, for the follow-up call. */
+  fromPrice: number;
+  popularId?: string;
+  contacted?: number;
+  caseId?: string;
+}
+
 export type EmailTemplate =
+  | 'custLead'
   | 'custSelfIssued'
   | 'custReceived'
   | 'custQuoted'
@@ -162,7 +177,7 @@ export interface Notification {
   id: string;
   at: number;
   caseId: string;
-  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self';
+  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead';
   params?: Record<string, string | number>;
   read: boolean;
 }

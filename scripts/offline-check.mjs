@@ -22,7 +22,7 @@ await office.goto(file + '#backoffice');
 await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
 const fontsOk = await office.evaluate(async () => {
   await document.fonts.ready;
-  return ['600 16px "Bai Jamjuree"', '400 16px "IBM Plex Sans Thai"'].every((f) => document.fonts.check(f, 'ทดสอบ'));
+  return ['500 16px "Mitr"', '400 16px "IBM Plex Sans Thai"'].every((f) => document.fonts.check(f, 'ทดสอบ'));
 });
 assert.ok(fontsOk, 'embedded Thai fonts are available offline');
 const seeded = await office.locator('.case-row').count();

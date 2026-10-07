@@ -97,6 +97,9 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   ].sort((a, b) => b.value - a.value);
 
   const funnelCases = cohort.filter((c) => seg === 'all' || c.source === seg);
+  const leadsIn = s.leads.filter((l) => l.at >= from && l.at <= to && (brand === 'all' || l.vehicle.brandId === brand));
+  const leadConv = leadsIn.length ? leadsIn.filter((l) => l.caseId).length / leadsIn.length : 0;
+  const leadOpen = leadsIn.filter((l) => !l.caseId && !l.contacted).length;
   const funnel = FUNNEL.map((st) => ({ st, n: funnelCases.filter((c) => c.stamps[st] !== undefined).length }));
 
   const overdue = base
@@ -212,6 +215,13 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
               { value: 'self', label: t('srcSelf') },
               { value: 'quote', label: t('srcQuote') },
             ]} />
+          </div>
+          <div className="lead-stat">
+            <div>
+              <div className="eyebrow">{t('kLeads')}</div>
+              <div className="lead-stat-n num">{fmtNum(leadsIn.length, lang)}</div>
+            </div>
+            <p className="hint">{t('kLeadsNote', { pct: fmtNum(leadConv * 100, lang, 0), open: fmtNum(leadOpen, lang) })}</p>
           </div>
           {funnel[0].n === 0 ? (
             <p className="muted">{t('noData')}</p>

@@ -41,6 +41,9 @@ watch(office);
 await office.goto(url + '#backoffice');
 await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
 log('customer and back-office tabs open');
+await customer.getByRole('button', { name: 'คุยกับเจ้าหน้าที่' }).click();
+await customer.getByText('@abc-demo').waitFor();
+await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
 
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
@@ -101,11 +104,42 @@ assert.equal(cols, 4, 'packages in 4 columns on desktop');
 const ctaY = (await customer.locator('.quote-cta.top').boundingBox()).y;
 assert.ok(ctaY < (await cards.first().boundingBox()).y, 'quote bar sits above the packages');
 await customer.getByText('฿380,000').first().waitFor();
+// recommendations, instalments, plain-language cover
+assert.equal(await customer.locator('.pkg-card.badge-popular').count(), 1, 'one best seller');
+assert.equal(await customer.locator('.pkg-card.badge-value').count(), 1, 'one best value');
+assert.ok((await customer.locator('.pkg-card.badge-popular').innerText()).includes('ขายดีที่สุด'));
+assert.ok((await customer.locator('.pkg-card.type-T1').first().innerText()).includes('หรือผ่อน 0% 10 เดือน'), 'Class 1 shows monthly instalments');
+assert.ok((await customer.locator('.pkg-card.type-T3P').first().locator('.scenarios .no').count()) >= 3, '3+ lists what it does not cover');
+log('best seller / best value badges, 0% instalments and plain-language cover shown');
+// compare
+await customer.locator('.pkg-card.type-T1').first().getByText('เปรียบเทียบ').click();
+await customer.locator('.pkg-card.type-T2P').first().getByText('เปรียบเทียบ').click();
+await customer.locator('.pkg-card.type-T3P').first().getByText('เปรียบเทียบ').click();
+assert.equal(await customer.locator('.pkg-card.type-T3').locator('input[type=checkbox]').isDisabled(), true, 'max 3 to compare');
+await customer.getByRole('button', { name: 'เปรียบเทียบเลย' }).click();
+const modal = customer.getByRole('dialog', { name: 'เปรียบเทียบแพ็กเกจ' });
+await modal.waitFor();
+assert.equal(await modal.locator('thead th').count(), 4, 'three packages side by side');
+assert.ok((await modal.innerText()).includes('ชนเอง / ไม่มีคู่กรณี'));
+if (shots) await customer.screenshot({ path: `${shots}/1b-compare.png` });
+await modal.getByRole('button', { name: /ปิด/ }).click();
+await customer.getByRole('button', { name: 'ล้าง', exact: true }).click();
+log('compare up to 3 packages side by side');
+// lead capture (same phone as the form, so the later request converts it)
+await customer.locator('#lead-contact').fill('12345');
+await customer.getByRole('button', { name: 'ส่งราคาให้ฉัน' }).click();
+await customer.getByText('กรอกเบอร์มือถือ 10 หลัก หรืออีเมลให้ถูกต้อง').waitFor();
+await customer.locator('#lead-contact').fill('081-234-5678');
+await customer.getByRole('button', { name: 'ส่งราคาให้ฉัน' }).click();
+await customer.getByText(/ส่งราคาไปที่ 0812345678 แล้ว/).waitFor();
+await office.locator('.toast', { hasText: 'ผู้สนใจใหม่ 0812345678' }).waitFor({ timeout: 5000 });
+log('"send me the price" captures a lead and alerts the back office');
 const spill = await customer.locator('.pkg-card').evaluateAll((els) =>
   els.filter((el) => [...el.querySelectorAll('*')].some((c) => c.getBoundingClientRect().right > el.getBoundingClientRect().right + 0.5)).length,
 );
 assert.equal(spill, 0, 'nothing spills out of a package card (incl. CMI)');
 await customer.getByRole('radio', { name: 'ชั้น 1' }).click();
+await cards.first().locator('.details-toggle').click();
 assert.ok((await cards.first().innerText()).includes('฿380,000'), 'Class 1 own damage uses the chosen sum insured');
 if (shots) await customer.screenshot({ path: `${shots}/1-packages.png`, fullPage: true });
 await cards.first().getByRole('button', { name: 'เลือกแพ็กเกจนี้', exact: true }).click();
@@ -123,6 +157,10 @@ log(`package case submitted: ${refA}`);
 // back office tab gets a realtime toast + bell
 await office.locator('.toast', { hasText: refA }).waitFor({ timeout: 5000 });
 log('back office received realtime toast');
+await office.getByRole('tab', { name: /ผู้สนใจ/ }).click();
+await office.locator('.leads-table tr', { hasText: '0812345678' }).first().getByText(refA).waitFor();
+await office.getByRole('tab', { name: 'งาน', exact: true }).click();
+log('lead marked as converted once the same customer submitted');
 
 // email to customer and staff
 const emails = await customer.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')).emails.map((e) => e.template));
@@ -291,10 +329,13 @@ await coInputs.nth(1).setInputFiles(jpg('id.jpg'));
 await customer.locator('.checkout .ok-note').waitFor();
 await customer.getByRole('radio', { name: /กรมธรรม์กระดาษ/ }).click();
 await customer.getByRole('radio', { name: /บัตรเครดิต/ }).click();
+await customer.getByRole('radio', { name: /ผ่อน 0% 6 เดือน/ }).click();
+assert.ok((await customer.locator('.pay-btn').innerText()).includes('/เดือน'), 'pay button shows the monthly amount');
 if (shots) await customer.screenshot({ path: `${shots}/8-checkout.png`, fullPage: true });
 await customer.locator('.pay-btn').click();
 await customer.getByRole('heading', { name: 'ชำระเงินสำเร็จ ออกกรมธรรม์แล้ว' }).waitFor({ timeout: 5000 });
 await customer.getByText(/จัดส่งกรมธรรม์ทาง EMS เลขพัสดุ EB\d{9}TH/).waitFor();
+await customer.getByText(/ผ่อน 0% 6 เดือน/).waitFor();
 await customer.getByRole('button', { name: 'ดู e-Policy' }).click();
 await customer.locator('.policy-doc').getByText('320 รถกระบะส่วนบุคคล').waitFor();
 if (shots) await customer.screenshot({ path: `${shots}/9-self-done.png`, fullPage: true });

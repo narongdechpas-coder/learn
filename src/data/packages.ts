@@ -154,3 +154,32 @@ export function estimateQuote(model: CarModel, code: UsageCode, si: number, type
       return cmiPremium(code) ?? 0;
   }
 }
+
+/** 0% instalments on card: 10 months from 10,000 THB, 6 months from 4,000 THB. */
+export function installmentPlan(premium: number): { months: number; monthly: number } | null {
+  const months = premium >= 10000 ? 10 : premium >= 4000 ? 6 : 0;
+  return months ? { months, monthly: Math.ceil(premium / months) } : null;
+}
+
+/** "Best seller" and "best value" picks among the packages shown for a car. */
+export function packageBadges(pkgs: Package[]): { popular?: string; value?: string } {
+  const has = (id: string) => pkgs.some((p) => p.id === id);
+  const popular = has('T1-garage-0')
+    ? 'T1-garage-0'
+    : (pkgs.find((p) => p.type === 'T2P' && p.ownDamage >= 300000) ?? pkgs.find((p) => p.type === 'T2P'))?.id;
+  const value = has('T1-garage-3000') ? 'T1-garage-3000' : pkgs.find((p) => p.type === 'T3P' && p.ownDamage >= 200000)?.id;
+  return { popular, value: value === popular ? undefined : value };
+}
+
+export type Scenario = 'collide' | 'solo' | 'theftFire' | 'flood' | 'thirdParty';
+export const SCENARIOS: Scenario[] = ['collide', 'solo', 'theftFire', 'flood', 'thirdParty'];
+
+/** Which everyday situations each cover type pays for, in plain terms. */
+export const SCENARIO_COVER: Record<CoverageType, Record<Scenario, boolean>> = {
+  T1: { collide: true, solo: true, theftFire: true, flood: true, thirdParty: true },
+  T2P: { collide: true, solo: false, theftFire: true, flood: false, thirdParty: true },
+  T3P: { collide: true, solo: false, theftFire: false, flood: false, thirdParty: true },
+  T2: { collide: false, solo: false, theftFire: true, flood: false, thirdParty: true },
+  T3: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: true },
+  CMI: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: false },
+};
