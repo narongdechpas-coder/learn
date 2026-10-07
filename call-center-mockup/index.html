@@ -10,6 +10,7 @@
   --gold:#9a6a12; --gold-soft:#f8eed8;
   --good:#1d7a45; --good-soft:#e2f3e8; --warn:#9a5b00; --warn-soft:#fbeed6; --crit:#b42318; --crit-soft:#fde6e3; --info:#1f5fa8; --info-soft:#e3edf9;
   --line-brand:#06a74b; --fb-brand:#1665d8;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
   --scrim:rgba(14,26,23,.48); --shadow:0 18px 50px rgba(14,40,34,.18);
   --f-display:"Anuphan","IBM Plex Sans Thai",system-ui,sans-serif;
   --f-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -22,6 +23,7 @@
   --gold:#e3b456; --gold-soft:#3a2f17;
   --good:#5cc98a; --good-soft:#17321f; --warn:#e8a94a; --warn-soft:#3a2b12; --crit:#f2826f; --crit-soft:#3d1c18; --info:#7fb2f0; --info-soft:#18283d;
   --line-brand:#2fcf72; --fb-brand:#6aa3f5;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
   --scrim:rgba(0,0,0,.6); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1715; --surface:#16211e; --surface-2:#1b2824; --ink:#e7eeeb; --muted:#a3b2ad; --faint:#76857f; --line:#2a3a35;
@@ -29,6 +31,7 @@
   --gold:#e3b456; --gold-soft:#3a2f17;
   --good:#5cc98a; --good-soft:#17321f; --warn:#e8a94a; --warn-soft:#3a2b12; --crit:#f2826f; --crit-soft:#3d1c18; --info:#7fb2f0; --info-soft:#18283d;
   --line-brand:#2fcf72; --fb-brand:#6aa3f5;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
   --scrim:rgba(0,0,0,.6); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -341,6 +344,39 @@ tr.fresh td{background:var(--accent-soft)}
 .pipe-ro span.past{background:var(--accent-soft);color:var(--accent)}
 .pipe-ro span.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);position:relative;z-index:1}
 .pipe-ro span.on.wait{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+/* reports */
+.rep-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.rep-tabs{padding:0;margin-bottom:16px}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.chart{padding:8px 10px 4px;overflow:hidden}
+.chart svg{display:block;max-width:100%;height:auto}
+.chart .ax{font-size:11px;fill:var(--muted);font-family:var(--f-mono)}
+.chart .lbl{font-size:12px;fill:var(--ink);font-family:var(--f-body)}
+.kpi .d .d{font-size:12px}
+.decide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.decide{grid-template-columns:minmax(0,1fr)}}
+.dc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--line)}
+.dc.crit{border-top-color:var(--crit)}.dc.warn{border-top-color:var(--warn)}.dc.good{border-top-color:var(--good)}
+.dc h4{font-size:16px}.dc p{margin:0;color:var(--muted);font-size:13px}
+.chcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.bars.wide .bar-row{grid-template-columns:150px minmax(0,1fr) 88px}
+.dash.ag{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
+@media (max-width:1100px){.dash.ag{grid-template-columns:minmax(0,1fr)}}
+.sortable th,.sortable td{padding:8px 9px}
+@media (max-width:1100px){.chcards{grid-template-columns:minmax(0,1fr)}}
+.chc h3{display:flex;align-items:center}
+.sortable th button{border:0;background:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}
+.sortable tbody tr{cursor:pointer}
+.sortable tbody tr:hover td{background:var(--surface-2)}
+.sortable tbody tr.sel td{background:var(--accent-soft)}
+.stacks{display:flex;flex-direction:column;gap:10px;padding:14px}
+.stk-row{display:grid;grid-template-columns:170px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px}
+.stk-row .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.stk{display:flex;height:16px}
+.stk i{display:block;height:100%;border-right:2px solid var(--surface)}
+.stk i:last-child{border-radius:0 4px 4px 0}
+@media (max-width:520px){.stk-row{grid-template-columns:110px minmax(0,1fr) 54px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -355,6 +391,7 @@ tr.fresh td{background:var(--accent-soft)}
       <button class="tab" role="tab" data-view="desk" aria-selected="false">Agent Desktop</button>
       <button class="tab" role="tab" data-view="arch" aria-selected="false">Architecture</button>
       <button class="tab" role="tab" data-view="dash" aria-selected="false">Supervisor</button>
+      <button class="tab" role="tab" data-view="reports" aria-selected="false">Reports</button>
     </nav>
     <div class="agent-pill"><span class="avatar" id="agentAv">พร</span><span class="nm" id="agentName">พรทิพย์ (Agent #A-217)</span><span class="dot" id="agentDot"></span><span id="agentState">Ready</span></div>
   </div>
@@ -429,6 +466,15 @@ tr.fresh td{background:var(--accent-soft)}
       <div class="panel-h"><h3>Ticket ล่าสุด & Escalation</h3><span class="chip" id="liveCount">0 จาก Demo</span></div>
       <div class="tbl-wrap"><table><thead><tr><th>Ticket</th><th>ลูกค้า</th><th>ช่องทาง</th><th>หมวด</th><th>Priority</th><th>ทีม / ส่วนงาน</th><th class="num">SLA คงเหลือ</th><th>สถานะ</th></tr></thead><tbody id="tktBody"></tbody></table></div>
     </div>
+  </section>
+  <!-- ===== Reports ===== -->
+  <section class="view" id="view-reports" hidden>
+    <div class="rep-head">
+      <div><span class="eyebrow">Reports · ข้อมูลจำลอง · ถึง 07/10/2569</span><h2 style="font-size:24px">รายงานผลการดำเนินงาน</h2></div>
+      <div class="var-pick" id="perPick" role="group" aria-label="ช่วงเวลา"></div>
+    </div>
+    <div class="subtabs rep-tabs" id="repTabs" role="tablist"></div>
+    <div id="repBody"></div>
   </section>
 </main>
 
@@ -838,8 +884,8 @@ const idChip=s=>{const i=s.identity2&&st.searched?s.identity2:s.identity;
 
 /* ===== Views ===== */
 function setView(v){st.view=v;document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  ['launcher','desk','arch','dash'].forEach(k=>$('#view-'+k).hidden=k!==v);
-  if(v==='dash')renderDash(); if(v!=='desk'){$('#toastHost').innerHTML='';} else if(st.step===0)renderToast();
+  ['launcher','desk','arch','dash','reports'].forEach(k=>$('#view-'+k).hidden=k!==v);
+  if(v==='dash')renderDash(); if(v==='reports')renderReports(); if(v!=='desk'){$('#toastHost').innerHTML='';} else if(st.step===0)renderToast();
   try{localStorage.setItem('abc-view',v)}catch(e){}
   window.scrollTo({top:0});}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.view));
@@ -1205,12 +1251,221 @@ function renderDash(){
   $('#tktBody').innerHTML=rows.map(r=>`<tr class="${r.fresh?'fresh':''}"><td class="mono">${r.id}</td><td>${r.name}</td><td>${r.ch}</td><td>${r.cat}</td><td>${chip([r.pri,r.pri==='Urgent'?'crit':r.pri==='High'?'warn':r.pri==='Low'?'':'info'])}</td><td>${r.team}</td><td class="num mono">${r.sla}</td><td>${chip([r.status,r.status==='Escalated'?'crit':r.status==='Resolved'?'good':'acc'])}</td></tr>`).join('');
 }
 const tip=$('#tip');
-document.addEventListener('mousemove',e=>{const r=e.target.closest&&e.target.closest('[data-tip]');if(!r){tip.hidden=true;return;}
+document.addEventListener('mousemove',e=>{const r=e.target.closest&&e.target.closest('[data-tip]');if(!r){if(!String(e.target.id||'').endsWith('-hit'))tip.hidden=true;return;}
   tip.textContent=r.dataset.tip;tip.hidden=false;tip.style.left=Math.min(e.clientX+12,innerWidth-200)+'px';tip.style.top=(e.clientY+14)+'px';});
+
+/* ===== Reports ===== */
+const PER={today:{label:'วันนี้',k:1/30,prev:'เมื่อวาน'},w:{label:'7 วัน',k:7/30,prev:'7 วันก่อนหน้า'},m:{label:'30 วัน',k:1,prev:'30 วันก่อนหน้า'}};
+const REP_TABS=[['exec','ภาพรวมผู้บริหาร'],['agent','พนักงาน'],['channel','ช่องทาง'],['voc','เสียงลูกค้า'],['bo','ส่วนงาน Back Office']];
+const rs={tab:'exec',per:'m',sort:'premium',dir:-1,agent:'A-217'};
+try{const v=JSON.parse(localStorage.getItem('abc-rep')||'{}');if(v.tab)rs.tab=v.tab;if(v.per)rs.per=v.per;}catch(e){}
+const nf=n=>Math.round(n).toLocaleString('en-US');
+const baht=n=>n>=1e6?`฿${(n/1e6).toFixed(1)} ล้าน`:`฿${nf(n)}`;
+const LINE_SAVE=7747*0.55*(82-21)*12; /* สายต่ออายุทาง Voice ~55% ของ 7,747/เดือน ย้ายไป LINE */
+const mmssS=s=>`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`;
+const K=()=>PER[rs.per].k;
+const delta=(v,good,unit='')=>`<span class="d ${good?'up':'down'}">${v>0?'▲':'▼'} ${Math.abs(v)}${unit}</span>`;
+function kpiTile(t,v,d,note){return `<div class="kpi"><div class="t">${t}</div><div class="v">${v}</div><div class="d">${d||''} <span class="muted">${note||''}</span></div></div>`;}
+
+/* deterministic series */
+const rnd=i=>{const x=Math.sin(i*12.9898+78.233)*43758.5453;return x-Math.floor(x);};
+const CHN=[['voice','Voice',1240,'--s1'],['line','LINE OA',660,'--s2'],['fb','Facebook',230,'--s3']];
+const H_SHAPE={voice:[.5,.9,1.25,1.3,1.15,.8,.95,1.2,1.25,1.1,.9,.7,.5],line:[.4,.6,.8,.9,1,.9,.9,1,1,1.1,1.3,1.4,1.2],fb:[.5,.6,.8,.9,1,1,.9,1,1,1.1,1.2,1.3,1.1]};
+const TH_DAY=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+function volSeries(){
+  if(rs.per==='today'){const x=[...Array(13)].map((_,i)=>String(8+i).padStart(2,'0')+':00');
+    return {x,series:CHN.map(([k,n,b,c],ci)=>{const sh=H_SHAPE[k],sum=sh.reduce((a,v)=>a+v,0);return {name:n,color:c,values:sh.map((v,i)=>Math.round(b*1.04*v/sum*(0.92+rnd(i+ci*31)*0.16)))};})};}
+  const n=rs.per==='w'?7:30,end=new Date(2026,9,7),x=[],dows=[];
+  for(let i=n-1;i>=0;i--){const d=new Date(end);d.setDate(end.getDate()-i);dows.push(d.getDay());x.push((n===7?TH_DAY[d.getDay()]+' ':'')+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'));}
+  return {x,series:CHN.map(([k,nm,b,c],ci)=>({name:nm,color:c,values:dows.map((w,i)=>{const wk=w===0||w===6?(k==='voice'?.55:k==='line'?.92:.85):1;return Math.round(b*wk*(0.9+rnd(i+ci*57+n)*0.2)*(k==='line'?1+i/n*0.12:1));})}))};
+}
+const sumSeries=v=>v.series.map(s=>s.values.reduce((a,b)=>a+b,0));
+
+/* charts */
+function niceMax(m){const p=Math.pow(10,Math.floor(Math.log10(m)));const f=m/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;}
+function lineChart(id,d,fmt=nf){
+  const el=document.getElementById(id);if(!el)return;const W=Math.max(320,el.clientWidth||640),H=240,L=46,R=d.series.length>1?78:24,T=14,B=28;
+  const all=d.series.flatMap(s=>s.values),lo=d.min??0,hi=niceMax(Math.max(...all)*1.05),span=hi-lo;
+  const X=i=>L+(W-L-R)*(d.x.length===1?0.5:i/(d.x.length-1)),Y=v=>T+(H-T-B)*(1-(v-lo)/span);
+  const ticks=[0,1,2,3,4].map(i=>lo+span*i/4);
+  const every=Math.ceil(d.x.length/Math.max(2,Math.floor((W-L-R)/62)));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${d.label||''}">`;
+  svg+=ticks.map(t=>`<line x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${Y(t)+4}" text-anchor="end" class="ax">${fmt(t)}</text>`).join('');
+  svg+=d.x.map((x,i)=>i%every===0||i===d.x.length-1?`<text x="${X(i)}" y="${H-8}" text-anchor="middle" class="ax">${x}</text>`:'').join('');
+  d.series.forEach(s=>{svg+=`<polyline fill="none" stroke="var(${s.color})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${s.values.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`;
+    const li=s.values.length-1;svg+=`<circle cx="${X(li)}" cy="${Y(s.values[li])}" r="4" fill="var(${s.color})" stroke="var(--surface)" stroke-width="2"/>`;});
+  if(d.series.length>1){const ends=d.series.map(s=>({s,y:Y(s.values[s.values.length-1])})).sort((a,b)=>a.y-b.y);
+    for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14;
+    svg+=ends.map(e=>`<text x="${W-R+8}" y="${e.y+4}" class="lbl">${e.s.name}</text>`).join('');}
+  svg+=`<line id="${id}-x" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--faint)" stroke-width="1" visibility="hidden"/><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" id="${id}-hit"/></svg>`;
+  el.innerHTML=svg;
+  const hit=document.getElementById(id+'-hit'),xl=document.getElementById(id+'-x');
+  hit.addEventListener('mousemove',e=>{const r=el.querySelector('svg').getBoundingClientRect(),px=(e.clientX-r.left)*(W/r.width);
+    const i=Math.max(0,Math.min(d.x.length-1,Math.round((px-L)/((W-L-R)/Math.max(1,d.x.length-1)))));
+    xl.setAttribute('x1',X(i));xl.setAttribute('x2',X(i));xl.setAttribute('visibility','visible');
+    tip.innerHTML=`<b>${d.x[i]}</b>`+d.series.map(s=>`<br><span class="swatch" style="background:var(${s.color})"></span>${s.name}: ${fmt(s.values[i])}`).join('');
+    tip.hidden=false;tip.style.left=Math.min(e.clientX+14,innerWidth-190)+'px';tip.style.top=(e.clientY+14)+'px';});
+  hit.addEventListener('mouseleave',()=>{xl.setAttribute('visibility','hidden');tip.hidden=true;});
+}
+function sparkline(vals,w=120,h=32){const lo=Math.min(...vals),hi=Math.max(...vals),sp=hi-lo||1,X=i=>2+(w-6)*i/(vals.length-1),Y=v=>3+(h-6)*(1-(v-lo)/sp);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="var(--s1)" stroke-width="2" points="${vals.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/><circle cx="${X(vals.length-1)}" cy="${Y(vals[vals.length-1])}" r="3" fill="var(--s1)"/></svg>`;}
+function hbars(rows,{unit='',fmt=nf,max,wide}={}){const m=max||Math.max(...rows.map(r=>r[1]));
+  return `<div class="bars${wide?' wide':''}">${rows.map(r=>`<div class="bar-row" data-tip="${r[0]}: ${fmt(r[1])}${unit}"><span style="min-width:0;overflow-wrap:anywhere">${r[0]}</span><div class="bar-track"><div class="bar-fill" style="width:${r[1]/m*100}%"></div></div><span class="n">${fmt(r[1])}${unit}</span></div>`).join('')}</div>`;}
+const legend=items=>`<div class="legend">${items.map(([n,c])=>`<span><i class="swatch" style="background:var(${c})"></i>${n}</span>`).join('')}</div>`;
+
+/* --- data --- */
+const AGENTS=[
+ ['พรทิพย์ ศรีสวัสดิ์','A-217',742,338,82,4.7,92,96,15.1,1420000,4.1,[4.4,4.5,4.6,4.7],'ใช้ NBA ได้เป็นธรรมชาติ · ยืนยันตัวตนเร็ว','ลด Hold time ช่วงค้นเอกสาร',[['QA-88120',95,'แจ้งเคลม VIP · ครบทุกขั้น'],['QA-88004',90,'ต่ออายุ LINE · เสนอ Rider ดี']]],
+ ['วีระพงษ์ แก้วใส','A-204',801,312,84,4.6,90,94,12.4,1180000,3.6,[4.5,4.5,4.6,4.6],'FCR สูงสุดในทีม','ลด AHT ช่องทางแชท',[['QA-88111',92,'สลักหลังรถ · อธิบายเบี้ยชัด'],['QA-87990',88,'สอบถามเคลม']]],
+ ['ศศิธร มณีรัตน์','A-231',688,356,79,4.5,88,92,13.0,1050000,5.2,[4.3,4.4,4.4,4.5],'ปิดการขายดี','ใช้ Knowledge base แทนการถามหัวหน้า',[['QA-88098',87,'ลูกค้าใหม่ · ขอ Consent ครบ']]],
+ ['ณัฐวุฒิ ทองมา','A-219',712,365,76,4.3,84,90,9.8,760000,6.0,[4.2,4.3,4.2,4.3],'รับสายได้ปริมาณมาก','ถามคำถามยืนยันตัวตนให้ครบ',[['QA-88075',82,'ลืมยืนยันวันเกิดก่อนเปิดข้อมูล']]],
+ ['กมลชนก ใจดี','A-226',655,330,80,4.6,91,97,8.6,640000,3.9,[4.5,4.6,4.6,4.6],'Adherence ดีมาก','เสนอ NBA ให้บ่อยขึ้น',[['QA-88060',93,'ร้องเรียน · ใช้คำขอโทษเหมาะสม']]],
+ ['ธนากร บุญมี','A-233',590,402,71,4.1,78,88,7.2,410000,8.3,[4.3,4.2,4.1,4.1],'สุภาพ อดทน','AHT สูง · Escalate บ่อย · ทบทวนขั้นตอนเคลม',[['QA-88042',74,'ส่งต่อเคลมผิดทีม'],['QA-87951',79,'ไม่ใช้ AI สรุป']]],
+ ['ปิยะนุช สมบูรณ์','A-208',734,321,83,4.5,89,95,11.6,980000,4.4,[4.4,4.4,4.5,4.5],'ทำงานได้หลายช่องทาง','—',[['QA-88019',90,'Facebook · Priority queue']]],
+ ['อนุสรณ์ เพชรดี','A-241',548,388,74,4.0,76,85,6.1,320000,7.5,[4.0,4.1,4.0,4.0],'เรียนรู้เร็ว (พนักงานใหม่ 3 เดือน)','Coaching: ผลิตภัณฑ์สุขภาพ + การรับมือลูกค้าไม่พอใจ',[['QA-88001',76,'ตอบเงื่อนไขแผนสุขภาพผิด']]],
+ ['รัชนี ทองสุข','A-212',699,344,81,4.4,87,93,10.3,860000,4.8,[4.4,4.3,4.4,4.4],'ความรู้เคลมดี','เพิ่มอัตราเสนอ NBA',[['QA-87988',88,'คู่กรณี · ค้นด้วยทะเบียน']]],
+ ['สมศักดิ์ จันทร์งาม','A-229',667,349,78,4.3,85,91,9.1,700000,5.6,[4.2,4.3,4.3,4.3],'ช่วยเพื่อนในทีม','ลด Hold time',[['QA-87970',85,'ต่ออายุ · ลืมแจ้งช่องทางชำระ']]]];
+const agStatus=a=>a[5]>=4.6&&a[6]>=90?['Top performer','good']:(a[5]<4.2||a[6]<80||a[4]<72)?['Coaching','warn']:['On track',''];
+const CH_KPI={voice:{asa:28,aban:6.8,aht:358,fcr:76,csat:4.4,cost:82,conv:14.2,dA:-4,dF:+3},line:{asa:41,aban:3.1,aht:430,fcr:81,csat:4.7,cost:21,conv:11.0,dA:-9,dF:+5,note:'จัดการพร้อมกันเฉลี่ย 2.6 แชท'},fb:{asa:95,aban:9.4,aht:485,fcr:72,csat:4.2,cost:27,conv:6.1,dA:+6,dF:-1,note:'ช่วง 18:00–21:00 คิวยาว'}};
+const REASONS=[['สอบถามสถานะเคลม',18.4,+2.1,21],['แจ้งเคลม / อุบัติเหตุ',14.2,+0.4,6],['ต่ออายุ / ชำระเบี้ย',12.9,-1.8,9],['ขอเอกสาร / หนังสือรับรอง',9.8,+3.6,7],['แก้ไขข้อมูล / สลักหลัง',8.7,+0.2,8],['สอบถามผลิตภัณฑ์',8.1,-0.5,4],['แอปใช้งานไม่ได้',6.3,+2.9,27],['ร้องเรียน',4.6,-0.7,18]];
+const ROOT=[['ฟอร์มแจ้งเคลมในแอปส่งไม่ผ่าน (iOS 19)',3120,'Digital','กำลังแก้ · ETA 20/10','warn'],['ขอเอกสารเคลมสุขภาพซ้ำหลายรอบ',1840,'Claims – Health','วางแผน Q4','crit'],['SMS ต่ออายุส่งไม่ถึง (เบอร์เก่า)',1150,'CRM / CDP','แก้แล้ว: Customer ID Mapping','good'],['EMS ตีกลับ (ที่อยู่ไม่ครบ)',620,'Policy Issuance','แก้แล้ว: ตรวจที่อยู่ตอนซื้อ','good']];
+const VERBATIM=[['LINE','"ต่ออายุใน LINE จบใน 5 นาที ไม่ต้องโทรเลย"',+0.8],['Voice','"แจ้งเคลมในแอปไม่ได้ เลยต้องโทรมา รอสายนานด้วย"',-0.5],['Facebook','"เคลมค่ารักษา 12 วันแล้วยังไม่ได้เงิน"',-0.7],['Voice','"พนักงานรู้ข้อมูลรถผมหมดเลย ไม่ต้องอธิบายซ้ำ"',+0.9]];
+const DEPTS=[['Underwriting – Motor',['Underwriting'],640,598,74,82,2,[3.1,18.4,9.5]],['Claims – Motor Survey',['Claims – Motor'],2210,2140,160,93,1,[0.6,14.0,2.1]],['Claims – Health',['Claims – Health'],1380,1240,210,79,5,[5.2,30.8,31.0]],['Claims – Third Party',['Claims – Third'],520,490,66,88,1,[2.4,22.0,14.2]],['Policy Issuance & Delivery',['Policy Issuance'],410,396,31,91,3,[1.8,44.0,6.0]],['Policy Service',['Policy Service'],1150,1130,42,96,1,[0.8,11.2,1.5]],['Sales – Renewal / Telesales',['Sales','Telesales'],980,955,38,97,1,[0.5,5.1,4.0]]];
+
+/* --- render --- */
+function renderReports(){
+  $('#perPick').innerHTML=Object.entries(PER).map(([k,p])=>`<button type="button" data-per="${k}" aria-pressed="${rs.per===k}">${p.label}</button>`).join('');
+  $('#repTabs').innerHTML=REP_TABS.map(([k,l])=>`<button class="subtab" role="tab" type="button" data-rt="${k}" aria-selected="${rs.tab===k}">${l}</button>`).join('');
+  document.querySelectorAll('[data-per]').forEach(b=>b.onclick=()=>{rs.per=b.dataset.per;saveRep();renderReports();});
+  document.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{rs.tab=b.dataset.rt;saveRep();renderReports();});
+  $('#repBody').innerHTML={exec:repExec,agent:repAgent,channel:repChannel,voc:repVoc,bo:repBo}[rs.tab]();
+  ({exec:()=>{},agent:bindAgent,channel:()=>lineChart('chVol',{...volSeries(),label:'ปริมาณ Contact รายช่องทาง'}),voc:()=>lineChart('npsLine',{x:[...Array(12)].map((_,i)=>'W'+(29+i)),series:[{name:'NPS',color:'--s1',values:[34,35,35,37,36,38,39,38,40,41,41,42]}],min:30,label:'NPS 12 สัปดาห์'},v=>Math.round(v)),bo:()=>{}})[rs.tab]();
+}
+function saveRep(){try{localStorage.setItem('abc-rep',JSON.stringify({tab:rs.tab,per:rs.per}))}catch(e){}}
+let rsz;addEventListener('resize',()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(st.view==='reports'&&(rs.tab==='channel'||rs.tab==='voc'))renderReports();},200);});
+
+function repExec(){const k=K(),p=PER[rs.per];
+  const prem=[['ต่ออายุ (Renewal)',9.8e6],['Cross-sell (NBA)',4.1e6],['Lead → ปิดการขาย',2.4e6],['Upsell / Rider (NBA)',2.3e6]].map(r=>[r[0],r[1]*k]);
+  const tot=prem.reduce((a,r)=>a+r[1],0);
+  const fun=[['NBA ที่เสนอ',18400],['ลูกค้าสนใจ',5150],['ปิดการขาย',2310]].map(r=>[r[0],r[1]*k]);
+  return `<div class="kpis">
+    ${kpiTile('เบี้ยประกันจาก Contact Center',baht(tot),delta(12,true,'%'),'vs '+p.prev)}
+    ${kpiTile('เบี้ยที่รักษาไว้ (Retention)',baht(3.2e6*k),delta(18,true,'%'),nf(214*k)+' กรมธรรม์')}
+    ${kpiTile('ต้นทุนต่อ Contact',`฿58`,delta(-13,true,' บาท'),'จาก ฿71')}
+    ${kpiTile('FCR',`78%`,delta(6,true,' pts'),'แก้จบในครั้งเดียว')}
+    ${kpiTile('CSAT / NPS',`4.5 · +42`,delta(4,true,' NPS'),'')}
+    ${kpiTile('คืนทุนโครงการ',`14 เดือน`,'<span class="muted">ROI 3 ปี 2.4 เท่า</span>','')}
+  </div>
+  <div class="dash">
+    <div class="panel"><div class="panel-h"><h3>เบี้ยประกันที่ Contact Center สร้าง</h3><span class="muted" style="font-size:12px">${p.label} · รวม ${baht(tot)}</span></div>${hbars(prem,{fmt:baht,wide:true})}</div>
+    <div class="panel"><div class="panel-h"><h3>NBA Funnel</h3><span class="muted" style="font-size:12px">อัตราปิดการขาย ${(2310/18400*100).toFixed(1)}%</span></div>${hbars(fun)}
+      <div class="panel-b muted" style="font-size:12px;border-top:1px solid var(--line)">ข้อเสนอมาจาก CDP (Propensity + Segment) และวัดผลกลับเข้า CDP ทุกครั้งที่ Agent บันทึกผล</div></div>
+  </div>
+  <div class="dash" style="margin-top:14px">
+    <div class="panel"><div class="panel-h"><h3>ต้นทุนต่อ Contact รายช่องทาง</h3><span class="muted" style="font-size:12px">บาท / Contact</span></div>${hbars([['Voice',82],['Facebook',27],['LINE OA',21],['LINE Bot (Self-service)',4]],{unit:' ฿'})}
+      <div class="panel-b muted" style="font-size:12px;border-top:1px solid var(--line)">ย้ายสายต่ออายุทาง Voice (~4,260 สาย/เดือน) ไป LINE ประหยัดได้ประมาณ ${baht(LINE_SAVE)} ต่อปี</div></div>
+    <div class="panel"><div class="panel-h"><h3>ก่อน vs หลังใช้ CRM × CDP</h3><span class="chip acc">Baseline Q1/2569</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>ตัวชี้วัด</th><th class="num">ก่อน</th><th class="num">หลัง</th><th class="num">เปลี่ยน</th></tr></thead><tbody>
+      ${[['AHT (นาที)','6:30','5:42','−12%'],['เวลายืนยันตัวตน','90 วิ','5 วิ','−94%'],['FCR','72%','78%','+6 pts'],['ติดต่อซ้ำใน 7 วัน','18%','11%','−7 pts'],['สัดส่วนช่องทางดิจิทัล','28%','42%','+14 pts'],['NBA conversion','—','12.6%','ใหม่']].map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td class="num">${chip([r[3],r[3]==='ใหม่'?'info':'good'])}</td></tr>`).join('')}
+      </tbody></table></div></div>
+  </div>
+  <h3 style="font-size:17px;margin:22px 0 10px">ประเด็นที่ CEO ต้องตัดสินใจ</h3>
+  <div class="decide">
+    ${[['crit','ฟอร์มแจ้งเคลมในแอปพัง','ทำให้มีสายเข้าเพิ่ม 3,120 สาย/เดือน (9% ของสายเคลมรถ) และ CSAT ช่องทางแอปลดลง',`ต้นทุนสายเกิน ${baht(3120*82*12)}/ปี`,'Digital · เร่งแก้ภายใน 20/10'],
+       ['good','ย้ายงานต่ออายุไป LINE','LINE ต้นทุนต่ำสุด (฿21) และ CSAT สูงสุด (4.7) ลูกค้าต่ออายุใน LINE จบใน 5 นาที',`ประหยัด ~${baht(LINE_SAVE)}/ปี + เบี้ย Rider เพิ่ม`,'Marketing + Renewal Desk'],
+       ['warn','Claims Health ช้ากว่า OLA','อยู่ใน OLA เพียง 79% · เวลารอลูกค้าส่งเอกสาร 31 ชม. เพราะขอเอกสารซ้ำหลายรอบ','เสี่ยงเรื่องร้องเรียน คปภ. + Churn กลุ่ม Gold','Claims · Checklist เอกสารครั้งเดียว']]
+      .map(c=>`<article class="dc ${c[0]}"><h4>${c[1]}</h4><p>${c[2]}</p><div class="nba-row"><b style="font-size:13px">${c[3]}</b></div><span class="muted" style="font-size:12px">ผู้รับผิดชอบ: ${c[4]}</span></article>`).join('')}
+  </div>`;}
+
+function repAgent(){const k=K(),demo=st.created.length;
+  const rows=AGENTS.map(a=>({a,name:a[0],id:a[1],handled:Math.round(a[2]*k)+(a[1]==='A-217'?demo:0),aht:a[3],fcr:a[4],csat:a[5],qa:a[6],adh:a[7],conv:a[8],premium:a[9]*k,esc:a[10]}));
+  rows.sort((x,y)=>(x[rs.sort]>y[rs.sort]?1:x[rs.sort]<y[rs.sort]?-1:0)*rs.dir);
+  const avg=f=>rows.reduce((s,r)=>s+r[f],0)/rows.length;
+  const cols=[['name','พนักงาน'],['handled','Contact'],['aht','AHT'],['fcr','FCR'],['csat','CSAT'],['qa','QA'],['adh','Adherence'],['conv','NBA conv.'],['premium','เบี้ยที่สร้าง'],['esc','Escalate']];
+  const sel=rows.find(r=>r.id===rs.agent)||rows[0],a=sel.a,stt=agStatus(a);
+  return `<div class="kpis">
+    ${kpiTile('Contact ที่ทีมรับ',nf(rows.reduce((s,r)=>s+r.handled,0)),'',PER[rs.per].label+(demo?` · รวม Demo ${demo}`:''))}
+    ${kpiTile('AHT เฉลี่ย',mmssS(avg('aht')),delta(-0.8,true,' นาที'),'')}
+    ${kpiTile('FCR เฉลี่ย',avg('fcr').toFixed(0)+'%','','เป้า 75%')}
+    ${kpiTile('CSAT เฉลี่ย',avg('csat').toFixed(2),'','เป้า 4.4')}
+    ${kpiTile('QA เฉลี่ย',avg('qa').toFixed(0),'','เป้า 85')}
+    ${kpiTile('ต้อง Coaching',String(rows.filter(r=>agStatus(r.a)[0]==='Coaching').length)+' คน','','')}
+  </div>
+  <div class="dash ag">
+   <div class="panel"><div class="panel-h"><h3>ทีม Hotline A · 10 คน</h3><span class="muted" style="font-size:12px">คลิกหัวคอลัมน์เพื่อเรียง · คลิกแถวเพื่อดูรายละเอียด</span></div>
+    <div class="tbl-wrap"><table class="sortable"><thead><tr>${cols.map(([f,l])=>`<th class="${f==='name'?'':'num'}"><button type="button" data-sort="${f}">${l}${rs.sort===f?(rs.dir<0?' ▼':' ▲'):''}</button></th>`).join('')}<th>สถานะ</th></tr></thead><tbody>
+    ${rows.map(r=>{const s=agStatus(r.a);return `<tr data-ag="${r.id}" class="${r.id===rs.agent?'sel':''}" tabindex="0"><td><b>${r.name}</b> <span class="mono muted">${r.id}</span></td><td class="num">${nf(r.handled)}</td><td class="num">${mmssS(r.aht)}</td><td class="num">${r.fcr}%</td><td class="num">${r.csat.toFixed(1)}</td><td class="num">${r.qa}</td><td class="num">${r.adh}%</td><td class="num">${r.conv.toFixed(1)}%</td><td class="num">${baht(r.premium)}</td><td class="num">${r.esc.toFixed(1)}%</td><td>${chip(s)}</td></tr>`}).join('')}
+    </tbody></table></div></div>
+   <div class="panel"><div class="p360-head"><span class="avatar">${a[0].slice(0,2)}</span><div style="flex:1;min-width:0"><h3>${a[0]}</h3><div class="muted mono" style="font-size:12px">${a[1]} · Hotline A</div></div>${chip(stt)}</div>
+    <div class="kv"><div><span>CSAT 4 สัปดาห์</span>${sparkline(a[11])}<b style="display:block;font-size:12px">${a[11].join(' → ')}</b></div><div><span>NBA conversion</span><b>${a[8]}%</b></div><div><span>เบี้ยที่สร้าง</span><b>${baht(a[9]*K())}</b></div></div>
+    <div class="panel-b" style="display:flex;flex-direction:column;gap:10px">
+     <div><span class="eyebrow">จุดแข็ง</span><p style="margin:.3em 0 0">${a[12]}</p></div>
+     <div><span class="eyebrow">หัวข้อ Coaching</span><p style="margin:.3em 0 0">${a[13]}</p></div>
+     <div><span class="eyebrow">QA ล่าสุด (สุ่มจากสายที่บันทึก)</span><div class="mini" style="margin-top:6px">${a[14].map(q=>`<div class="row"><div><b class="mono">${q[0]}</b><div class="muted" style="font-size:12px">${q[2]}</div></div>${chip([q[1]+'/100',q[1]>=90?'good':q[1]>=80?'':'warn'])}</div>`).join('')}</div></div>
+    </div></div>
+  </div>`;}
+function bindAgent(){document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{const f=b.dataset.sort;if(rs.sort===f)rs.dir*=-1;else{rs.sort=f;rs.dir=f==='name'||f==='aht'||f==='esc'?1:-1;}renderReports();});
+  document.querySelectorAll('[data-ag]').forEach(r=>{const go=()=>{rs.agent=r.dataset.ag;renderReports();};r.onclick=go;r.onkeydown=e=>{if(e.key==='Enter')go();};});}
+
+function repChannel(){const vs=volSeries(),tot=sumSeries(vs),all=tot.reduce((a,b)=>a+b,0);
+  const hours=rs.per==='today'?vs.x.map((x,i)=>[x,vs.series.reduce((s,se)=>s+se.values[i],0)]):[...Array(13)].map((_,i)=>[String(8+i).padStart(2,'0')+':00',Math.round(CHN.reduce((s,[kk,n,b])=>{const sh=H_SHAPE[kk],sm=sh.reduce((a,v)=>a+v,0);return s+b*sh[i]/sm;},0))]);
+  const peak=hours.reduce((m,h)=>h[1]>m[1]?h:m,hours[0]);
+  return `<div class="chcards">${CHN.map(([k,n,b,c],i)=>{const m=CH_KPI[k];return `<div class="panel chc"><div class="panel-h"><h3><i class="swatch" style="background:var(${c})"></i>${n}</h3><span class="mono">${nf(tot[i])} · ${(tot[i]/all*100).toFixed(0)}%</span></div>
+    <div class="kv" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div><span>${k==='voice'?'ASA (รอสาย)':'ตอบครั้งแรก'}</span><b>${mmssS(m.asa)}</b></div><div><span>Abandon</span><b>${m.aban}%</b></div><div><span>AHT</span><b>${mmssS(m.aht)}</b></div><div><span>FCR</span><b>${m.fcr}%</b></div>
+    <div><span>CSAT</span><b>${m.csat}</b></div><div><span>ต้นทุน/Contact</span><b>฿${m.cost}</b></div><div><span>NBA conv.</span><b>${m.conv}%</b></div><div><span>Abandon vs ก่อนหน้า</span><b class="${m.dA<0?'up':'down'}">${m.dA>0?'+':''}${m.dA}%</b></div></div>
+    ${m.note?`<div class="panel-b muted" style="font-size:12px">${m.note}</div>`:''}</div>`}).join('')}</div>
+  <div class="panel" style="margin-top:14px"><div class="panel-h"><h3>ปริมาณ Contact รายช่องทาง</h3>${legend(CHN.map(c=>[c[1],c[3]]))}</div><div class="chart" id="chVol"></div></div>
+  <div class="panel" style="margin-top:14px"><div class="panel-h"><h3>ปริมาณตามช่วงเวลา (เฉลี่ยต่อวัน)</h3>${chip(['ช่วงพีค '+peak[0],'warn'])}</div>${hbars(hours)}
+   <div class="panel-b muted" style="font-size:12px;border-top:1px solid var(--line)">ใช้วางกะพนักงาน (WFM): ช่วงพีคต้องการ Agent เพิ่ม 4 คน · LINE/Facebook พีคช่วงเย็นหลัง 18:00</div></div>`;}
+
+function repVoc(){const vs=volSeries(),all=sumSeries(vs).reduce((a,b)=>a+b,0);
+  return `<div class="kpis">
+    ${kpiTile('NPS','+42',delta(4,true),'12 สัปดาห์')}
+    ${kpiTile('CSAT','4.5',delta(0.1,true),'จาก 5')}
+    ${kpiTile('อัตราร้องเรียน','4.6%',delta(-0.7,true,' pts'),nf(all*0.046)+' เรื่อง')}
+    ${kpiTile('ติดต่อซ้ำใน 7 วัน','11%',delta(-7,true,' pts'),'')}
+  </div>
+  <div class="dash">
+   <div class="panel"><div class="panel-h"><h3>เหตุผลที่ลูกค้าติดต่อ (AI Topic)</h3><span class="muted" style="font-size:12px">% ของ ${nf(all)} Contact</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>เหตุผล</th><th class="num">สัดส่วน</th><th class="num">จำนวน</th><th class="num">แนวโน้ม</th><th class="num">ติดต่อซ้ำ</th></tr></thead><tbody>
+    ${REASONS.map(r=>`<tr data-tip="${r[0]}: ${r[1]}%"><td>${r[0]}<div class="meter" style="margin-top:4px"><i style="width:${r[1]/REASONS[0][1]*100}%;background:var(--bar)"></i></div></td><td class="num">${r[1]}%</td><td class="num">${nf(all*r[1]/100)}</td><td class="num">${chip([(r[2]>0?'▲ ':'▼ ')+Math.abs(r[2])+' pts',r[2]>2?'warn':r[2]<0?'good':''])}</td><td class="num">${chip([r[3]+'%',r[3]>=15?'crit':r[3]>=9?'warn':''])}</td></tr>`).join('')}
+    </tbody></table></div></div>
+   <div class="panel"><div class="panel-h"><h3>NPS 12 สัปดาห์</h3><span class="muted" style="font-size:12px">ตั้งแต่เปิดใช้ CRM × CDP</span></div><div class="chart" id="npsLine"></div>
+    <div class="panel-b" style="border-top:1px solid var(--line)"><span class="eyebrow">เสียงลูกค้า</span><div class="mini" style="margin-top:6px">${VERBATIM.map(v=>`<div class="row"><div style="flex:1">${v[1]}<div class="muted" style="font-size:12px">${v[0]}</div></div>${chip([(v[2]>0?'+':'')+v[2],v[2]>0?'good':'crit'])}</div>`).join('')}</div></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="panel-h"><h3>Root cause ที่ต้องแก้ต้นเหตุ</h3><span class="muted" style="font-size:12px">ต้นทุนคิดจาก ฿82/สาย · ต่อเดือน</span></div>
+   <div class="tbl-wrap"><table><thead><tr><th>สาเหตุ</th><th class="num">Contact ที่เกิดจากสาเหตุนี้</th><th class="num">ต้นทุน/เดือน</th><th>เจ้าของเรื่อง</th><th>สถานะ</th></tr></thead><tbody>
+   ${ROOT.map(r=>`<tr><td>${r[0]}</td><td class="num">${nf(r[1])}</td><td class="num">${baht(r[1]*82)}</td><td>${r[2]}</td><td>${chip([r[3],r[4]])}</td></tr>`).join('')}
+   </tbody></table></div></div>`;}
+
+function repBo(){const k=K();
+  const rows=DEPTS.map(d=>{const demo=st.created.filter(c=>c.status==='Closed'&&d[1].some(p=>(c.dept||'').startsWith(p))).length;
+    const tat=d[7].reduce((a,b)=>a+b,0);return {name:d[0],inn:Math.round(d[2]*k)+demo,closed:Math.round(d[3]*k)+demo,backlog:d[4],ola:d[5],olaD:d[6],tat,stack:d[7],demo};});
+  const maxT=Math.max(...rows.map(r=>r.tat));
+  const SEG=[['รอรับเรื่อง','--s1'],['กำลังดำเนินการ','--s2'],['รอลูกค้า','--s3']];
+  const aging=[['0–1 วัน',301,''],['1–3 วัน',182,''],['3–7 วัน',98,'warn'],['> 7 วัน',40,'crit']];
+  const fmtH=h=>h>=24?(h/24).toFixed(1)+' วัน':h.toFixed(1)+' ชม.';
+  return `<div class="kpis">
+    ${kpiTile('Ticket ที่ส่งต่อส่วนงาน',nf(rows.reduce((s,r)=>s+r.inn,0)),'',PER[rs.per].label)}
+    ${kpiTile('ปิดแล้ว',nf(rows.reduce((s,r)=>s+r.closed,0)),'',st.created.some(c=>c.status==='Closed')?'รวมที่ปิดใน Demo':'')}
+    ${kpiTile('Backlog คงค้าง',nf(rows.reduce((s,r)=>s+r.backlog,0)),'','ทุกส่วนงาน')}
+    ${kpiTile('อยู่ใน OLA',`89%`,delta(3,true,' pts'),'เป้า 90%')}
+  </div>
+  <div class="panel"><div class="panel-h"><h3>ผลงานรายส่วนงาน</h3><span class="muted" style="font-size:12px">${PER[rs.per].label}</span></div>
+   <div class="tbl-wrap"><table><thead><tr><th>ส่วนงาน</th><th class="num">รับเข้า</th><th class="num">ปิด</th><th class="num">Backlog</th><th class="num">เวลาเฉลี่ย</th><th class="num">OLA</th><th>อยู่ใน OLA</th><th class="num">รอลูกค้า</th></tr></thead><tbody>
+   ${rows.map(r=>`<tr><td><b>${r.name}</b>${r.demo?` ${chip(['+'+r.demo+' Demo','acc'])}`:''}</td><td class="num">${nf(r.inn)}</td><td class="num">${nf(r.closed)}</td><td class="num">${nf(r.backlog)}</td><td class="num">${fmtH(r.tat)}</td><td class="num">${r.olaD} วัน</td><td><div style="display:flex;align-items:center;gap:8px;min-width:150px"><div class="meter ${r.ola>=90?'good':r.ola>=85?'warn':'crit'}" style="flex:1"><i style="width:${r.ola}%"></i></div>${chip([r.ola+'%',r.ola>=90?'good':r.ola>=85?'warn':'crit'])}</div></td><td class="num">${fmtH(r.stack[2])}</td></tr>`).join('')}
+   </tbody></table></div></div>
+  <div class="dash" style="margin-top:14px">
+   <div class="panel"><div class="panel-h"><h3>เวลาที่ Ticket อยู่ในแต่ละสถานะ</h3>${legend(SEG.map(s=>[s[0],s[1]]))}</div>
+    <div class="stacks">${rows.map(r=>`<div class="stk-row"><span>${r.name}</span><div class="stk">${r.stack.map((v,i)=>`<i style="width:${v/maxT*100}%;background:var(${SEG[i][1]})" data-tip="${r.name} · ${SEG[i][0]}: ${fmtH(v)}"></i>`).join('')}</div><span class="n">${fmtH(r.tat)}</span></div>`).join('')}</div>
+    <div class="panel-b muted" style="font-size:12px;border-top:1px solid var(--line)">Claims Health ใช้เวลารอลูกค้ามากที่สุด (31 ชม.) ปัญหาอยู่ที่การขอเอกสารซ้ำ ไม่ใช่ขาดคน · Policy Issuance ช้าที่ขั้นดำเนินการ (พิมพ์และจัดส่ง)</div></div>
+   <div class="panel"><div class="panel-h"><h3>อายุ Backlog</h3>${chip(['> 7 วัน: เกิน OLA ทุกส่วนงาน','crit'])}</div>${hbars(aging.map(a=>[a[0],a[1]]))}
+    <div class="panel-b muted" style="font-size:12px;border-top:1px solid var(--line)">Ticket ที่ค้างเกิน 7 วันจะแจ้ง Supervisor ของส่วนงานอัตโนมัติทุกเช้า</div></div>
+  </div>`;}
 
 /* init */
 renderLauncher();renderArch();renderDesk();
 let v0='launcher';try{v0=localStorage.getItem('abc-view')||'launcher'}catch(e){}
-if(location.hash&&['launcher','desk','arch','dash'].includes(location.hash.slice(1)))v0=location.hash.slice(1);
+if(location.hash&&['launcher','desk','arch','dash','reports'].includes(location.hash.slice(1)))v0=location.hash.slice(1);
 setView(v0);
 </script>
