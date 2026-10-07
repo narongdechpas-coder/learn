@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Case, CoverageType, Customer as CustomerT, DocKey, Package } from '../types';
-import { BRANDS, CURRENT_YEAR, PROVINCES, brandById, modelById, modelsOf, suggestedSumInsured, vehicleLabel, yearsOf } from '../data/vehicles';
+import { BRANDS, CURRENT_YEAR, MODELS, PROVINCES, brandById, modelById, modelsOf, suggestedSumInsured, vehicleLabel, yearsOf } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, cmiPremium, packagesFor } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, fmtBaht, fmtDateTime, fmtSize, useT, type TKey } from '../i18n';
 import { canUpload, customerConfirm, customerDecline, docsMissing, submitCase, totalPremium, uploadDoc, useStore } from '../store';
@@ -72,9 +72,9 @@ function Steps({ step }: { step: Step }) {
 function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const { t, lang } = useT();
   const [step, setStep] = useState<Step>('car');
-  const [brandId, setBrandId] = useState('toyota');
-  const [modelId, setModelId] = useState('toyota-yaris-ativ');
-  const [year, setYear] = useState(2022);
+  const [brandId, setBrandId] = useState('');
+  const [modelId, setModelId] = useState('');
+  const [year, setYear] = useState(0);
   const [pkg, setPkg] = useState<Package | null>(null);
   const [addCmi, setAddCmi] = useState(true);
   const [filter, setFilter] = useState<CoverageType | 'all'>('all');
@@ -84,9 +84,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [errors, setErrors] = useState<Partial<Record<keyof CustomerT, string>>>({});
   const [doneId, setDoneId] = useState<string | null>(null);
 
-  const model = modelById(modelId);
-  const si = suggestedSumInsured(model, year);
-  const pkgs = useMemo(() => packagesFor(model, year, si), [model, year, si]);
+  const picked = modelId ? modelById(modelId) : undefined;
+  const ready = !!(brandId && picked && year);
+  // Later steps are only reachable once the car is fully chosen.
+  const model = picked ?? MODELS[0];
+  const si = ready ? suggestedSumInsured(model, year) : 0;
+  const pkgs = useMemo(() => (ready ? packagesFor(model, year, si) : []), [ready, model, year, si]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
   const source = pkg ? 'package' : 'quote';
@@ -94,15 +97,15 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const cmi = cmiPremium(model.body);
 
   const pickBrand = (id: string) => {
+    if (id === brandId) return;
     setBrandId(id);
-    const first = modelsOf(id)[0];
-    setModelId(first.id);
-    setYear(first.yearTo);
+    setModelId('');
+    setYear(0);
   };
   const pickModel = (id: string) => {
     setModelId(id);
-    const md = modelById(id);
-    if (year < md.yearFrom || year > md.yearTo) setYear(md.yearTo);
+    const md = id ? modelById(id) : undefined;
+    if (!md || year < md.yearFrom || year > md.yearTo) setYear(0);
   };
 
   const goPackages = () => {
@@ -171,34 +174,52 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             ))}
           </div>
           <div className="grid-2">
-            <Field htmlFor="car-model" label={t('model')}>
-              <select id="car-model" value={modelId} onChange={(e) => pickModel(e.target.value)}>
-                {modelsOf(brandId).map((x) => (
-                  <option key={x.id} value={x.id}>{x.name}</option>
-                ))}
+            <Field htmlFor="car-model" label={t('model')} hint={!brandId ? t('pickBrandFirst') : undefined}>
+              <select id="car-model" key={brandId} className={brandId ? 'pop' : ''} value={modelId} disabled={!brandId} onChange={(e) => pickModel(e.target.value)}>
+                <option value="">{t('pickModel')}</option>
+                {brandId &&
+                  modelsOf(brandId).map((x) => (
+                    <option key={x.id} value={x.id}>{x.name}</option>
+                  ))}
               </select>
             </Field>
-            <Field htmlFor="car-year" label={t('year')} hint={t('soldYears', { from: model.yearFrom, to: model.yearTo })}>
-              <select id="car-year" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-                {yearsOf(model).map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+            <Field htmlFor="car-year" label={t('year')} hint={picked ? t('soldYears', { from: picked.yearFrom, to: picked.yearTo }) : t('pickModelFirst')}>
+              <select id="car-year" key={modelId} className={picked ? 'pop' : ''} value={year || ''} disabled={!picked} onChange={(e) => setYear(Number(e.target.value))}>
+                <option value="">{t('pickYear')}</option>
+                {picked &&
+                  yearsOf(picked).map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
               </select>
             </Field>
           </div>
-          <div className="si-box">
-            <div>
-              <div className="eyebrow">{t('suggestedSI', { year: CURRENT_YEAR })}</div>
-              <div className="si-value num">{fmtBaht(si, lang)}</div>
-              <div className="hint">{t('siNote', { price: fmtBaht(model.newPrice, lang) })}</div>
+          {ready ? (
+            <div className="si-box reveal" key={`${modelId}-${year}`}>
+              <div>
+                <div className="eyebrow">{t('suggestedSI', { year: CURRENT_YEAR })}</div>
+                <div className="si-value num"><CountUp value={si} format={(n) => fmtBaht(n, lang)} /></div>
+                <div className="hint">{t('siNote', { price: fmtBaht(model.newPrice, lang) })}</div>
+              </div>
+              <div className="car-meta">
+                <span className="chip">{t(BODY_KEY[model.body])}</span>
+                <span className="chip">{brandById(brandId).name} {model.name} · {year}</span>
+              </div>
             </div>
-            <div className="car-meta">
-              <span className="chip">{t(BODY_KEY[model.body])}</span>
-              <span className="chip">{brandById(brandId).name} {model.name} · {year}</span>
+          ) : (
+            <div className="si-pending" aria-live="polite">
+              <ul>
+                {([['brand', !!brandId], ['model', !!picked], ['year', !!year]] as const).map(([k, ok]) => (
+                  <li key={k} className={ok ? 'ok' : ''}>
+                    <span className="tick" aria-hidden="true">{ok ? '✓' : ''}</span>
+                    {t(k)}
+                  </li>
+                ))}
+              </ul>
+              <p>{t('siPending')}</p>
             </div>
-          </div>
+          )}
           <div className="actions">
-            <button className="btn primary" type="button" onClick={goPackages}>{t('seePackages')} →</button>
+            <button className="btn primary" type="button" disabled={!ready} onClick={goPackages}>{t('seePackages')} →</button>
           </div>
         </section>
       )}
@@ -359,7 +380,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           <p className="hint">{t('doneEmail', { email: customer.email })}</p>
           <div className="actions center">
             <button className="btn primary" type="button" onClick={() => onTrack(doneId)}>{t('goTrack')}</button>
-            <button className="btn" type="button" onClick={() => { setStep('car'); setCustomer(SAMPLE_CUSTOMER()); setPkg(null); }}>{t('newRequest')}</button>
+            <button className="btn" type="button" onClick={() => { setStep('car'); setCustomer(SAMPLE_CUSTOMER()); setPkg(null); setBrandId(''); setModelId(''); setYear(0); }}>{t('newRequest')}</button>
           </div>
         </section>
       )}
@@ -604,3 +625,23 @@ function DocTile({ caseId, k, meta, label, disabled, onFile }: { caseId: string;
   );
 }
 
+
+/** Counts up to `value` once on mount (instant when the viewer prefers reduced motion). */
+function CountUp({ value, format, ms = 700 }: { value: number; format: (n: number) => string; ms?: number }) {
+  const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [n, setN] = useState(reduce ? value : 0);
+  const raf = useRef(0);
+  useEffect(() => {
+    if (reduce) return setN(value);
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(p < 1 ? Math.round((value * eased) / 1000) * 1000 : value);
+      if (p < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [value, ms, reduce]);
+  return <span aria-label={format(value)}>{format(n)}</span>;
+}

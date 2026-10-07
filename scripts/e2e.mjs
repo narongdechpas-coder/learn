@@ -38,7 +38,16 @@ log('customer and back-office tabs open');
 
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
-await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+const seeBtn = customer.getByRole('button', { name: /ดูแพ็กเกจ/ });
+assert.equal(await seeBtn.isDisabled(), true, 'packages locked until car is chosen');
+assert.equal(await customer.locator('.si-value').count(), 0, 'no sum insured before brand/model/year');
+await customer.getByRole('radio', { name: 'Toyota' }).click();
+await customer.locator('#car-model').selectOption('toyota-yaris-ativ');
+assert.equal(await customer.locator('.si-value').count(), 0, 'still hidden without a year');
+await customer.locator('#car-year').selectOption('2022');
+await customer.locator('.si-value').waitFor();
+log('sum insured appears only after brand, model and year');
+await seeBtn.click();
 await customer.getByRole('heading', { name: /แพ็กเกจสำหรับ Toyota Yaris Ativ 2022/ }).waitFor();
 const cards = customer.locator('.pkg-card');
 assert.ok((await cards.count()) >= 6, 'expected several packages');
@@ -102,6 +111,7 @@ await customer.getByRole('tab', { name: 'ซื้อประกัน' }).clic
 await customer.getByRole('button', { name: 'เริ่มคำขอใหม่', exact: true }).click().catch(() => {});
 await customer.getByRole('radio', { name: 'Mazda' }).click();
 await customer.locator('#car-model').selectOption('mazda-mx-5');
+await customer.locator('#car-year').selectOption('2024');
 await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
 await customer.getByText('ยังไม่มีแพ็กเกจสำเร็จรูปสำหรับรถคันนี้').waitFor();
 await customer.getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
@@ -162,6 +172,11 @@ if (shots) {
   await office.screenshot({ path: `${shots}/5-dashboard-dark.png`, fullPage: true });
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await phone.goto(url + '#customer');
+  await phone.getByRole('radio', { name: 'Honda' }).click();
+  await phone.locator('#car-model').selectOption('honda-city');
+  await phone.locator('#car-year').selectOption('2023');
+  await phone.waitForTimeout(900);
+  await phone.screenshot({ path: `${shots}/6a-phone-car.png`, fullPage: true });
   await phone.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
   await phone.screenshot({ path: `${shots}/6-phone.png`, fullPage: true });
   const overflow = await phone.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
