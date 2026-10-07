@@ -5,6 +5,8 @@
 
 **เปิดเดโม:** ดาวน์โหลด `dist/index.html` แล้วดับเบิลคลิกเปิดในเบราว์เซอร์
 
+**ฉบับ Offline (ไม่ต้องต่ออินเทอร์เน็ตเลย):** ดาวน์โหลด `dist/abc-motor-insurance-demo-offline.zip` แตกไฟล์ แล้วดับเบิลคลิก `abc-motor-insurance-demo.html` ฟอนต์ฝังอยู่ในไฟล์แล้ว รายละเอียดอยู่ใน `README.txt` ในไฟล์ zip
+
 ## สิ่งที่ทำได้
 
 | ส่วน | รายละเอียด |
@@ -51,7 +53,9 @@
 ```bash
 npm install
 npm run typecheck
-npm run build                                    # สร้าง dist/index.html
+npm run build                                    # สร้าง dist/index.html และ dist/offline/
+npm run package:offline                          # สร้าง dist/abc-motor-insurance-demo-offline.zip
+CHROMIUM_PATH=/path/to/chromium npm run test:offline  # เปิดไฟล์ offline โดยบล็อกเน็ตทั้งหมดแล้วตรวจ
 CHROMIUM_PATH=/path/to/chromium npm test         # ทดสอบ end-to-end ด้วย Playwright
 ```
 
