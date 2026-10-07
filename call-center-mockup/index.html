@@ -1,0 +1,861 @@
+<title>ABC Contact Center 360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell — sticky top bar with view tabs; Agent Desktop = presenter bar + 3-column workspace (conversation · Customer 360 · ticket) */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --surface-2:#f6f8f7; --ink:#14211f; --muted:#56655f; --faint:#8a9893; --line:#d9e1de;
+  --accent:#0d6e5d; --accent-soft:#e1f1ec; --accent-ink:#ffffff; --bar:#0f8a74;
+  --gold:#9a6a12; --gold-soft:#f8eed8;
+  --good:#1d7a45; --good-soft:#e2f3e8; --warn:#9a5b00; --warn-soft:#fbeed6; --crit:#b42318; --crit-soft:#fde6e3; --info:#1f5fa8; --info-soft:#e3edf9;
+  --line-brand:#06a74b; --fb-brand:#1665d8;
+  --scrim:rgba(14,26,23,.48); --shadow:0 18px 50px rgba(14,40,34,.18);
+  --f-display:"Anuphan","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1b2824; --ink:#e7eeeb; --muted:#a3b2ad; --faint:#76857f; --line:#2a3a35;
+  --accent:#3bbfa3; --accent-soft:#17352e; --accent-ink:#06201a; --bar:#1f9f86;
+  --gold:#e3b456; --gold-soft:#3a2f17;
+  --good:#5cc98a; --good-soft:#17321f; --warn:#e8a94a; --warn-soft:#3a2b12; --crit:#f2826f; --crit-soft:#3d1c18; --info:#7fb2f0; --info-soft:#18283d;
+  --line-brand:#2fcf72; --fb-brand:#6aa3f5;
+  --scrim:rgba(0,0,0,.6); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1b2824; --ink:#e7eeeb; --muted:#a3b2ad; --faint:#76857f; --line:#2a3a35;
+  --accent:#3bbfa3; --accent-soft:#17352e; --accent-ink:#06201a; --bar:#1f9f86;
+  --gold:#e3b456; --gold-soft:#3a2f17;
+  --good:#5cc98a; --good-soft:#17321f; --warn:#e8a94a; --warn-soft:#3a2b12; --crit:#f2826f; --crit-soft:#3d1c18; --info:#7fb2f0; --info-soft:#18283d;
+  --line-brand:#2fcf72; --fb-brand:#6aa3f5;
+  --scrim:rgba(0,0,0,.6); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:1.25}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:.86em;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar-in{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 20px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand b{font-family:var(--f-display);font-size:16px}
+.brand small{display:block;color:var(--muted);font-size:12px;line-height:1.2}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.tab{border:0;background:transparent;padding:7px 12px;border-radius:8px;color:var(--muted);font-weight:500}
+.tab:hover{background:var(--surface-2);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.agent-pill{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px}
+.avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:12px;flex:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
+.dot.busy{background:var(--warn)}
+
+main{padding-inline:20px;padding-block:20px 48px;max-width:1480px;margin:0 auto}
+.view[hidden]{display:none}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:500;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.gold{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.chip.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.crit{background:var(--crit-soft);color:var(--crit);border-color:transparent}
+.chip.info{background:var(--info-soft);color:var(--info);border-color:transparent}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.ch-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:6px;padding:3px 8px;color:var(--accent);background:var(--accent-soft)}
+.ch-badge.line{color:var(--line-brand);background:var(--good-soft)}
+.ch-badge.fb{color:var(--fb-brand);background:var(--info-soft)}
+.ch-badge svg{width:14px;height:14px;fill:currentColor}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.good{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-h h3{font-size:15px}
+.panel-b{padding:14px}
+
+/* ===== Scenario launcher ===== */
+.intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:end;margin-bottom:22px}
+.intro h1{font-size:clamp(24px,3vw,34px)}
+.intro p{max-width:62ch;color:var(--muted);margin:.5em 0 0}
+.legend-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.scen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.scen{display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.scen:hover{border-color:var(--accent)}
+.scen-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.scen-num{font-family:var(--f-mono);font-size:12px;color:var(--faint)}
+.scen h3{font-size:17px}
+.scen .who{font-size:13px;color:var(--muted)}
+.scen ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
+.scen ul li+li{margin-top:3px}
+.scen .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:8px;border-top:1px dashed var(--line)}
+
+/* ===== Agent desktop ===== */
+.presenter{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.scen-pick{display:flex;gap:4px;flex-wrap:wrap}
+.scen-pick button{border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--muted)}
+.scen-pick button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.steps{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto;counter-reset:st}
+.step{font-size:12px;color:var(--faint);padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:6px}
+.step b{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-size:11px;font-weight:600}
+.step.done{color:var(--muted)} .step.done b{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.step.now{color:var(--ink);background:var(--accent-soft)} .step.now b{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pres-actions{display:flex;gap:6px}
+
+.ws{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1.1fr);gap:14px;align-items:start}
+@media (max-width:1180px){.ws{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.ws .col-ticket{grid-column:1/-1}}
+@media (max-width:760px){.ws{grid-template-columns:minmax(0,1fr)}.intro{grid-template-columns:minmax(0,1fr)}.legend-row{justify-content:flex-start}.steps{margin-left:0}}
+
+.idle{display:grid;place-items:center;text-align:center;min-height:300px;padding:30px;color:var(--muted)}
+.idle h3{color:var(--ink);font-size:18px;margin-bottom:6px}
+
+/* conversation */
+.convo{display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto;padding:14px;background:var(--surface-2);border-radius:0 0 var(--r) var(--r)}
+.msg{max-width:86%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.5}
+.msg.c{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.a{background:var(--accent);color:var(--accent-ink);align-self:flex-end;border-bottom-right-radius:4px}
+.msg.sys{align-self:center;background:transparent;color:var(--faint);font-size:12px;padding:2px}
+.msg .who{display:block;font-size:11px;opacity:.7;margin-bottom:2px}
+.msg.new{animation:pop .3s ease-out}
+@keyframes pop{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+.call-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px}
+.call-meta div{min-width:0}
+.call-meta b{display:block;font-weight:600;font-size:13px;overflow-wrap:anywhere}
+.timer{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* 360 */
+.p360-head{display:flex;gap:12px;align-items:flex-start;padding:14px;border-bottom:1px solid var(--line)}
+.p360-head .avatar{width:44px;height:44px;font-size:15px}
+.p360-head h3{font-size:18px}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.kv div{min-width:0}
+.kv span{display:block;font-size:11px;color:var(--muted)}
+.kv b{font-weight:600;overflow-wrap:anywhere}
+.subtabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.subtab{border:0;background:transparent;padding:6px 10px 8px;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;white-space:nowrap}
+.subtab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 14px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.prod{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono)}
+.prod.health{background:var(--info-soft);color:var(--info)}
+.prod.home{background:var(--gold-soft);color:var(--gold)}
+.prod.tp{background:var(--warn-soft);color:var(--warn)}
+.item b{font-weight:600}
+.item .sub{font-size:12px;color:var(--muted)}
+.empty{padding:18px 14px;color:var(--muted);font-size:13px}
+
+.timeline{list-style:none;margin:0;padding:12px 14px;display:flex;flex-direction:column;gap:0}
+.timeline li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;padding:7px 0;position:relative;font-size:13px}
+.timeline li+li{border-top:1px dashed var(--line)}
+.timeline .when{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.timeline .src{font-size:11px;color:var(--faint);display:block}
+
+/* meters */
+.meter{height:6px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.meter.crit i{background:var(--crit)} .meter.warn i{background:var(--warn)} .meter.good i{background:var(--good)}
+.senti{display:flex;align-items:center;gap:8px}
+.senti-scale{position:relative;flex:1;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--crit),var(--line) 50%,var(--good))}
+.senti-scale i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+
+/* NBA */
+.nba{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.nba.hold{border-color:var(--warn);background:var(--warn-soft)}
+.nba h4{font-size:15px}
+.nba .script{font-size:13px;border-left:3px solid var(--accent);padding-left:10px;color:var(--ink)}
+.nba.hold .script{border-left-color:var(--warn)}
+.nba-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ticket */
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+.field textarea{min-height:92px;resize:vertical;line-height:1.5}
+.ai-tag{font-size:10.5px;font-weight:600;color:var(--info);background:var(--info-soft);border-radius:4px;padding:0 5px;letter-spacing:.03em}
+.sla{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.sla .timer{font-size:20px;font-weight:500}
+.sla.hot .timer{color:var(--crit)}
+.pipeline{display:flex;gap:0;padding:12px 14px;flex-wrap:wrap}
+.pipeline button{flex:1 1 auto;border:1px solid var(--line);background:var(--surface);padding:6px 8px;font-size:12px;margin-left:-1px;color:var(--muted)}
+.pipeline button:first-child{border-radius:7px 0 0 7px;margin-left:0}
+.pipeline button:last-child{border-radius:0 7px 7px 0}
+.pipeline button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);position:relative;z-index:1}
+.pipeline button.past{background:var(--accent-soft);color:var(--accent)}
+.consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:10px 12px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2)}
+.ticket-foot{display:flex;justify-content:space-between;gap:8px;padding:12px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+
+/* toast */
+.toast{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;width:min(380px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;animation:slide .35s ease-out}
+@keyframes slide{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.toast-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--accent);color:var(--accent-ink)}
+.toast-h.line{background:var(--line-brand);color:var(--surface)}
+.toast-h.fb{background:var(--fb-brand);color:var(--surface)}
+.ring{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.18);animation:ring 1.2s ease-in-out infinite}
+.ring svg{width:18px;height:18px;fill:currentColor}
+@keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}50%{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
+.toast-b{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.toast-b .big{font-size:20px;font-family:var(--f-mono);font-weight:500}
+.toast-f{display:flex;gap:8px;padding:0 14px 14px}
+.toast-f .btn{flex:1;justify-content:center}
+
+/* modal */
+.scrim{position:fixed;inset:0;z-index:50;background:var(--scrim);display:grid;place-items:start center;overflow:auto;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px}
+.modal{width:min(980px,100%);background:var(--surface);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;animation:slide .3s ease-out}
+.modal-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.modal-h .title{display:flex;align-items:center;gap:10px;font-weight:600}
+.cdp-mark{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.06em;background:var(--ink);color:var(--surface);padding:2px 7px;border-radius:4px}
+.modal-b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0}
+.modal-b > section{padding:14px 16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.modal-b > section + section{border-left:1px solid var(--line)}
+@media (max-width:760px){.modal-b{grid-template-columns:minmax(0,1fr)}.modal-b > section + section{border-left:0;border-top:1px solid var(--line)}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}.call-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.form{grid-template-columns:minmax(0,1fr)}}
+.idres{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.idres .avatar{width:48px;height:48px;font-size:16px}
+.idres h2{font-size:21px}
+.idres .conf{margin-left:auto;text-align:right;min-width:150px}
+.blk h4{font-size:13px;margin-bottom:6px;font-family:var(--f-body);font-weight:600;color:var(--muted);letter-spacing:.02em}
+.mini{display:flex;flex-direction:column;gap:6px}
+.mini .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;align-items:center;flex-wrap:wrap}
+.mini .row > div{min-width:0}
+.modal-f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.search-tp{display:flex;gap:8px;flex-wrap:wrap}
+.search-tp select,.search-tp input{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--surface);min-width:0}
+.search-tp input{flex:1 1 160px}
+
+/* sync */
+.sync-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:0}
+.sync-grid > section{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sync-grid > section+section{border-left:1px solid var(--line)}
+@media (max-width:860px){.sync-grid{grid-template-columns:minmax(0,1fr)}.sync-grid > section+section{border-left:0;border-top:1px solid var(--line)}}
+.ev{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;font-size:13px;align-items:start}
+.ev .st{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:2px}
+.ev.sent .st{background:var(--good);border-color:var(--good)}
+.ev.sending .st{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ev code{font-family:var(--f-mono);font-size:12px;font-weight:500}
+.ev .d{display:block;color:var(--muted);font-size:12px}
+pre.payload{margin:0;font-family:var(--f-mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:200px;color:var(--ink)}
+.seg-move{display:flex;flex-direction:column;gap:8px}
+.seg-move .arrow{color:var(--faint);font-size:12px}
+.jr{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.jr .when{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* ===== Architecture ===== */
+.arch-wrap{overflow-x:auto;border:1px solid var(--line);background:var(--surface);border-radius:var(--r)}
+.arch-wrap svg{display:block;min-width:960px;width:100%;height:auto}
+.arch-legend{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0 22px;font-size:13px;color:var(--muted)}
+.arch-legend span{display:inline-flex;align-items:center;gap:6px}
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:fl;margin:0;padding:0;list-style:none}
+.flow li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--muted);counter-increment:fl}
+.flow li::before{content:counter(fl);font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:600;display:block}
+.flow li b{color:var(--ink);display:block;font-size:14px;margin-bottom:2px}
+
+/* ===== Dashboard ===== */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi .v{font-family:var(--f-display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .t{font-size:12px;color:var(--muted)}
+.kpi .d{font-size:12px;margin-top:2px}
+.up{color:var(--good)} .down{color:var(--crit)}
+.dash{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.dash{grid-template-columns:minmax(0,1fr)}}
+.bars{display:flex;flex-direction:column;gap:9px;padding:14px}
+.bar-row{display:grid;grid-template-columns:150px minmax(0,1fr) 56px;gap:10px;align-items:center;font-size:13px;position:relative}
+.bar-track{height:14px;position:relative}
+.bar-fill{height:100%;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px}
+.bar-row:hover .bar-fill{filter:brightness(1.12)}
+.bar-row .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+@media (max-width:520px){.bar-row{grid-template-columns:100px minmax(0,1fr) 44px}}
+.tip{position:fixed;z-index:60;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;padding:6px 9px;border-radius:6px;box-shadow:var(--shadow)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.fresh td{background:var(--accent-soft)}
+.section-title{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.section-title h2{font-size:24px}
+.section-title p{margin:.3em 0 0;color:var(--muted);max-width:70ch}
+
+@media (max-width:760px){.flow{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:620px){.topbar{position:static}.topbar-in{padding:10px 16px;gap:8px}.tabs{margin-left:0;width:100%}.agent-pill .nm{display:none}
+  main{padding-inline:16px}.item{grid-template-columns:auto minmax(0,1fr)}.item > div:last-child{grid-column:2;text-align:left!important}.idres .conf{margin-left:0;text-align:left}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2 30 7v9c0 8-5.6 13.6-13 16C9.6 29.6 4 24 4 16V7z" fill="var(--accent)"/><text x="17" y="21" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" font-weight="600" fill="var(--accent-ink)">ABC</text></svg>
+      <div><b>ABC Insurance</b><small>Contact Center 360 · CRM × CDP (Mockup)</small></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" data-view="launcher" aria-selected="true">Scenarios</button>
+      <button class="tab" role="tab" data-view="desk" aria-selected="false">Agent Desktop</button>
+      <button class="tab" role="tab" data-view="arch" aria-selected="false">Architecture</button>
+      <button class="tab" role="tab" data-view="dash" aria-selected="false">Supervisor</button>
+    </nav>
+    <div class="agent-pill"><span class="avatar">พร</span><span class="nm">พรทิพย์ (Agent #A-217)</span><span class="dot" id="agentDot"></span><span id="agentState">Ready</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- ===== Launcher ===== -->
+  <section class="view" id="view-launcher">
+    <div class="intro">
+      <div>
+        <span class="eyebrow">Demo script · 5 scenarios</span>
+        <h1>รับสายครั้งเดียว เห็นลูกค้าครบ 360° แล้วเปิด Ticket ได้ทันที</h1>
+        <p>จำลองการรับเรื่องจากโทรศัพท์ LINE OA และ Facebook ของประกันภัย ABC ทุกครั้งที่มีสายหรือแชทเข้า CRM จะถามข้อมูลจาก CDP แล้วแสดงเป็น Pop-up ทันที เมื่อจบการสนทนา ข้อมูลจะไหลกลับเข้า CDP เพื่อใช้ในรอบถัดไป</p>
+      </div>
+      <div class="legend-row">
+        <span class="chip acc">ผู้ถือกรมธรรม์ ×3</span><span class="chip info">ลูกค้าใหม่ ×1</span><span class="chip warn">คู่กรณี ×1</span>
+      </div>
+    </div>
+    <div class="scen-grid" id="scenGrid"></div>
+  </section>
+
+  <!-- ===== Agent desktop ===== -->
+  <section class="view" id="view-desk" hidden>
+    <div class="presenter">
+      <span class="eyebrow">Scenario</span>
+      <div class="scen-pick" id="scenPick"></div>
+      <div class="steps" id="steps"></div>
+      <div class="pres-actions">
+        <button class="btn sm" id="btnReset" type="button">เริ่มใหม่</button>
+        <button class="btn sm primary" id="btnNext" type="button">ขั้นถัดไป →</button>
+      </div>
+    </div>
+    <div class="ws" id="ws"></div>
+  </section>
+
+  <!-- ===== Architecture ===== -->
+  <section class="view" id="view-arch" hidden>
+    <div class="section-title">
+      <div><span class="eyebrow">Solution architecture</span><h2>ระบบเชื่อมกันอย่างไร</h2>
+      <p>CRM ทำหน้าที่ทำงานกับเคส (Ticket, SLA, Routing) ส่วน CDP เป็นศูนย์รวมตัวตนลูกค้า (Identity) และคำแนะนำ (NBA) โดยดึงข้อมูลกรมธรรม์และเคลมจาก Core System</p></div>
+    </div>
+    <div class="arch-wrap" id="archWrap"></div>
+    <div class="arch-legend">
+      <span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--accent)" stroke-width="2"/></svg>Real-time API (&lt; 300 ms)</span>
+      <span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--gold)" stroke-width="2" stroke-dasharray="5 4"/></svg>Event stream (เขียนกลับเข้า CDP)</span>
+      <span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--faint)" stroke-width="2"/></svg>Batch / Sync รายวัน</span>
+    </div>
+    <h3 style="font-size:17px;margin-bottom:10px">ลำดับข้อมูลเมื่อมีสายเข้า</h3>
+    <ol class="flow">
+      <li><b>สาย / แชทเข้า</b>CTI ได้เบอร์โทร (ANI), LINE ได้ UID, Facebook ได้ PSID แล้วส่งเข้าคิวตาม IVR หรือ Keyword</li>
+      <li><b>Identity Resolution</b>CRM ส่ง Identifier ให้ CDP จับคู่แบบ Deterministic (เบอร์, LINE UID, เลขบัตร) หรือ Probabilistic (Cookie, Device)</li>
+      <li><b>Screen Pop</b>CDP คืน Profile 360, กรมธรรม์, เคลม, Journey, Sentiment และ NBA แล้วแสดงเป็น Pop-up ก่อน Agent กดรับ</li>
+      <li><b>เปิด Ticket</b>Agent เลือกหมวด CRM คำนวณ SLA และ Assign ทีม ระบบ AI ช่วยสรุปบทสนทนา</li>
+      <li><b>Wrap-up</b>บันทึกผล Disposition, Consent (PDPA) และผลตอบรับ NBA</li>
+      <li><b>เขียนกลับเข้า CDP</b>ส่ง Event, อัปเดต Segment และสั่ง Journey ต่อ เช่น LINE แจ้งสถานะ หรือแบบสำรวจ CSAT</li>
+    </ol>
+  </section>
+
+  <!-- ===== Dashboard ===== -->
+  <section class="view" id="view-dash" hidden>
+    <div class="section-title">
+      <div><span class="eyebrow">Supervisor · วันนี้ 07/10/2569 · ถึง 14:30 น.</span><h2>ภาพรวม Contact Center</h2>
+      <p>ตัวเลขจำลอง Ticket ที่สร้างระหว่าง Demo จะขึ้นในตารางด้านล่างทันที</p></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="dash">
+      <div class="panel"><div class="panel-h"><h3>Ticket วันนี้ แยกตามหมวด</h3><span class="muted" style="font-size:12px">จำนวน Ticket</span></div><div class="bars" id="barsCat"></div></div>
+      <div class="panel"><div class="panel-h"><h3>สัดส่วนช่องทาง</h3><span class="muted" style="font-size:12px">% ของ Interaction</span></div><div class="bars" id="barsCh"></div></div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-h"><h3>Ticket ล่าสุด & Escalation</h3><span class="chip" id="liveCount">0 จาก Demo</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Ticket</th><th>ลูกค้า</th><th>ช่องทาง</th><th>หมวด</th><th>Priority</th><th>ทีม</th><th class="num">SLA คงเหลือ</th><th>สถานะ</th></tr></thead><tbody id="tktBody"></tbody></table></div>
+    </div>
+  </section>
+</main>
+
+<div id="toastHost"></div>
+<div id="modalHost"></div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const ICON={
+  voice:'<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>',
+  chat:'<svg viewBox="0 0 24 24"><path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-5 4V4a1 1 0 0 1 1-1z"/></svg>'
+};
+const CH={
+  voice:{label:'Voice · Hotline 1234',short:'Voice',cls:'',icon:ICON.voice,verb:'สายเรียกเข้า'},
+  line:{label:'LINE OA @abcinsure',short:'LINE',cls:'line',icon:ICON.chat,verb:'แชทใหม่จาก LINE'},
+  fb:{label:'Facebook Messenger',short:'Facebook',cls:'fb',icon:ICON.chat,verb:'ข้อความใหม่จาก Facebook'}
+};
+const TYPE={policyholder:{label:'ผู้ถือกรมธรรม์',cls:'acc'},prospect:{label:'ลูกค้าใหม่',cls:'info'},thirdparty:{label:'คู่กรณี',cls:'warn'}};
+const PROD={motor:['MT',''],health:['HL','health'],home:['HM','home'],tp:['TP','tp']};
+
+const S=[
+{ id:1, channel:'voice', type:'policyholder', title:'ลูกค้า VIP แจ้งอุบัติเหตุรถยนต์',
+  who:'คุณสมชาย ใจดี · ประกันรถชั้น 1 + บ้าน', from:'081-234-5678', route:'IVR กด 2 แจ้งเคลมรถยนต์ → Motor Claim Queue', wait:'00:18',
+  notes:['CDP จับคู่เบอร์โทรได้ทันที Agent ไม่ต้องถามเลขกรมธรรม์','เห็นว่าลูกค้าเพิ่งเปิดแอปหน้า "แจ้งเคลม" แต่ส่งไม่สำเร็จ','NBA เสนอ PA Plus แต่ระบบแนะนำให้เสนอหลังเคลมจบ'],
+  identity:{status:'matched',method:'Deterministic · ANI ตรงกับเบอร์มือถือหลัก',conf:100},
+  profile:{name:'คุณสมชาย ใจดี',ini:'สจ',meta:'ชาย · 46 ปี · บางนา กรุงเทพฯ',cdp:'CDP-00012874',since:'ลูกค้าตั้งแต่ 2558 (11 ปี)',clv:'฿482,000',pref:'Voice, LINE',consent:'PDPA ✓ · Marketing ✓',segments:[['VIP Platinum','gold'],['Multi-policy','acc'],['App active','']]},
+  policies:[
+    {p:'motor',name:'ประกันรถยนต์ชั้น 1',no:'MT-2568-0045821',d:'Toyota Camry 2.5 HEV · กข 1234 กรุงเทพมหานคร',st:'Active',exp:'15/03/2570',prem:'฿24,500'},
+    {p:'home',name:'ประกันอัคคีภัยบ้านอยู่อาศัย',no:'HM-2567-0012230',d:'บ้านเดี่ยว · ทุนประกัน ฿4,500,000',st:'Active',exp:'01/08/2570',prem:'฿3,900'}],
+  claims:[{p:'motor',name:'เคลมกระจกบังลมหน้า',no:'CLM-2567-00318',d:'ปิดเคลม · จ่าย ฿12,800',st:'Closed',when:'14/06/2567'}],
+  tickets:[],
+  journey:[
+    ['07/10 08:42','ABC Connect App','เปิดหน้า "แจ้งเคลม" 2 ครั้ง แต่ไม่ได้ส่งฟอร์ม'],
+    ['02/10 19:10','SMS','ได้รับข้อความเตือนเช็กสภาพรถก่อนเดินทางไกล'],
+    ['18/09 12:03','Website','อ่านบทความ "ประกัน PA สำหรับคนเดินทางบ่อย"'],
+    ['30/08 10:20','LINE OA','กดดูคูปองตรวจเช็กรถฟรี ที่ศูนย์พันธมิตร'],
+    ['15/03 09:00','Billing','ชำระเบี้ยต่ออายุผ่านบัตรเครดิต (Auto-renew)']],
+  senti:{label:'กังวล',v:-0.3,cls:'warn'}, churn:{v:12,cls:'good',label:'ต่ำ'},
+  nba:{title:'ABC PA Plus (อุบัติเหตุส่วนบุคคล)',kind:'Cross-sell',prop:72,price:'฿2,990/ปี',hold:true,
+    script:'"เพื่อความอุ่นใจระหว่างรอรถซ่อม คุณสมชายสนใจรับข้อมูลประกันอุบัติเหตุ PA Plus ทาง LINE ไหมคะ"',
+    holdNote:'ระบบแนะนำให้เสนอหลังจบเคลม ถ้าลูกค้าเครียดในระหว่างแจ้งอุบัติเหตุ'},
+  transcript:[
+    ['sys','CTI · Screen pop จาก CDP · 0.21 วินาที'],
+    ['a','ABC ประกันภัย สวัสดีค่ะ คุณสมชายใช่ไหมคะ ดิฉันพรทิพย์ยินดีให้บริการค่ะ'],
+    ['c','ครับ ผมเพิ่งโดนชนท้ายที่แยกอโศก-เพชรบุรีครับ ลองแจ้งในแอปแล้วแต่ส่งไม่ผ่าน'],
+    ['a','ไม่ต้องกังวลนะคะ ดิฉันเห็นกรมธรรม์ชั้น 1 ของรถ Camry ทะเบียน กข 1234 แล้ว คุณสมชายบาดเจ็บไหมคะ'],
+    ['c','ไม่เจ็บครับ คู่กรณีเป็น Honda City ทะเบียน 3ขข 5678 เขายอมรับว่าเป็นฝ่ายผิด'],
+    ['a','รับทราบค่ะ ดิฉันเปิดเคลมให้แล้ว และส่งพนักงานสำรวจไปภายใน 30 นาที ระหว่างนี้จะส่งลิงก์ติดตามทาง LINE นะคะ'],
+    ['c','ขอบคุณครับ ช่วยได้เยอะเลย']],
+  ticket:{id:'TK-2569-104233',cat:'Claim',sub:'แจ้งอุบัติเหตุ (FNOL)',pri:'High',sla:30,slaLabel:'ส่งพนักงานสำรวจถึงที่เกิดเหตุ',team:'Claims – Motor Survey',link:'MT-2568-0045821 → CLM-2569-00871',status:1,
+    ai:'ลูกค้า VIP ถูกชนท้ายที่แยกอโศก-เพชรบุรี เวลา ~09:05 ไม่มีผู้บาดเจ็บ คู่กรณี Honda City 3ขข 5678 รับผิด ลูกค้าพยายามแจ้งผ่านแอปไม่สำเร็จ เปิดเคลม CLM-2569-00871 และส่งพนักงานสำรวจ (SLA 30 นาที)'},
+  sync:{events:[['interaction.completed','Voice · 05:48 นาที · sentiment −0.3 → +0.4'],['ticket.created','TK-2569-104233 · Claim/FNOL · High'],['claim.opened','CLM-2569-00871 ผูกกับ MT-2568-0045821'],['app.issue.flagged','ฟอร์มแจ้งเคลมในแอปส่งไม่สำเร็จ → แจ้งทีม Digital'],['nba.response','PA Plus · deferred (เสนอหลังปิดเคลม)']],
+    before:[['VIP Platinum','gold'],['Multi-policy','acc'],['App active','']], after:[['VIP Platinum','gold'],['Multi-policy','acc'],['Active claim','warn'],['PA Plus · หลังปิดเคลม','info']],
+    journeys:[['ทันที','LINE Flex: ติดตามพนักงานสำรวจแบบ Real-time'],['+24 ชม.','แบบสำรวจ CSAT ทาง LINE'],['ปิดเคลม +3 วัน','เสนอ PA Plus ผ่าน LINE (Consent ✓)']]}},
+
+{ id:2, channel:'line', type:'policyholder', title:'ต่ออายุประกันบ้าน ผ่าน LINE',
+  who:'คุณนภา พรหมมา · ประกันบ้านจะหมดอายุใน 30 วัน', from:'LINE: Napa.P', route:'Rich menu "ต่ออายุ" → Renewal Chat Queue', wait:'00:05',
+  notes:['LINE UID ผูกกับโปรไฟล์ไว้แล้วจาก LINE Login ไม่ต้องยืนยันตัวตนซ้ำ','CDP เห็นว่าลูกค้าเปิดอีเมลต่ออายุ 2 ครั้งและอ่านเรื่องน้ำท่วม','NBA: Upsell ภัยน้ำท่วม (propensity 81%)'],
+  identity:{status:'matched',method:'Deterministic · LINE UID ผูกด้วย LINE Login',conf:100},
+  profile:{name:'คุณนภา พรหมมา',ini:'นพ',meta:'หญิง · 38 ปี · ปากเกร็ด นนทบุรี',cdp:'CDP-00230551',since:'ลูกค้าตั้งแต่ 2564 (5 ปี)',clv:'฿96,500',pref:'LINE',consent:'PDPA ✓ · Marketing ✓',segments:[['Loyal 5Y','acc'],['Renewal ≤30d','warn'],['Flood-risk zone','info']]},
+  policies:[
+    {p:'home',name:'ประกันอัคคีภัยบ้านอยู่อาศัย',no:'HM-2568-0088127',d:'ทาวน์โฮม 2 ชั้น · ทุนประกัน ฿2,800,000',st:'หมดอายุใน 30 วัน',exp:'06/11/2569',prem:'฿2,450',warn:true},
+    {p:'health',name:'ABC Health Smart แผน 1',no:'HL-2566-0230088',d:'IPD ฿1,000,000/ปี',st:'Active',exp:'20/04/2570',prem:'฿14,200'}],
+  claims:[],
+  tickets:[{no:'TK-2568-077810',name:'ขอเปลี่ยนที่อยู่จัดส่งเอกสาร',st:'Resolved',when:'12/02/2568'}],
+  journey:[
+    ['07/10 11:58','LINE OA','กด Rich menu "ต่ออายุกรมธรรม์"'],
+    ['05/10 21:14','Email','เปิดอีเมลใบแจ้งต่ออายุ (ครั้งที่ 2) แต่ไม่คลิกชำระ'],
+    ['04/10 08:30','Website','อ่าน "ประกันบ้านคุ้มครองน้ำท่วมไหม" 3 นาที'],
+    ['01/10 07:00','Email','ส่งใบแจ้งต่ออายุ HM-2568-0088127'],
+    ['22/09 18:45','Weather feed','พื้นที่ปากเกร็ดมีประกาศเฝ้าระวังน้ำล้นตลิ่ง']],
+  senti:{label:'ปกติ',v:0.2,cls:''}, churn:{v:34,cls:'warn',label:'ปานกลาง'},
+  nba:{title:'เพิ่มความคุ้มครองภัยน้ำท่วม',kind:'Upsell',prop:81,price:'+฿1,200/ปี',
+    script:'"บ้านคุณนภาอยู่ในพื้นที่เฝ้าระวังน้ำ ต่ออายุรอบนี้เพิ่มคุ้มครองน้ำท่วมได้ เพิ่มเพียง 1,200 บาทต่อปีค่ะ"'},
+  transcript:[
+    ['sys','LINE · ผูกตัวตนอัตโนมัติจาก LINE UID'],
+    ['c','สวัสดีค่ะ ประกันบ้านจะหมดเดือนหน้า ต่ออายุได้เลยไหมคะ แล้วปีนี้ราคาเท่าไหร่'],
+    ['a','สวัสดีค่ะคุณนภา ต่ออายุกรมธรรม์ HM-2568-0088127 ได้เลยค่ะ เบี้ยเท่าเดิม 2,450 บาท'],
+    ['c','ช่วงนี้กลัวน้ำท่วมด้วยค่ะ ของเดิมคุ้มครองไหม'],
+    ['a','แผนเดิมยังไม่ครอบคลุมน้ำท่วมค่ะ เพิ่มความคุ้มครองได้ 1,200 บาท/ปี คุ้มครองสูงสุด 100,000 บาท'],
+    ['c','โอเคค่ะ เอาแบบเพิ่มน้ำท่วมเลย ส่งลิงก์จ่ายเงินมาได้ไหม'],
+    ['a','ได้เลยค่ะ ส่งใบเสนอราคาพร้อมลิงก์ชำระ (PromptPay/บัตร) ใน LINE นี้ภายใน 5 นาทีนะคะ']],
+  ticket:{id:'TK-2569-104241',cat:'Renewal',sub:'ต่ออายุ + เพิ่มความคุ้มครอง',pri:'Medium',sla:240,slaLabel:'ส่งใบเสนอราคาและลิงก์ชำระ',team:'Sales – Renewal Desk',link:'HM-2568-0088127',status:1,
+    ai:'ลูกค้าขอต่ออายุประกันบ้าน HM-2568-0088127 (หมดอายุ 06/11/2569) และตกลงเพิ่มความคุ้มครองภัยน้ำท่วม +฿1,200/ปี รวมเบี้ย ฿3,650 ขอใบเสนอราคาและลิงก์ชำระผ่าน LINE'},
+  sync:{events:[['interaction.completed','LINE · 6 ข้อความ · sentiment +0.5'],['ticket.created','TK-2569-104241 · Renewal · Medium'],['nba.response','Flood rider · accepted'],['quote.issued','QT-2569-55120 · ฿3,650']],
+    before:[['Loyal 5Y','acc'],['Renewal ≤30d','warn'],['Flood-risk zone','info']], after:[['Loyal 5Y','acc'],['Renewal · Quote sent','good'],['Flood rider ✓','info']],
+    journeys:[['ทันที','LINE Flex: ใบเสนอราคา + ลิงก์ชำระ'],['+48 ชม. ถ้ายังไม่จ่าย','LINE เตือนชำระ (ครั้งเดียว)'],['ชำระแล้ว','ส่ง e-Policy + ระงับอีเมลเตือนต่ออายุ']]}},
+
+{ id:3, channel:'voice', type:'prospect', title:'ลูกค้าใหม่สนใจประกันสุขภาพ',
+  who:'เบอร์ไม่อยู่ใน CRM · CDP พบพฤติกรรมบนเว็บ', from:'089-555-0199', route:'IVR กด 1 สนใจผลิตภัณฑ์ → Telesales Queue', wait:'00:32',
+  notes:['CRM ไม่รู้จักเบอร์นี้ แต่ CDP ผูกกับ Cookie จากฟอร์ม "ให้โทรกลับ" ที่กรอกไม่ครบ','Agent เห็นว่าลูกค้าใช้เครื่องคำนวณเบี้ย อายุ 34 ปี แผน 2','บันทึก Consent PDPA ก่อนส่งเป็น Lead'],
+  identity:{status:'anonymous',method:'Probabilistic · เบอร์จากฟอร์มเว็บ + Cookie ID',conf:78},
+  profile:{name:'ผู้สนใจ (ยังไม่ระบุชื่อ)',ini:'?',meta:'คาดว่าอายุ 34 ปี · กรุงเทพฯ (จาก IP)',cdp:'CDP-ANON-7f3a91',since:'เข้าเว็บครั้งแรก 28/09/2569',clv:'—',pref:'—',consent:'ยังไม่มี Consent',segments:[['Prospect','info'],['Health intent: สูง','acc'],['From FB Ads','']]},
+  policies:[], claims:[], tickets:[],
+  journey:[
+    ['07/10 13:55','Website','กดปุ่ม "โทรหาเรา" จากหน้า ABC Health Smart'],
+    ['07/10 13:41','Website','กรอกฟอร์มให้โทรกลับไม่ครบ (มีเฉพาะเบอร์)'],
+    ['06/10 22:10','Premium calculator','คำนวณเบี้ย อายุ 34 · แผน 2 · ฿18,900/ปี'],
+    ['03/10 20:31','Website','ดูหน้าเปรียบเทียบแผนสุขภาพ 4 ครั้ง'],
+    ['28/09 12:15','Facebook Ads','คลิกโฆษณา "ประกันสุขภาพ เริ่มต้นวันละ 50 บาท"']],
+  senti:{label:'สนใจ',v:0.4,cls:'good'}, churn:null,
+  nba:{title:'ABC Health Smart แผน 2',kind:'New business',prop:76,price:'฿18,900/ปี',
+    script:'"จากที่คุณคำนวณไว้ แผน 2 ค่าห้อง 4,000 บาท/คืน คุ้มครอง IPD 3 ล้านบาท/ปี เบี้ยเดือนละประมาณ 1,575 บาทค่ะ"'},
+  transcript:[
+    ['sys','CTI · ไม่พบใน CRM → CDP พบ Anonymous profile (78%)'],
+    ['a','ABC ประกันภัย สวัสดีค่ะ ดิฉันพรทิพย์ ขอทราบชื่อด้วยค่ะ'],
+    ['c','ผมธนพล ครับ เมื่อกี้ดูประกันสุขภาพในเว็บ อยากถามรายละเอียดแผน 2 ครับ'],
+    ['a','ค่ะคุณธนพล แผน 2 ที่คำนวณไว้ เบี้ย 18,900 บาท/ปี สำหรับอายุ 34 ปี ค่าห้อง 4,000 บาทต่อคืนค่ะ'],
+    ['c','ต้องตรวจสุขภาพก่อนไหมครับ แล้วผ่อนได้ไหม'],
+    ['a','ไม่ต้องตรวจสุขภาพสำหรับอายุไม่เกิน 40 ปี และผ่อนรายเดือนได้ค่ะ ขออนุญาตเก็บข้อมูลเพื่อส่งใบเสนอราคาและให้เจ้าหน้าที่ติดต่อกลับนะคะ'],
+    ['c','ได้ครับ ส่งทาง LINE ได้เลย']],
+  ticket:{id:'TK-2569-104250',cat:'Sales Lead',sub:'ประกันสุขภาพ – ขอใบเสนอราคา',pri:'Medium',sla:120,slaLabel:'Telesales ติดต่อกลับ',team:'Telesales – Health',link:'— (ยังไม่มีกรมธรรม์)',status:1,consent:true,
+    ai:'ผู้สนใจรายใหม่ คุณธนพล อายุ 34 ปี สนใจ ABC Health Smart แผน 2 (฿18,900/ปี) ถามเรื่องตรวจสุขภาพและผ่อนรายเดือน ยินยอมให้ติดต่อกลับและรับใบเสนอราคาทาง LINE Lead score 82'},
+  sync:{events:[['identity.merged','CDP-ANON-7f3a91 → CDP-00318822 (ชื่อ + เบอร์ + Cookie)'],['consent.updated','PDPA ✓ · Marketing ✓ · ช่องทาง LINE/Voice'],['interaction.completed','Voice · 04:30 นาที · sentiment +0.4'],['lead.created','TK-2569-104250 · Lead score 82']],
+    before:[['Prospect','info'],['Health intent: สูง','acc'],['From FB Ads','']], after:[['Hot lead','good'],['Health · แผน 2','acc'],['Consent ✓','info']],
+    journeys:[['ทันที','SMS ลิงก์เพิ่มเพื่อน LINE OA + ใบเสนอราคา'],['≤ 2 ชม.','Telesales โทรกลับ (มอบหมายอัตโนมัติ)'],['+7 วัน ถ้ายังไม่ซื้อ','Retarget Facebook Ads ด้วย Audience ใหม่']]}},
+
+{ id:4, channel:'voice', type:'thirdparty', title:'คู่กรณีโทรถามสถานะซ่อมรถ',
+  who:'ไม่ใช่ลูกค้า ABC · ค้นด้วยทะเบียนรถ/เลขเคลม', from:'062-777-4411', route:'IVR กด 3 คู่กรณี/บุคคลภายนอก → TP Claim Queue', wait:'00:41',
+  notes:['เบอร์ไม่อยู่ในฐานลูกค้า Pop-up จึงเปิดช่องค้นหาด้วยทะเบียนรถหรือเลขเคลม','CDP สร้าง Third-party profile ผูกกับเคลม เห็นอู่ซ่อมและความคืบหน้า','ระงับการเสนอขายระหว่างเคลม แต่ขอ Consent ไว้เสนอหลังปิดเคลม'],
+  identity:{status:'unknown',method:'ไม่พบ ANI ในฐานลูกค้า → ค้นหาด้วยทะเบียนรถ',conf:0},
+  search:{type:'ทะเบียนรถ',q:'7กพ 9012 กรุงเทพมหานคร'},
+  identity2:{status:'thirdparty',method:'ค้นพบจากทะเบียนรถในเคลม CLM-2569-00412',conf:96},
+  profile:{name:'คุณอรทัย ศรีสุข',ini:'อศ',meta:'คู่กรณี (ฝ่ายถูก) · Mazda 2 · 7กพ 9012',cdp:'CDP-TP-004412',since:'สร้างเมื่อ 22/09/2569 จากเคลม',clv:'—',pref:'Voice',consent:'PDPA (เพื่อเคลม) ✓ · Marketing ✗',segments:[['Third party','warn'],['Claim in repair','info']]},
+  policies:[],
+  claims:[{p:'tp',name:'เคลมคู่กรณี (ABC เป็นฝ่ายผิด)',no:'CLM-2569-00412',d:'ผู้เอาประกัน: คุณวิทยา แก้วมณี · อู่ ศรีนครินทร์ออโต้ (อู่ในเครือ)',st:'กำลังซ่อม 60%',when:'นัดรับรถ 14/10/2569',warn:true},
+    {p:'tp',name:'ค่าขาดประโยชน์ใช้รถ',no:'CLM-2569-00412-L',d:'12 วัน × ฿500 = ฿6,000 · รอเอกสารสมุดบัญชี',st:'รอเอกสาร',when:'ยื่น 25/09/2569',warn:true}],
+  tickets:[{no:'TK-2569-099120',name:'คู่กรณีขอเปลี่ยนอู่',st:'Resolved',when:'24/09/2569'}],
+  journey:[
+    ['06/10 16:20','Garage portal','อู่อัปเดต: พ่นสีเสร็จ รอประกอบชิ้นส่วน'],
+    ['01/10 10:05','SMS','แจ้งคู่กรณี: อนุมัติค่าอะไหล่แล้ว'],
+    ['25/09 14:40','Claim system','ยื่นขอค่าขาดประโยชน์ 12 วัน'],
+    ['24/09 09:12','Voice','ขอเปลี่ยนอู่ (TK-2569-099120)'],
+    ['22/09 18:30','Claim system','เปิดเคลมคู่กรณี จากที่เกิดเหตุถนนพระราม 9']],
+  senti:{label:'ไม่พอใจเล็กน้อย',v:-0.2,cls:'warn'}, churn:null,
+  nba:{title:'ไม่เสนอขายระหว่างเคลม',kind:'Suppress',prop:0,price:'',hold:true,
+    script:'"หลังปิดเคลม ABC ขออนุญาตส่งข้อเสนอประกันรถยนต์ให้คุณอรทัยทาง SMS ได้ไหมคะ"',
+    holdNote:'คู่กรณีที่ได้รับบริการดีมีโอกาสเปลี่ยนมาเป็นลูกค้า แต่ต้องขอ Consent แยกก่อน'},
+  transcript:[
+    ['sys','CTI · ไม่พบใน CRM → เปิดช่องค้นหาคู่กรณี'],
+    ['a','ABC ประกันภัย สวัสดีค่ะ ขอทราบทะเบียนรถหรือเลขเคลมค่ะ'],
+    ['c','รถ Mazda 2 ทะเบียน 7กพ 9012 ค่ะ รถของ ABC ชนเรา ตอนนี้ซ่อมถึงไหนแล้วคะ'],
+    ['a','คุณอรทัยใช่ไหมคะ อู่ ศรีนครินทร์ออโต้แจ้งว่าพ่นสีเสร็จแล้ว รอประกอบ นัดรับรถ 14 ตุลาคมค่ะ'],
+    ['c','แล้วค่าขาดประโยชน์ที่ยื่นไปล่ะคะ เงียบไปเลย'],
+    ['a','ตอนนี้รอสำเนาสมุดบัญชีค่ะ ส่งทาง SMS ลิงก์อัปโหลดให้เลยนะคะ ได้รับแล้วจ่ายภายใน 3 วันทำการค่ะ'],
+    ['c','ได้ค่ะ ขอบคุณค่ะ']],
+  ticket:{id:'TK-2569-104257',cat:'Third-party Claim',sub:'ติดตามสถานะซ่อม / ค่าขาดประโยชน์',pri:'Medium',sla:480,slaLabel:'ทีมเคลมคู่กรณีติดต่อกลับ (1 วันทำการ)',team:'Claims – Third Party',link:'CLM-2569-00412',status:1,consent:true,consentLabel:'คู่กรณียินยอมรับข้อเสนอประกันรถยนต์หลังปิดเคลม (SMS)',
+    ai:'คู่กรณี คุณอรทัย (Mazda 2 · 7กพ 9012) สอบถามสถานะซ่อมเคลม CLM-2569-00412 อู่แจ้งนัดรับรถ 14/10 และติดตามค่าขาดประโยชน์ ฿6,000 ซึ่งรอเอกสารสมุดบัญชี ส่งลิงก์อัปโหลดทาง SMS แล้ว'},
+  sync:{events:[['interaction.completed','Voice · 03:55 นาที · sentiment −0.2 → +0.3'],['ticket.created','TK-2569-104257 · Third-party · Medium'],['document.requested','สมุดบัญชี · ลิงก์ SMS หมดอายุ 72 ชม.'],['consent.updated','Marketing ✓ (หลังปิดเคลม) · SMS']],
+    before:[['Third party','warn'],['Claim in repair','info']], after:[['Third party','warn'],['Claim in repair','info'],['Post-claim lead','good']],
+    journeys:[['ทันที','SMS ลิงก์อัปโหลดเอกสาร'],['รับรถแล้ว','SMS แบบสำรวจความพึงพอใจงานซ่อม'],['ปิดเคลม +7 วัน','ส่งข้อเสนอประกันรถชั้น 1 (ส่วนลดคู่กรณี 10%)']]}},
+
+{ id:5, channel:'fb', type:'policyholder', title:'ร้องเรียนเคลมสุขภาพล่าช้า',
+  who:'คุณกฤษณ์ ธนากร · อารมณ์เชิงลบ เสี่ยงยกเลิก', from:'Facebook: Krit Thanakorn', route:'Keyword "ยกเลิก", "ร้องเรียน" → Priority Queue', wait:'00:03',
+  notes:['CDP ตรวจพบ Sentiment −0.72 และคำว่า "ยกเลิก" จึงส่งเข้าคิว Priority','เห็นว่าเคลมค้าง 12 วัน เกิน SLA 7 วัน และติดต่อมาแล้ว 2 ครั้ง','NBA เป็น Retention ไม่ใช่การขาย Escalate ถึง Supervisor อัตโนมัติ'],
+  identity:{status:'matched',method:'Deterministic · Facebook PSID ผูกกับเบอร์ที่ยืนยันแล้ว',conf:97},
+  profile:{name:'คุณกฤษณ์ ธนากร',ini:'กธ',meta:'ชาย · 41 ปี · เชียงใหม่',cdp:'CDP-00145209',since:'ลูกค้าตั้งแต่ 2562 (7 ปี)',clv:'฿210,000',pref:'Facebook, Voice',consent:'PDPA ✓ · Marketing ✓',segments:[['At-risk','crit'],['Health + Motor','acc'],['Complained ×2','warn']]},
+  policies:[
+    {p:'health',name:'ABC Health Smart แผน 3',no:'HL-2565-0145209',d:'IPD ฿5,000,000/ปี · ห้อง ฿6,000',st:'Active',exp:'10/01/2570',prem:'฿32,400'},
+    {p:'motor',name:'ประกันรถยนต์ชั้น 2+',no:'MT-2568-0098331',d:'Honda HR-V · 2กร 4471 เชียงใหม่',st:'Active',exp:'02/05/2570',prem:'฿9,800'}],
+  claims:[{p:'health',name:'เคลมค่ารักษา (IPD) – ไส้ติ่งอักเสบ',no:'CLM-H-2569-0233',d:'฿68,400 · รพ.เอกชน เชียงใหม่ (สำรองจ่าย)',st:'ค้าง 12 วัน · เกิน SLA',when:'ยื่น 25/09/2569',crit:true}],
+  tickets:[{no:'TK-2569-101877',name:'ติดตามเคลม CLM-H-2569-0233',st:'Open',when:'01/10/2569'},{no:'TK-2569-103020',name:'ติดตามเคลม (ครั้งที่ 2)',st:'Open',when:'04/10/2569'}],
+  journey:[
+    ['07/10 14:02','Facebook','ส่งข้อความ "จะยกเลิกกรมธรรม์" · Sentiment −0.72'],
+    ['06/10 20:15','Website','เปิดหน้า "วิธียกเลิกกรมธรรม์"'],
+    ['04/10 10:30','Voice','โทรติดตามเคลม ครั้งที่ 2 (TK-2569-103020)'],
+    ['01/10 15:45','LINE OA','ติดตามเคลม ครั้งที่ 1 (TK-2569-101877)'],
+    ['25/09 09:20','Claim system','ยื่นเคลมสำรองจ่าย ฿68,400']],
+  senti:{label:'โกรธ',v:-0.72,cls:'crit'}, churn:{v:68,cls:'crit',label:'สูง'},
+  nba:{title:'Retention: Fast-track เคลม + ส่วนลดต่ออายุ 10%',kind:'Retention',prop:64,price:'ส่วนลด ฿3,240',
+    script:'"ขอโทษจริง ๆ ค่ะคุณกฤษณ์ ดิฉันส่งเคลมเข้า Fast-track ให้แล้ว จะโอนเงินภายใน 24 ชั่วโมง และรอบต่ออายุหน้า ABC มอบส่วนลด 10% ให้ค่ะ"'},
+  transcript:[
+    ['sys','Facebook · Priority routing (keyword + sentiment)'],
+    ['c','เคลมค่ารักษา 12 วันแล้วยังไม่ได้เงิน โทรไปสองรอบก็บอกให้รอ ถ้าแบบนี้จะยกเลิกกรมธรรม์ทั้งหมด!'],
+    ['a','ขอโทษจริง ๆ ค่ะคุณกฤษณ์ ดิฉันเห็นเคลม CLM-H-2569-0233 ยอด 68,400 บาท ค้างเกินกำหนดแล้วค่ะ'],
+    ['a','ตรวจสอบแล้วเอกสารครบ ค้างที่ขั้นอนุมัติ ดิฉันส่งเข้า Fast-track และแจ้งหัวหน้าทีมแล้ว โอนเงินภายใน 24 ชั่วโมงค่ะ'],
+    ['c','ครั้งนี้จะได้จริงใช่ไหม'],
+    ['a','รับรองค่ะ หัวหน้าทีมจะโทรยืนยันภายใน 2 ชั่วโมง และรอบต่ออายุหน้ามีส่วนลด 10% ให้เพื่อขออภัยค่ะ'],
+    ['c','โอเค รอดูนะ']],
+  ticket:{id:'TK-2569-104262',cat:'Complaint',sub:'เคลมล่าช้าเกิน SLA',pri:'Urgent',sla:120,slaLabel:'Supervisor โทรยืนยัน + โอนเงิน',team:'Supervisor → Claims – Health',link:'CLM-H-2569-0233 · รวม 2 Ticket เดิม',status:2,
+    ai:'ลูกค้า At-risk ร้องเรียนเคลม IPD CLM-H-2569-0233 (฿68,400) ค้าง 12 วัน เกิน SLA 7 วัน ติดตามมาแล้ว 2 ครั้ง ขู่ยกเลิกกรมธรรม์ ส่ง Fast-track โอนภายใน 24 ชม. Escalate Supervisor โทรกลับภายใน 2 ชม. เสนอส่วนลดต่ออายุ 10% ลูกค้ารับทราบ'},
+  sync:{events:[['interaction.completed','Facebook · sentiment −0.72 → −0.1'],['ticket.created','TK-2569-104262 · Complaint · Urgent (รวม 2 Ticket เดิม)'],['ticket.escalated','Supervisor: คุณวรรณา · Claims Health'],['nba.response','Retention offer · accepted'],['marketing.suppressed','งดส่งข้อเสนอขาย 30 วัน']],
+    before:[['At-risk','crit'],['Health + Motor','acc'],['Complained ×2','warn']], after:[['Retention watchlist','warn'],['Health + Motor','acc'],['Fast-track claim','info']],
+    journeys:[['≤ 2 ชม.','งาน Callback ของ Supervisor'],['โอนเงินแล้ว','Messenger แจ้งยอดโอน + ขอโทษอีกครั้ง'],['+3 วัน','แบบสำรวจ CSAT/NPS · ถ้า ≤ 6 เปิด Ticket อัตโนมัติ']]}}
+];
+
+const STEPS=['สาย/แชทเข้า','CDP Pop-up','จัดการ & Ticket','Wrap-up & CDP Sync'];
+const STATUS=['New','In progress','Escalated','Resolved'];
+const st={view:'launcher',sc:0,step:0,searched:false,sub:'pol',tStatus:1,summary:'',convoShown:0,nba:null,created:[]};
+let timers=[];
+const $=s=>document.querySelector(s);
+const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[]};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sc=()=>S[st.sc];
+const chip=([t,c])=>`<span class="chip ${c||''}">${t}</span>`;
+const chBadge=ch=>`<span class="ch-badge ${CH[ch].cls}">${CH[ch].icon}${CH[ch].short}</span>`;
+const idChip=s=>{const i=s.identity2&&st.searched?s.identity2:s.identity;
+  return {matched:`<span class="chip good">Matched · ${i.conf}%</span>`,anonymous:`<span class="chip info">Anonymous → Probable · ${i.conf}%</span>`,unknown:`<span class="chip">ไม่พบในฐานลูกค้า</span>`,thirdparty:`<span class="chip warn">Third-party · ${i.conf}%</span>`}[i.status]};
+
+/* ===== Views ===== */
+function setView(v){st.view=v;document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  ['launcher','desk','arch','dash'].forEach(k=>$('#view-'+k).hidden=k!==v);
+  if(v==='dash')renderDash(); if(v!=='desk'){$('#toastHost').innerHTML='';} else if(st.step===0)renderToast();
+  try{localStorage.setItem('abc-view',v)}catch(e){}
+  window.scrollTo({top:0});}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+function renderLauncher(){
+  $('#scenGrid').innerHTML=S.map((s,i)=>`<article class="scen">
+    <div class="scen-top"><span class="scen-num">SCENARIO ${i+1}</span>${chBadge(s.channel)}</div>
+    <h3>${s.title}</h3>
+    <div class="chips">${chip([TYPE[s.type].label,TYPE[s.type].cls])}<span class="chip">${s.ticket.cat}</span></div>
+    <div class="who">${s.who}</div>
+    <ul>${s.notes.map(n=>`<li>${n}</li>`).join('')}</ul>
+    <div class="foot"><span class="mono muted">${s.ticket.pri} · SLA ${fmtSla(s.ticket.sla)}</span><button class="btn sm primary" data-go="${i}" type="button">เริ่ม Demo →</button></div>
+  </article>`).join('');
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{startScenario(+b.dataset.go);setView('desk')});
+}
+const fmtSla=m=>m>=60?(m%60?`${Math.floor(m/60)} ชม. ${m%60} น.`:`${m/60} ชม.`):`${m} นาที`;
+
+/* ===== Agent desktop ===== */
+function startScenario(i){clearTimers();Object.assign(st,{sc:i,step:0,searched:false,sub:'pol',tStatus:S[i].ticket.status,summary:'',convoShown:0,nba:null});
+  $('#modalHost').innerHTML='';renderDesk();renderToast();}
+function renderPresenter(){
+  $('#scenPick').innerHTML=S.map((s,i)=>`<button type="button" aria-pressed="${i===st.sc}" data-pick="${i}" title="${s.title}">${i+1} · ${CH[s.channel].short}</button>`).join('');
+  document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>startScenario(+b.dataset.pick));
+  $('#steps').innerHTML=STEPS.map((t,i)=>`<span class="step ${i<st.step?'done':i===st.step?'now':''}"><b>${i+1}</b>${t}</span>`).join('');
+  const nb=$('#btnNext');
+  nb.textContent=['รับสาย →','เปิด Workspace →','จบ & Wrap-up →','Scenario ถัดไป →'][st.step];
+  nb.disabled=st.step===1&&sc().identity2&&!st.searched;
+  $('#agentDot').className='dot'+(st.step>0&&st.step<3?' busy':'');
+  $('#agentState').textContent=st.step===0?'Ready':st.step<3?'On '+CH[sc().channel].short:'Wrap-up';
+}
+$('#btnNext').onclick=()=>{ if(st.step===0)accept(); else if(st.step===1)openWorkspace(); else if(st.step===2)wrapUp(); else startScenario((st.sc+1)%S.length);};
+$('#btnReset').onclick=()=>startScenario(st.sc);
+
+function renderToast(){
+  const s=sc(); if(st.view!=='desk'||st.step!==0){$('#toastHost').innerHTML='';return;}
+  $('#toastHost').innerHTML=`<div class="toast" role="alertdialog" aria-label="${CH[s.channel].verb}">
+    <div class="toast-h ${CH[s.channel].cls}"><span class="ring">${CH[s.channel].icon}</span><div><b>${CH[s.channel].verb}</b><div style="font-size:12px;opacity:.85">${CH[s.channel].label}</div></div></div>
+    <div class="toast-b"><span class="big">${s.from}</span><span class="muted" style="font-size:12px">${s.route}</span>
+      <div class="chips"><span class="chip">รอในคิว <span class="mono">${s.wait}</span></span>${idChip(s)}</div>
+      <span style="font-size:12px" class="muted">CDP ส่งข้อมูลกลับมาแล้ว · เปิดดูได้ทันทีที่รับสาย</span></div>
+    <div class="toast-f"><button class="btn" type="button" id="tDecline">ปฏิเสธ</button><button class="btn good" type="button" id="tAccept">${s.channel==='voice'?'รับสาย':'รับแชท'}</button></div></div>`;
+  $('#tAccept').onclick=accept; $('#tDecline').onclick=()=>{$('#toastHost').innerHTML='';};
+}
+function accept(){st.step=1;$('#toastHost').innerHTML='';renderPresenter();startCallTimer();renderModalCDP();}
+
+let callSec=0;
+function startCallTimer(){callSec=0;const t=setInterval(()=>{callSec++;const el=$('#callTimer');if(el)el.textContent=mmss(callSec)},1000);timers.push(t);}
+const mmss=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+function cdpBody(s){
+  const unknown=s.identity2&&!st.searched;
+  if(unknown) return `<div class="idres"><span class="avatar" style="background:var(--surface-2);color:var(--muted)">?</span><div><h2>${s.from}</h2><div class="muted">${s.identity.method}</div></div><div class="conf">${idChip(s)}</div></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div><span class="eyebrow">ค้นหาคู่กรณี / บุคคลภายนอก</span><p class="muted" style="margin:.3em 0 0">ถามผู้ติดต่อว่าโทรเกี่ยวกับเคลมไหน แล้วค้นด้วยทะเบียนรถหรือเลขเคลม</p></div>
+      <form class="search-tp" id="tpForm"><select id="tpType" aria-label="ค้นหาด้วย"><option>ทะเบียนรถ</option><option>เลขเคลม</option><option>เลขบัตรประชาชน</option></select>
+      <input id="tpQ" aria-label="คำค้นหา" value="${s.search.q}"><button class="btn primary" type="submit">ค้นหาใน CDP</button></form>
+      <div class="mini"><div class="row"><span class="muted">ไม่ใช่คู่กรณี?</span><button class="btn sm" type="button" disabled>สร้างเป็น Prospect ใหม่</button></div></div>
+    </div>`;
+  const p=s.profile, i=s.identity2&&st.searched?s.identity2:s.identity;
+  return `<div class="idres"><span class="avatar">${p.ini}</span><div style="min-width:0"><h2>${p.name}</h2><div class="muted">${p.meta}</div><div class="chips" style="margin-top:6px">${chip([TYPE[s.type].label,TYPE[s.type].cls])}${p.segments.map(chip).join('')}</div></div>
+    <div class="conf"><div>${idChip(s)}</div><div class="muted" style="font-size:12px;margin-top:4px">${i.method}</div><div class="mono muted" style="font-size:11px;margin-top:2px">${p.cdp}</div></div></div>
+  <div class="kv"><div><span>ความสัมพันธ์</span><b>${p.since}</b></div><div><span>Customer Lifetime Value</span><b>${p.clv}</b></div><div><span>Consent</span><b>${p.consent}</b></div></div>
+  <div class="modal-b">
+    <section>
+      <div class="blk"><h4>${s.type==='thirdparty'?'เคลมที่เกี่ยวข้อง':'กรมธรรม์'}</h4><div class="mini">${(s.type==='thirdparty'?s.claims:s.policies).map(x=>`<div class="row"><div><b>${x.name}</b><div class="mono muted">${x.no}</div></div>${chip([x.st,x.crit?'crit':x.warn?'warn':'good'])}</div>`).join('')||`<div class="row"><span class="muted">ยังไม่มีกรมธรรม์ · Prospect</span>${chip(['New business','info'])}</div>`}</div></div>
+      <div class="blk"><h4>Ticket / เคลมที่ยังเปิด</h4><div class="mini">${openItems(s)}</div></div>
+      <div class="blk"><h4>Sentiment & ความเสี่ยง</h4>
+        <div class="senti"><span style="font-size:12px" class="muted">ลบ</span><div class="senti-scale"><i style="left:${(s.senti.v+1)*50}%"></i></div><span style="font-size:12px" class="muted">บวก</span>${chip([s.senti.label+' '+(s.senti.v>0?'+':'')+s.senti.v,s.senti.cls])}</div>
+        ${s.churn?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px"><span class="muted" style="white-space:nowrap">Churn risk</span><div class="meter ${s.churn.cls}" style="flex:1"><i style="width:${s.churn.v}%"></i></div><b class="mono">${s.churn.v}%</b>${chip([s.churn.label,s.churn.cls])}</div>`:''}
+      </div>
+    </section>
+    <section>
+      <div class="blk"><h4>Journey ล่าสุด (ทุกช่องทาง)</h4><ul class="timeline" style="padding:0">${s.journey.map(j=>`<li><span class="when">${j[0]}</span><span>${j[2]}<span class="src">${j[1]}</span></span></li>`).join('')}</ul></div>
+      ${nbaCard(s,true)}
+    </section>
+  </div>`;
+}
+function openItems(s){
+  const c=s.claims.filter(x=>x.st!=='Closed').map(x=>`<div class="row"><div><b>${x.name}</b><div class="mono muted">${x.no}</div></div>${chip([x.st,x.crit?'crit':'warn'])}</div>`);
+  const t=s.tickets.filter(x=>x.st==='Open').map(x=>`<div class="row"><div><b>${x.name}</b><div class="mono muted">${x.no} · ${x.when}</div></div>${chip(['Open','warn'])}</div>`);
+  const all=[...(s.type==='thirdparty'?[]:c),...t];
+  return all.join('')||`<div class="row"><span class="muted">ไม่มีเรื่องค้าง</span>${chip(['Clear','good'])}</div>`;
+}
+function nbaCard(s,compact){
+  const n=s.nba, hold=n.hold;
+  const decided=st.nba?`<span class="chip ${st.nba==='accept'?'good':st.nba==='defer'?'info':''}">${{accept:'ลูกค้าตอบรับ',decline:'ลูกค้าปฏิเสธ',defer:'เลื่อนไปเสนอภายหลัง'}[st.nba]}</span>`:'';
+  return `<div class="nba ${hold?'hold':''}">
+    <div class="nba-row"><span class="eyebrow">Next Best Action · ${n.kind}</span>${n.prop?`<span class="mono" style="font-size:12px">Propensity ${n.prop}%</span>`:''}</div>
+    <h4>${n.title}${n.price?` <span class="muted" style="font-weight:500;font-size:13px">· ${n.price}</span>`:''}</h4>
+    ${n.prop?`<div class="meter"><i style="width:${n.prop}%"></i></div>`:''}
+    ${hold?`<div style="font-size:12px" class="muted">${n.holdNote}</div>`:''}
+    <div class="script">${n.script}</div>
+    ${compact?'':`<div class="nba-row">${decided||`<div class="chips"><button class="btn sm primary" type="button" data-nba="accept">ลูกค้าตอบรับ</button><button class="btn sm" type="button" data-nba="${hold?'defer':'decline'}">${hold?'เสนอภายหลัง':'ปฏิเสธ'}</button></div>`}</div>`}
+  </div>`;
+}
+function renderModalCDP(){
+  const s=sc();
+  $('#modalHost').innerHTML=`<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="CDP Customer Pop-up">
+    <div class="modal-h"><div class="title"><span class="cdp-mark">CDP</span>Customer 360 Pop-up ${chBadge(s.channel)}</div><span class="muted mono" style="font-size:12px">ตอบกลับใน 0.21 วินาที · <span id="callTimer">${mmss(callSec)}</span></span></div>
+    <div id="cdpBody">${cdpBody(s)}</div>
+    <div class="modal-f"><span class="muted" style="font-size:12px">ข้อมูลจาก CDP (Profile, Journey, NBA) + Core Policy/Claims</span><button class="btn primary" type="button" id="mOpen" ${s.identity2&&!st.searched?'disabled':''}>เปิด Workspace & สร้าง Ticket →</button></div>
+  </div></div>`;
+  $('#mOpen').onclick=openWorkspace;
+  const f=$('#tpForm'); if(f) f.onsubmit=e=>{e.preventDefault();st.searched=true;renderModalCDP();renderPresenter();};
+}
+
+function openWorkspace(){st.step=2;$('#modalHost').innerHTML='';renderDesk();playConvo();startSla();}
+
+function renderDesk(){
+  renderPresenter();
+  const s=sc(), ws=$('#ws');
+  if(st.step<2){
+    ws.innerHTML=`<div class="panel" style="grid-column:1/-1"><div class="idle"><div><span class="eyebrow">${st.step===0?'Agent พร้อมรับสาย':'กำลังดู CDP Pop-up'}</span><h3>${st.step===0?`มี${CH[s.channel].verb} · ${s.from}`:'ตรวจข้อมูลลูกค้าก่อนเริ่มสนทนา'}</h3><p style="max-width:52ch;margin:.4em auto 0">${st.step===0?'กด "รับสาย" บนการแจ้งเตือนมุมขวาบน หรือกด "ขั้นถัดไป" เพื่อเปิด Pop-up ข้อมูลลูกค้าจาก CDP':'Pop-up แสดงข้อมูลลูกค้า 360° ก่อนเริ่มคุย'}</p>
+    ${st.step===1?'<p><button class="btn primary" type="button" id="reopen">เปิด Pop-up อีกครั้ง</button></p>':''}</div></div></div>`;
+    const r=$('#reopen'); if(r) r.onclick=renderModalCDP; return;
+  }
+  const p=s.profile,t=s.ticket;
+  ws.innerHTML=`
+  <div class="panel col-convo">
+    <div class="panel-h"><h3>บทสนทนา</h3>${chBadge(s.channel)}</div>
+    <div class="call-meta"><div><span class="muted">${s.channel==='voice'?'เบอร์โทร':'บัญชี'}</span><b class="mono">${s.from}</b></div><div><span class="muted">ระยะเวลา</span><b class="timer" id="callTimer">${mmss(callSec)}</b></div><div><span class="muted">คิว</span><b>${s.route.split('→')[1]||''}</b></div></div>
+    <div class="convo" id="convo" aria-live="polite"></div>
+  </div>
+  <div class="panel col-360">
+    <div class="p360-head"><span class="avatar">${p.ini}</span><div style="min-width:0;flex:1"><h3>${st.sc===2?'คุณธนพล (ยืนยันระหว่างสาย)':p.name}</h3><div class="muted" style="font-size:13px">${p.meta}</div><div class="chips" style="margin-top:6px">${chip([TYPE[s.type].label,TYPE[s.type].cls])}${p.segments.map(chip).join('')}</div></div>${idChip(s)}</div>
+    <div class="kv"><div><span>CDP ID</span><b class="mono">${p.cdp}</b></div><div><span>CLV</span><b>${p.clv}</b></div><div><span>ช่องทางที่ชอบ</span><b>${p.pref}</b></div></div>
+    <div class="subtabs" role="tablist">${[['pol',s.type==='thirdparty'?'เคลมที่เกี่ยวข้อง':'กรมธรรม์'],['clm','เคลม'],['jrn','Journey'],['tkt','Ticket เดิม']].filter(x=>!(s.type==='thirdparty'&&x[0]==='clm')).map(([k,l])=>`<button class="subtab" role="tab" type="button" data-sub="${k}" aria-selected="${st.sub===k}">${l}</button>`).join('')}</div>
+    <div id="subBody">${subBody(s)}</div>
+    <div style="padding:14px;border-top:1px solid var(--line)" id="nbaWrap">${nbaCard(s,false)}</div>
+  </div>
+  <div class="panel col-ticket">
+    <div class="panel-h"><h3>Ticket <span class="mono muted" style="font-weight:400;font-size:13px">${t.id}</span></h3><span class="chip ${t.pri==='Urgent'?'crit':t.pri==='High'?'warn':'info'}">${t.pri}</span></div>
+    <div class="sla" id="slaBox"><div><span class="eyebrow">SLA · ${t.slaLabel}</span><div class="timer" id="slaTimer">${slaText(t.sla*60)}</div></div><div style="flex:1;min-width:120px"><div class="meter good" id="slaMeter"><i style="width:100%"></i></div><div class="muted" style="font-size:11px;margin-top:3px">เป้าหมาย ${fmtSla(t.sla)} · คำนวณตาม Priority และประเภทลูกค้า</div></div></div>
+    <form class="form" id="tForm">
+      <div class="field"><label for="fType">ประเภทผู้ติดต่อ</label><input id="fType" value="${TYPE[s.type].label}" readonly></div>
+      <div class="field"><label for="fCh">ช่องทาง</label><input id="fCh" value="${CH[s.channel].label}" readonly></div>
+      <div class="field"><label for="fCat">หมวด <span class="ai-tag">AI แนะนำ</span></label><select id="fCat">${['Claim','Third-party Claim','Renewal','Sales Lead','Policy Service','Complaint'].map(c=>`<option ${c===t.cat?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field"><label for="fSub">หมวดย่อย <span class="ai-tag">AI แนะนำ</span></label><input id="fSub" value="${t.sub}"></div>
+      <div class="field"><label for="fPri">Priority</label><select id="fPri">${['Low','Medium','High','Urgent'].map(c=>`<option ${c===t.pri?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field"><label for="fTeam">มอบหมายทีม</label><select id="fTeam"><option selected>${t.team}</option><option>Policy Service</option><option>Supervisor</option></select></div>
+      <div class="field full"><label for="fLink">ผูกกับกรมธรรม์ / เคลม</label><input id="fLink" class="mono" value="${t.link}"></div>
+      <div class="field full"><label for="fSum">สรุปเรื่อง <button class="btn sm" type="button" id="aiFill" style="margin-left:auto"><span class="ai-tag">AI</span> สรุปจากบทสนทนา</button></label><textarea id="fSum" placeholder="กด &quot;สรุปจากบทสนทนา&quot; หรือพิมพ์เอง">${st.summary}</textarea></div>
+      ${t.consent?`<label class="consent field full" for="fCons" style="flex-direction:row"><input type="checkbox" id="fCons" checked style="width:auto;margin-top:3px"><span>${t.consentLabel||'ลูกค้ายินยอมให้เก็บและใช้ข้อมูลเพื่อเสนอผลิตภัณฑ์ (PDPA) · ช่องทาง LINE/Voice'}</span></label>`:''}
+    </form>
+    <div class="pipeline" id="pipe" role="group" aria-label="สถานะ Ticket"></div>
+    <div class="ticket-foot"><button class="btn" type="button" id="btnEsc">Escalate ถึง Supervisor</button><button class="btn primary" type="button" id="btnSave">บันทึก & จบการสนทนา</button></div>
+  </div>`;
+  document.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{st.sub=b.dataset.sub;document.querySelectorAll('[data-sub]').forEach(x=>x.setAttribute('aria-selected',x===b));$('#subBody').innerHTML=subBody(s)});
+  bindNba(); renderPipe();
+  $('#aiFill').onclick=()=>{st.summary=t.ai;$('#fSum').value=t.ai;};
+  $('#fSum').oninput=e=>st.summary=e.target.value;
+  $('#btnEsc').onclick=()=>{st.tStatus=2;renderPipe();};
+  $('#btnSave').onclick=wrapUp;
+  renderConvo();
+}
+function bindNba(){document.querySelectorAll('[data-nba]').forEach(b=>b.onclick=()=>{st.nba=b.dataset.nba;$('#nbaWrap').innerHTML=nbaCard(sc(),false);bindNba();});}
+function renderPipe(){$('#pipe').innerHTML=STATUS.map((x,i)=>`<button type="button" class="${i===st.tStatus?'on':i<st.tStatus?'past':''}" data-st="${i}" aria-pressed="${i===st.tStatus}">${x}</button>`).join('');
+  document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{st.tStatus=+b.dataset.st;renderPipe();});}
+function subBody(s){
+  const k=st.sub;
+  if(k==='pol'){const arr=s.type==='thirdparty'?s.claims:s.policies;
+    if(!arr.length)return `<div class="empty">ยังไม่มีกรมธรรม์ · ลูกค้าเป็น Prospect<br><span class="muted">CDP มีความสนใจจากเว็บไซต์ (ดูแท็บ Journey)</span></div>`;
+    return `<div class="list">${arr.map(x=>`<div class="item"><span class="prod ${PROD[x.p][1]}">${PROD[x.p][0]}</span><div><b>${x.name}</b><div class="mono muted" style="font-size:12px">${x.no}</div><div class="sub">${x.d}</div></div><div style="text-align:right">${chip([x.st,x.crit?'crit':x.warn?'warn':'good'])}<div class="sub" style="margin-top:4px">${x.exp?'หมดอายุ '+x.exp:x.when}${x.prem?' · '+x.prem:''}</div></div></div>`).join('')}</div>`;}
+  if(k==='clm'){if(!s.claims.length)return `<div class="empty">ไม่มีประวัติเคลม</div>`;
+    return `<div class="list">${s.claims.map(x=>`<div class="item"><span class="prod ${PROD[x.p][1]}">${PROD[x.p][0]}</span><div><b>${x.name}</b><div class="mono muted" style="font-size:12px">${x.no}</div><div class="sub">${x.d}</div></div><div style="text-align:right">${chip([x.st,x.crit?'crit':x.st==='Closed'?'':'warn'])}<div class="sub" style="margin-top:4px">${x.when}</div></div></div>`).join('')}</div>`;}
+  if(k==='jrn')return `<ul class="timeline">${s.journey.map(j=>`<li><span class="when">${j[0]}</span><span>${j[2]}<span class="src">${j[1]}</span></span></li>`).join('')}</ul>`;
+  if(!s.tickets.length)return `<div class="empty">ไม่มี Ticket ก่อนหน้า</div>`;
+  return `<div class="list">${s.tickets.map(x=>`<div class="item"><span class="prod">TK</span><div><b>${x.name}</b><div class="mono muted" style="font-size:12px">${x.no}</div></div><div style="text-align:right">${chip([x.st,x.st==='Open'?'warn':'good'])}<div class="sub" style="margin-top:4px">${x.when}</div></div></div>`).join('')}</div>`;
+}
+function renderConvo(){const s=sc(),c=$('#convo');if(!c)return;
+  c.innerHTML=s.transcript.slice(0,st.convoShown).map((m,i)=>msgHtml(m,s,false)).join('')||'<div class="msg sys">กำลังเชื่อมต่อ…</div>';c.scrollTop=c.scrollHeight;}
+const msgHtml=(m,s,fresh)=>`<div class="msg ${m[0]}${fresh?' new':''}">${m[0]==='sys'?'':`<span class="who">${m[0]==='a'?'พรทิพย์ (Agent)':s.channel==='voice'?'ผู้โทร (Speech-to-text)':'ลูกค้า'}</span>`}${m[1]}</div>`;
+function playConvo(){const s=sc();
+  if(reduced){st.convoShown=s.transcript.length;renderConvo();return;}
+  st.convoShown=0;renderConvo();
+  const t=setInterval(()=>{if(st.convoShown>=s.transcript.length){clearInterval(t);return;}
+    st.convoShown++;const c=$('#convo');if(!c)return;if(st.convoShown===1)c.innerHTML='';
+    c.insertAdjacentHTML('beforeend',msgHtml(s.transcript[st.convoShown-1],s,true));c.scrollTop=c.scrollHeight;},1100);
+  timers.push(t);}
+let slaLeft=0;
+const slaText=sec=>sec>=3600?`${Math.floor(sec/3600)}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`:mmss(sec);
+function startSla(){const tot=sc().ticket.sla*60;slaLeft=tot;
+  const t=setInterval(()=>{slaLeft=Math.max(0,slaLeft-1);const el=$('#slaTimer');if(!el)return;el.textContent=slaText(slaLeft);
+    const pct=slaLeft/tot*100;const m=$('#slaMeter');m.querySelector('i').style.width=pct+'%';m.className='meter '+(pct>50?'good':pct>20?'warn':'crit');},1000);timers.push(t);}
+
+/* ===== Wrap-up / CDP sync ===== */
+function wrapUp(){
+  const s=sc(),t=s.ticket;clearTimers();st.step=3;renderPresenter();
+  if(st.tStatus<1)st.tStatus=1;
+  const rec={id:t.id,name:st.sc===2?'คุณธนพล':s.profile.name,ch:CH[s.channel].short,cat:t.cat,pri:($('#fPri')||{}).value||t.pri,team:t.team,sla:slaText(slaLeft||t.sla*60),status:STATUS[st.tStatus]};
+  st.created=st.created.filter(x=>x.id!==rec.id);st.created.unshift(rec);
+  const ev=s.sync.events;
+  const payload={event:ev[0][0],profile_id:s.profile.cdp.replace('ANON-7f3a91','00318822'),channel:s.channel,ticket_id:t.id,category:t.cat,priority:rec.pri,agent:'A-217',duration_sec:callSec||348,nba:{offer:s.nba.title,response:st.nba||(s.nba.hold?'deferred':'not_offered')},ts:'2026-10-07T14:0'+(st.sc+1)+':12+07:00'};
+  $('#modalHost').innerHTML=`<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Wrap-up และส่งข้อมูลกลับเข้า CDP">
+    <div class="modal-h"><div class="title"><span class="cdp-mark">CDP</span>Wrap-up & ส่งข้อมูลกลับเข้า CDP</div><span class="chip good">Ticket ${t.id} บันทึกแล้ว · ${rec.status}</span></div>
+    <div class="sync-grid">
+      <section><span class="eyebrow">1 · Event ที่ส่งเข้า CDP</span><div id="evList" style="display:flex;flex-direction:column;gap:10px">${ev.map((e,i)=>`<div class="ev" data-ev="${i}"><span class="st"></span><div><code>${e[0]}</code><span class="d">${e[1]}</span></div></div>`).join('')}</div>
+        <pre class="payload" aria-label="ตัวอย่าง Payload">${JSON.stringify(payload,null,2)}</pre></section>
+      <section><span class="eyebrow">2 · Segment ที่เปลี่ยน</span><div class="seg-move"><div class="muted" style="font-size:12px">ก่อน</div><div class="chips">${s.sync.before.map(chip).join('')}</div><div class="arrow">↓ อัปเดตแบบ Real-time</div><div class="muted" style="font-size:12px">หลัง</div><div class="chips">${s.sync.after.map(chip).join('')}</div></div></section>
+      <section><span class="eyebrow">3 · Journey ที่ถูกสั่งต่อ</span>${s.sync.journeys.map(j=>`<div class="jr"><span class="when">${j[0]}</span><span>${j[1]}</span></div>`).join('')}</section>
+    </div>
+    <div class="modal-f"><button class="btn" type="button" id="goDash">ดูใน Supervisor Dashboard</button><button class="btn primary" type="button" id="goNext">Scenario ถัดไป →</button></div>
+  </div></div>`;
+  $('#goDash').onclick=()=>{$('#modalHost').innerHTML='';setView('dash')};
+  $('#goNext').onclick=()=>startScenario((st.sc+1)%S.length);
+  ev.forEach((e,i)=>{const el=document.querySelector(`[data-ev="${i}"]`);
+    if(reduced){el.className='ev sent';return;}
+    timers.push(setTimeout(()=>el.className='ev sending',i*550));timers.push(setTimeout(()=>el.className='ev sent',i*550+450));});
+}
+
+/* ===== Architecture ===== */
+function renderArch(){
+  const box=(x,y,w,h,title,items,tone)=>`<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="var(--${tone||'surface-2'})" stroke="var(--line)"/>
+    <text x="${x+14}" y="${y+24}" font-family="Anuphan,sans-serif" font-size="15" font-weight="600" fill="var(--ink)">${title}</text>
+    ${items.map((t,i)=>`<text x="${x+14}" y="${y+48+i*20}" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans Thai,sans-serif">• ${t}</text>`).join('')}</g>`;
+  const arr=(x1,y1,x2,y2,c,dash,label,lx,ly)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--${c})" stroke-width="2" ${dash?'stroke-dasharray="6 5"':''} marker-end="url(#ah-${c})"/>${label?`<text x="${lx}" y="${ly}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace" text-anchor="middle">${label}</text>`:''}`;
+  const mk=c=>`<marker id="ah-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--${c})"/></marker>`;
+  $('#archWrap').innerHTML=`<svg viewBox="0 0 1160 520" role="img" aria-label="แผนภาพสถาปัตยกรรม CRM เชื่อม CDP">
+  <defs>${mk('accent')}${mk('gold')}${mk('faint')}</defs>
+  <text x="30" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">CHANNELS</text>
+  <text x="250" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">ENGAGEMENT</text>
+  <text x="560" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">CUSTOMER DATA</text>
+  <text x="900" y="34" font-size="11" letter-spacing="1.2" fill="var(--faint)" font-family="IBM Plex Mono,monospace">SYSTEMS OF RECORD</text>
+  ${box(30,50,170,80,'Voice / CTI',['Hotline 1234 · IVR','ANI → Screen pop'])}
+  ${box(30,150,170,80,'LINE OA',['Messaging API','LINE UID / LINE Login'])}
+  ${box(30,250,170,80,'Facebook',['Messenger API','PSID · Keyword'])}
+  ${box(30,370,170,100,'Digital touchpoints',['Website / App','Facebook Ads','Premium calculator'])}
+  ${box(250,50,250,180,'Omnichannel CRM',['Routing / ACD / Priority queue','Agent Desktop + Pop-up','Ticket · SLA · Escalation','AI summary · Knowledge base','Wrap-up · Disposition'],'accent-soft')}
+  ${box(250,260,250,90,'Supervisor & QA',['Real-time dashboard','Speech analytics / CSAT'])}
+  ${box(560,50,290,290,'CDP (Customer Data Platform)',['Identity Resolution','  Deterministic + Probabilistic','Unified Profile 360°','Segments (Real-time)','Scoring: Churn · Propensity · Lead','Next Best Action engine','Consent & PDPA vault','Journey Orchestration','Third-party profiles (คู่กรณี)'],'gold-soft')}
+  ${box(900,50,230,90,'Policy Admin (Core)',['กรมธรรม์ · เบี้ย · ต่ออายุ'])}
+  ${box(900,160,230,90,'Claims System',['เคลม · คู่กรณี · อู่ในเครือ'])}
+  ${box(900,270,230,70,'Billing / Payment',['PromptPay · บัตร'])}
+  ${box(560,380,570,90,'Outbound actions (จาก Journey)',['LINE Flex · SMS · Email · Messenger · Callback task · Ads audience'])}
+  ${arr(200,90,248,110,'accent')}${arr(200,190,248,160,'accent')}${arr(200,290,248,200,'accent')}
+  <path d="M200 440 H530 V300 H556" fill="none" stroke="var(--faint)" stroke-width="2" marker-end="url(#ah-faint)"/><text x="380" y="432" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace" text-anchor="middle">web/app events</text>
+  ${arr(500,110,558,110,'accent',false,'lookup',529,100)}
+  ${arr(558,150,502,150,'accent',false,'profile+NBA',529,168)}
+  ${arr(500,200,558,225,'gold',true,'events',522,232)}
+  ${arr(898,95,852,120,'faint',false,'sync',875,94)}
+  ${arr(898,205,852,205,'accent',false,'claim API',875,198)}
+  ${arr(898,305,852,290,'faint',false,'',0,0)}
+  ${arr(705,340,705,378,'gold',true,'trigger',740,364)}
+  </svg>`;
+}
+
+/* ===== Dashboard ===== */
+const CAT=[['Claim (รถยนต์/สุขภาพ)',142],['Policy Service',96],['Renewal',74],['Sales Lead',61],['Third-party Claim',38],['Complaint',23]];
+const CHM=[['Voice',58],['LINE OA',31],['Facebook',11]];
+const BASE=[
+  {id:'TK-2569-104198',name:'คุณปิยะ วงศ์ไทย',ch:'Voice',cat:'Claim',pri:'High',team:'Claims – Motor Survey',sla:'00:08:12',status:'In progress'},
+  {id:'TK-2569-104176',name:'คุณจันทร์เพ็ญ ศรีวงศ์',ch:'LINE',cat:'Complaint',pri:'Urgent',team:'Supervisor',sla:'00:41:00',status:'Escalated'},
+  {id:'TK-2569-104150',name:'คุณอนุชา มีสุข',ch:'Facebook',cat:'Policy Service',pri:'Low',team:'Policy Service',sla:'05:12:30',status:'New'}];
+function bars(el,data,unit){const max=Math.max(...data.map(d=>d[1]));
+  el.innerHTML=data.map(d=>`<div class="bar-row" data-tip="${d[0]}: ${d[1]}${unit}"><span style="min-width:0;overflow-wrap:anywhere">${d[0]}</span><div class="bar-track"><div class="bar-fill" style="width:${d[1]/max*100}%"></div></div><span class="n">${d[1]}${unit}</span></div>`).join('');}
+function renderDash(){
+  const total=CAT.reduce((a,b)=>a+b[1],0)+st.created.length;
+  $('#kpis').innerHTML=[['สายรอในคิว','7','<span class="down">▲ 2 จากชั่วโมงก่อน</span>'],['Ticket วันนี้',String(total),`<span class="up">${st.created.length?'+'+st.created.length+' จาก Demo':'อัปเดตทุก 30 วินาที'}</span>`],['AHT','5:42','<span class="up">▼ 0:48 หลังใช้ Pop-up</span>'],['FCR','78%','<span class="up">▲ 6 pts</span>'],['SLA ตามเป้า','92%','<span class="muted">เป้า 90%</span>'],['CSAT','4.5','<span class="muted">จาก 5 · 312 คำตอบ</span>']]
+    .map(k=>`<div class="kpi"><div class="t">${k[0]}</div><div class="v">${k[1]}</div><div class="d">${k[2]}</div></div>`).join('');
+  bars($('#barsCat'),CAT,''); bars($('#barsCh'),CHM,'%');
+  const rows=[...st.created.map(r=>({...r,fresh:true})),...BASE];
+  $('#liveCount').textContent=st.created.length+' จาก Demo';
+  $('#tktBody').innerHTML=rows.map(r=>`<tr class="${r.fresh?'fresh':''}"><td class="mono">${r.id}</td><td>${r.name}</td><td>${r.ch}</td><td>${r.cat}</td><td>${chip([r.pri,r.pri==='Urgent'?'crit':r.pri==='High'?'warn':r.pri==='Low'?'':'info'])}</td><td>${r.team}</td><td class="num mono">${r.sla}</td><td>${chip([r.status,r.status==='Escalated'?'crit':r.status==='Resolved'?'good':'acc'])}</td></tr>`).join('');
+}
+const tip=$('#tip');
+document.addEventListener('mousemove',e=>{const r=e.target.closest&&e.target.closest('[data-tip]');if(!r){tip.hidden=true;return;}
+  tip.textContent=r.dataset.tip;tip.hidden=false;tip.style.left=Math.min(e.clientX+12,innerWidth-200)+'px';tip.style.top=(e.clientY+14)+'px';});
+
+/* init */
+renderLauncher();renderArch();renderDesk();
+let v0='launcher';try{v0=localStorage.getItem('abc-view')||'launcher'}catch(e){}
+if(location.hash&&['launcher','desk','arch','dash'].includes(location.hash.slice(1)))v0=location.hash.slice(1);
+setView(v0);
+</script>
