@@ -448,10 +448,11 @@ function BackDoc({ c, k }: { c: Case; k: DocKey }) {
   const meta = c.docs[k];
   const url = useFileUrl(`${c.id}:${k}`, c.seeded ? undefined : meta?.at);
   const [big, setBig] = useState(false);
+  const [broken, setBroken] = useState(false);
   return (
     <div className={`doc-tile${meta ? ' has' : ''}`}>
       <button type="button" className="doc-thumb" onClick={() => url && setBig(true)} disabled={!url} aria-label={DOC_LABEL[lang][k]}>
-        {url ? <img src={url} alt="" /> : <span aria-hidden="true">{meta ? '✓' : '—'}</span>}
+        {url && !broken ? <img src={url} alt="" onError={() => setBroken(true)} /> : <span aria-hidden="true">{meta ? '✓' : '—'}</span>}
       </button>
       <div className="doc-label">{DOC_LABEL[lang][k]}</div>
       <div className="hint">{meta ? (c.seeded ? t('sampleDoc') : meta.name) : t('missing')}</div>

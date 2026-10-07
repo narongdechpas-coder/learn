@@ -16,6 +16,12 @@ if (shots) mkdirSync(shots, { recursive: true });
 
 const executablePath = process.env.CHROMIUM_PATH || undefined; // e.g. /opt/pw-browsers/chromium
 const browser = await chromium.launch({ executablePath });
+// A real (tiny) JPEG for normal uploads; an oversized blob only for the size check.
+const sample = await browser.newPage({ viewport: { width: 64, height: 48 } });
+await sample.setContent('<body style="margin:0;background:#2a78d6"></body>');
+const realJpg = await sample.screenshot({ type: 'jpeg', quality: 70 });
+await sample.close();
+const jpg = (name, size) => ({ name, mimeType: 'image/jpeg', buffer: size ? Buffer.alloc(size, 0xff) : realJpg });
 const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
 const errors = [];
 const watch = (p) => {
@@ -23,7 +29,7 @@ const watch = (p) => {
   p.on('console', (m) => m.type() === 'error' && !/fonts\.g/.test(m.text()) && !/ERR_/.test(m.text()) && errors.push(m.text()));
 };
 
-const jpg = (name, size = 2048) => ({ name, mimeType: 'image/jpeg', buffer: Buffer.alloc(size, 0xff) });
+
 let step = 0;
 const log = (s) => console.log(`  ${++step}. ${s}`);
 
@@ -129,13 +135,31 @@ await customer.getByText('รับเฉพาะไฟล์ .jpg').waitFor();
 await inputs.nth(0).setInputFiles(jpg('big.jpg', 3 * 1024 * 1024 + 10));
 await customer.getByRole('alert').filter({ hasText: 'big.jpg' }).waitFor();
 log('rejects .png and files over 3MB');
+// Real JPEGs in extreme shapes (tall and wide) must stay inside their tiles.
+const shotPage = await browser.newPage({ viewport: { width: 300, height: 1200 } });
+await shotPage.setContent('<body style="margin:0;background:linear-gradient(#c33,#33c)"></body>');
+const tallJpg = await shotPage.screenshot({ type: 'jpeg', quality: 60 });
+await shotPage.setViewportSize({ width: 1600, height: 200 });
+const wideJpg = await shotPage.screenshot({ type: 'jpeg', quality: 60 });
+await shotPage.close();
 for (let i = 0; i < 6; i++) {
-  await inputs.nth(i).setInputFiles(jpg(`doc${i}.jpg`));
+  const buffer = i === 0 ? tallJpg : i === 1 ? wideJpg : null;
+  await inputs.nth(i).setInputFiles(buffer ? { name: `photo-with-a-very-long-file-name-${i}.jpg`, mimeType: 'image/jpeg', buffer } : jpg(`doc${i}.jpg`));
   await customer.locator('.uploads .doc-tile.has').nth(i).waitFor();
+}
+for (const i of [0, 1]) {
+  const tile = customer.locator('.uploads .doc-tile').nth(i);
+  await tile.locator('.doc-thumb img').waitFor();
+  const box = await tile.locator('.doc-thumb').boundingBox();
+  const img = await tile.locator('.doc-thumb img').boundingBox();
+  const t = await tile.boundingBox();
+  assert.ok(Math.abs(img.height - box.height) < 1 && Math.abs(img.width - box.width) < 1, `image ${i} fills its frame without overflowing`);
+  assert.ok(Math.abs(box.height - (box.width * 3) / 4) < 2, `frame ${i} keeps 4:3`);
+  assert.ok(box.x >= t.x && box.x + box.width <= t.x + t.width + 0.5, `frame ${i} inside tile`);
 }
 await customer.getByText('เอกสารครบแล้ว').waitFor();
 if (shots) await customer.screenshot({ path: `${shots}/2-track.png`, fullPage: true });
-log('all 6 documents uploaded');
+log('all 6 documents uploaded; tall and wide photos stay inside 4:3 frames');
 
 // back office: accept → docs review → issue
 await office.bringToFront();

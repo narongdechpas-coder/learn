@@ -807,7 +807,7 @@ export function fmtMinutes(min: number, lang: Lang): string {
   return r ? `${h} h ${r} min` : `${h} h`;
 }
 
-export const fmtSize = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+export const fmtSize = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))}KB` : `${(bytes / 1024 / 1024).toFixed(2)}MB`);
 
 export const USAGE_LABEL: Record<Lang, Record<UsageCode, string>> = {
   th: {

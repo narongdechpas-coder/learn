@@ -1049,11 +1049,12 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
 function DocTile({ caseId, k, meta, label, disabled, onFile }: { caseId: string; k: DocKey; meta?: Case['docs'][DocKey]; label: string; disabled: boolean; onFile: (f: File | undefined) => void }) {
   const { t } = useT();
   const url = useFileUrl(`${caseId}:${k}`, meta?.at);
+  const [broken, setBroken] = useState<string | null>(null);
   const id = `up-${caseId}-${k}`;
   return (
     <div className={`doc-tile${meta ? ' has' : ''}`}>
       <div className="doc-thumb">
-        {url ? <img src={url} alt={label} /> : <span aria-hidden="true">{meta ? '✓' : '＋'}</span>}
+        {url && broken !== url ? <img src={url} alt={label} onError={() => setBroken(url)} /> : <span aria-hidden="true">{meta ? '✓' : '＋'}</span>}
       </div>
       <div className="doc-label">{label}</div>
       {meta && <div className="hint">{meta.name} · {fmtSize(meta.size)}</div>}
