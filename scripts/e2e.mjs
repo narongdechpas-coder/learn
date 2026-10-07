@@ -101,6 +101,10 @@ assert.equal(cols, 4, 'packages in 4 columns on desktop');
 const ctaY = (await customer.locator('.quote-cta.top').boundingBox()).y;
 assert.ok(ctaY < (await cards.first().boundingBox()).y, 'quote bar sits above the packages');
 await customer.getByText('฿380,000').first().waitFor();
+const spill = await customer.locator('.pkg-card').evaluateAll((els) =>
+  els.filter((el) => [...el.querySelectorAll('*')].some((c) => c.getBoundingClientRect().right > el.getBoundingClientRect().right + 0.5)).length,
+);
+assert.equal(spill, 0, 'nothing spills out of a package card (incl. CMI)');
 await customer.getByRole('radio', { name: 'ชั้น 1' }).click();
 assert.ok((await cards.first().innerText()).includes('฿380,000'), 'Class 1 own damage uses the chosen sum insured');
 if (shots) await customer.screenshot({ path: `${shots}/1-packages.png`, fullPage: true });

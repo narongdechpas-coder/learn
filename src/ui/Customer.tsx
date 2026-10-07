@@ -584,7 +584,10 @@ function PackageCard({ p, onChoose }: { p: Package; onChoose: () => void }) {
   const money = (n: number) => (n ? fmtBaht(n, lang) : t('notCovered'));
   const rows: [string, string][] =
     p.type === 'CMI'
-      ? [[t('paMed'), t('cmiCover', { med: fmtBaht(p.medical, lang), pa: fmtBaht(p.pa, lang) })]]
+      ? [
+          [t('cmiMedical'), `${fmtBaht(p.medical, lang)}${t('perPerson')}`],
+          [t('cmiDeath'), `${fmtBaht(p.pa, lang)}${t('perPerson')}`],
+        ]
       : [
           [t('ownDamage'), money(p.ownDamage)],
           [t('fireTheft'), money(p.fireTheft)],

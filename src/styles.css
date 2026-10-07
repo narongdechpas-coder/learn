@@ -292,7 +292,7 @@ select:disabled { opacity: 0.55; cursor: not-allowed; }
 .pkg-price .num { font-family: var(--f-display); font-size: 1.55rem; font-weight: 700; }
 .cover-list { margin: 10px 0 14px; display: grid; gap: 0; font-size: 0.8rem; flex: 1; align-content: start; }
 .cover-list div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
-.cover-list dt { color: var(--ink-2); }
+.cover-list dt { color: var(--ink-2); min-width: 0; }
 .cover-list dd { margin: 0; font-weight: 600; text-align: right; white-space: nowrap; }
 .cover-list .off dd, .cover-list .off dt { color: var(--muted); font-weight: 400; }
 .quote-cta.top { margin: 0 0 16px; border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
