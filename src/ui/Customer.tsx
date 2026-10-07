@@ -167,6 +167,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
 
   const goPackages = () => {
     setPkg(null);
+    setCustom(false);
     setFilter('all');
     setStep('pkg');
   };
@@ -181,11 +182,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const goCustomQuote = (withCode?: UsageCode) => {
     setPkg(null);
     setCustom(true);
+    // Carry over whatever the customer already picked so they only fill the gaps.
     setCBrand(brandId ? brandById(brandId).name : '');
-    setCModel('');
-    setCYear(0);
+    setCModel(picked?.name ?? '');
+    setCYear(year);
     setCCode(withCode ?? (code || '110'));
-    setQuoteSI(0);
+    setQuoteSI(ready ? si : 0);
     setQuoteType('T1');
     setQuoteErr(null);
     setStep('quote');
@@ -431,7 +433,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <h2>{t('quoteTitle')}</h2>
               <p className="lead">{t('quoteLead')}</p>
             </div>
-            <button className="btn ghost" type="button" onClick={() => setStep(custom ? 'car' : 'pkg')}>← {t('back')}</button>
+            <button className="btn ghost" type="button" onClick={() => { if (custom) { setCustom(false); setStep('car'); } else setStep('pkg'); }}>← {t('back')}</button>
           </div>
           {custom ? (
             <div className="custom-car">
