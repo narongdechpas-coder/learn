@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
-import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDateTime, useT, type TKey } from '../i18n';
+import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDateTime, usageText, useT, type TKey } from '../i18n';
 import {
   acceptCase,
   addNote,
@@ -17,10 +17,10 @@ import {
   useStore,
 } from '../store';
 import { SLA_KEYS, slaFor } from '../lib/sla';
-import { BizClock, CaseSla, Field, SlaChip, StatusPill, TypeTag, useNow } from './common';
+import { BizClock, CaseSla, Field, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
 import { useFileUrl } from './Customer';
 
-const OPEN: Status[] = ['NEW', 'ACCEPTED', 'QUOTED', 'AWAITING_DOCS', 'DOCS_REVIEW'];
+const OPEN: Status[] = ['NEW', 'AWAITING_PAYMENT', 'ACCEPTED', 'QUOTED', 'AWAITING_DOCS', 'DOCS_REVIEW'];
 const STATUSES: Status[] = [...OPEN, 'ISSUED', 'CANCELLED'];
 
 export function BackOffice({
@@ -176,7 +176,7 @@ export function BackOffice({
                       </div>
                       <div className="cr-bot">
                         <TypeTag type={c.coverage} />
-                        <span className={`src src-${c.source}`}>{t(c.source === 'package' ? 'srcPackage' : 'srcQuote')}</span>
+                        <span className={`src src-${c.source}`}>{t(SOURCE_KEY[c.source])}</span>
                         <span className="muted num">{fmtDateTime(c.createdAt, lang)}</span>
                         <span className="cr-owner muted">{staffById(c.assignee)?.[lang] ?? t('unassigned')}</span>
                         {OPEN.includes(c.status) && <CaseSla c={c} now={now} />}
@@ -206,7 +206,9 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
   const ref = n.caseId;
   switch (n.kind) {
     case 'new':
-      return t('nNew', { ref, source: t(n.params?.source === 'quote' ? 'srcQuote' : 'srcPackage') });
+      return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) });
+    case 'self':
+      return t('nSelf', { ref, type: COVERAGE_LABEL[lang][(n.params?.type as 'T2P') ?? 'T2P'] });
     case 'confirmed':
       return t('nConfirmed', { ref });
     case 'docs':
@@ -221,7 +223,7 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
 function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; now: number; onClose: () => void }) {
   const { t, lang } = useT();
   const model = modelOfVehicle(c.vehicle);
-  const suggested = estimateQuote(model, c.desiredSI ?? c.vehicle.sumInsured, c.coverage);
+  const suggested = estimateQuote(model, c.vehicle.usage, c.desiredSI ?? c.vehicle.sumInsured, c.coverage);
   const [price, setPrice] = useState<number>(c.quotedPremium ?? suggested);
   const [mode, setMode] = useState<null | 'cancel' | 'reupload'>(null);
   const [reason, setReason] = useState('');
@@ -235,7 +237,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
     <article className="case-detail">
       <header className="cd-head">
         <div>
-          <div className="eyebrow num">{c.id} · {t(c.source === 'package' ? 'srcPackage' : 'srcQuote')}</div>
+          <div className="eyebrow num">{c.id} · {t(SOURCE_KEY[c.source])}</div>
           <h3>{c.customer.firstName} {c.customer.lastName}</h3>
           <div className="cd-tags">
             <StatusPill status={c.status} />
@@ -276,7 +278,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
               <button className="btn" type="button" onClick={() => setMode(mode === 'reupload' ? null : 'reupload')}>{t('actReupload')}</button>
             </>
           )}
-          {(c.status === 'AWAITING_DOCS' || (c.status === 'QUOTED' && c.source === 'quote')) && <span className="muted">⏳ {t('waitCustomer')}</span>}
+          {(c.status === 'AWAITING_DOCS' || c.status === 'AWAITING_PAYMENT' || (c.status === 'QUOTED' && c.source === 'quote')) && <span className="muted">⏳ {t('waitCustomer')}</span>}
           <button className="btn ghost danger" type="button" onClick={() => setMode(mode === 'cancel' ? null : 'cancel')}>{t('actCancel')}</button>
         </div>
       )}
@@ -318,6 +320,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
           <h4>{t('vehicleInfo')}</h4>
           <dl className="kv">
             <dt>{t('car')}</dt><dd>{vehicleText(c.vehicle)}</dd>
+            <dt>{t('usageCode')}</dt><dd>{usageText(c.vehicle.usage, lang)}</dd>
             <dt>{t('plate')}</dt><dd>{c.customer.plate} · {c.customer.province}</dd>
             <dt>{t('chassis')}</dt><dd className="num">{c.customer.chassis}</dd>
             <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang)}</dd>
@@ -325,6 +328,8 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('waitingQuote')}</dd>
             <dt>{t('startDate')}</dt><dd>{c.customer.startDate}</dd>
             {c.policyNo && (<><dt>Policy</dt><dd className="num">{c.policyNo}</dd></>)}
+            {c.payment && (<><dt>{t('paidBy')}</dt><dd>{t(c.payment.method === 'qr' ? 'payQr' : 'payCard')}</dd></>)}
+            {c.delivery && (<><dt>{t('deliveryLabel')}</dt><dd>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</dd></>)}
           </dl>
         </section>
         <section>
@@ -388,14 +393,16 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
   function history(c: Case) {
     const out: { at: number; by: string; text: string }[] = [];
     if (c.seeded) {
-      const order = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'issued', 'cancelled'] as const;
+      const order = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'paid', 'issued', 'cancelled'] as const;
       for (const st of order) {
         const at = c.stamps[st];
         if (!at) continue;
-        if (c.source === 'package' && (st === 'quoted' || st === 'confirmed')) continue;
-        const by = st === 'submitted' || st === 'confirmed' || st === 'docsComplete' ? 'customer' : c.assignee ?? 'system';
+        if (c.source !== 'quote' && (st === 'quoted' || st === 'confirmed')) continue;
+        if (c.source === 'self' && st === 'accepted') continue;
+        const by = st === 'submitted' || st === 'confirmed' || st === 'docsComplete' || st === 'paid' ? 'customer' : c.assignee ?? 'system';
         const key: Record<typeof st, TKey> = {
-          submitted: c.source === 'package' ? 'lSubmitPackage' : 'lSubmitQuote',
+          submitted: c.source === 'package' ? 'lSubmitPackage' : c.source === 'self' ? 'lSelfStart' : 'lSubmitQuote',
+          paid: 'lPaid',
           accepted: 'lAccept',
           quoted: 'lQuote',
           confirmed: 'lConfirm',
@@ -403,12 +410,14 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
           issued: 'lIssue',
           cancelled: 'lCancel',
         };
-        out.push({ at, by, text: t(key[st], { price: fmtBaht(c.quotedPremium ?? 0, lang), ref: c.id, text: '-' }) });
+        out.push({ at, by, text: t(key[st], { price: fmtBaht(c.quotedPremium ?? 0, lang), ref: c.id, text: '-', method: c.payment ? t(c.payment.method === 'qr' ? 'payQr' : 'payCard') : '' }) });
       }
     }
     for (const l of c.log) {
       const map: Record<string, TKey> = {
         submitPackage: 'lSubmitPackage',
+        selfStart: 'lSelfStart',
+        paid: 'lPaid',
         submitQuote: 'lSubmitQuote',
         accept: 'lAccept',
         assign: 'lAssign',
@@ -425,6 +434,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         price: fmtBaht(Number(l.text ?? 0), lang),
         doc: l.text && l.action === 'upload' ? DOC_LABEL[lang][l.text as DocKey] : '',
         text: l.text ?? '',
+        method: l.action === 'paid' ? t(l.text === 'qr' ? 'payQr' : 'payCard') : '',
       });
       if (l.action === 'assign') text += `: ${staffById(l.text)?.[lang] ?? ''}`;
       out.push({ at: l.at, by: l.by, text });

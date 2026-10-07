@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react';
-import type { Case, Customer, CoverageType, DocKey, Email, EmailTemplate, Notification, Package, Source, Vehicle } from './types';
+import type { Case, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Notification, Package, Source, Vehicle } from './types';
 import { seedCases } from './lib/seed';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
-import { CURRENT_YEAR, modelOfVehicle } from './data/vehicles';
+import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
 
@@ -21,7 +21,7 @@ export interface State {
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 1;
+const VERSION = 2;
 
 function fresh(): State {
   const now = Date.now();
@@ -137,13 +137,17 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
-  return Math.round((base + (c.addCmi ? cmiPremium(modelOfVehicle(c.vehicle).body) : 0)) * 100) / 100;
+  return Math.round((base + (c.addCmi ? (cmiPremium(c.vehicle.usage) ?? 0) : 0)) * 100) / 100;
 };
 
 export const requiredDocs = (c: Case) => REQUIRED_DOCS[c.coverage];
 export const docsMissing = (c: Case) => requiredDocs(c).filter((k) => !c.docs[k]);
 export const canUpload = (c: Case) =>
-  c.source === 'package' ? ['NEW', 'AWAITING_DOCS'].includes(c.status) : c.status === 'AWAITING_DOCS';
+  c.source === 'self'
+    ? c.status === 'AWAITING_PAYMENT'
+    : c.source === 'package'
+      ? ['NEW', 'AWAITING_DOCS'].includes(c.status)
+      : c.status === 'AWAITING_DOCS';
 
 export interface SubmitInput {
   source: Source;
@@ -161,16 +165,25 @@ export function submitCase(input: SubmitInput): string {
   const seq = base.seq + 1;
   const p = bkkParts(now);
   const id = `ABC-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+  const self = input.source === 'self';
   const c: Case = {
     id,
     ...input,
     createdAt: now,
-    status: 'NEW',
-    stamps: input.source === 'package' ? { submitted: now, quoted: now, confirmed: now } : { submitted: now },
+    status: self ? 'AWAITING_PAYMENT' : 'NEW',
+    stamps:
+      input.source === 'quote'
+        ? { submitted: now }
+        : { submitted: now, quoted: now, confirmed: now, ...(self ? { accepted: now } : {}) },
     docs: {},
-    log: [{ at: now, by: 'customer', action: input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
+    log: [{ at: now, by: 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
   const s: State = { ...base, seq, cases: [c, ...base.cases], mine: [id, ...base.mine] };
+  if (self) {
+    // Nobody needs to act yet; the back office hears about it once it is paid.
+    commit(s);
+    return id;
+  }
   s.emails = mail(s, 'custReceived', c);
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source });
@@ -243,6 +256,7 @@ export async function uploadDoc(id: string, key: DocKey, file: File) {
     c.log.push({ at: now, by: 'customer', action: 'upload', text: key });
     if (docsMissing(c).length === 0 && !c.stamps.docsComplete) {
       c.stamps.docsComplete = now;
+      if (c.source === 'self') return;
       if (c.status === 'AWAITING_DOCS') c.status = 'DOCS_REVIEW';
       s.emails = mail(s, 'staffDocsComplete', c);
       return { notifications: notify(s, 'docs', id) };
@@ -273,6 +287,30 @@ export function issuePolicy(id: string, staffId: string) {
     c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
     c.log.push({ at: now, by: staffId, action: 'issue' });
     return { emails: mail(s, 'custIssued', c, { policyNo: c.policyNo, premium: c.premium ?? 0 }) };
+  });
+}
+
+/** Self service: simulated payment, then the policy is issued straight away. */
+export function payAndIssue(id: string, delivery: Delivery, payment: { method: 'qr' | 'card'; last4?: string }) {
+  update(id, (c, s) => {
+    if (c.status !== 'AWAITING_PAYMENT' || docsMissing(c).length) return;
+    const now = Date.now();
+    c.stamps.paid = now;
+    c.stamps.issued = now;
+    c.status = 'ISSUED';
+    c.payment = { ...payment, at: now };
+    c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
+    c.premium = totalPremium(c);
+    c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+    c.log.push({ at: now, by: 'customer', action: 'paid', text: payment.method });
+    s.emails = mail(s, 'custSelfIssued', c, {
+      policyNo: c.policyNo,
+      premium: c.premium ?? 0,
+      deliveryMethod: c.delivery.method,
+      trackingNo: c.delivery.trackingNo ?? '',
+      sendTo: c.delivery.email ?? '',
+    });
+    return { notifications: notify(s, 'self', id, { type: c.coverage }) };
   });
 }
 

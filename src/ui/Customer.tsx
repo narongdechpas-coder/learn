@@ -1,14 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { BodyType, Case, CoverageType, Customer as CustomerT, DocKey, Package, Vehicle } from '../types';
-import { BRANDS, CURRENT_YEAR, CUSTOM_MODEL_ID, MIN_CUSTOM_YEAR, MODELS, PROVINCES, brandById, modelById, modelsOf, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
-import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, cmiPremium, packagesFor } from '../data/packages';
-import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, fmtBaht, fmtDateTime, fmtSize, useT, type TKey } from '../i18n';
-import { canUpload, customerConfirm, customerDecline, docsMissing, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import type { Case, CoverageType, Customer as CustomerT, Delivery, DocKey, Package, Stage, UsageCode, Vehicle } from '../types';
+import {
+  ALL_CODES,
+  BRANDS,
+  CATALOGUE_CODES,
+  CURRENT_YEAR,
+  CUSTOM_MODEL_ID,
+  MIN_CUSTOM_YEAR,
+  MODELS,
+  PROVINCES,
+  brandById,
+  brandsFor,
+  modelById,
+  modelsOf,
+  suggestedSumInsured,
+  vehicleText,
+  yearsOf,
+} from '../data/vehicles';
+import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SELF_SERVICE_TYPES, cmiPremium, packagesFor } from '../data/packages';
+import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
+import { canUpload, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
-import type { Stage } from '../types';
+import { BrandIcon, FakeQr, UsageIcon } from './icons';
 
-const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv' } as const;
+const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
 
 const tomorrow = () => {
   const d = new Date(Date.now() + 86400000 + 7 * 3600000);
@@ -30,7 +46,10 @@ const SAMPLE_CUSTOMER = (): CustomerT => ({
   driver2: '',
 });
 
-type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done';
+const isSelfType = (t: CoverageType) => SELF_SERVICE_TYPES.includes(t);
+const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
+
+type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
 
 export function CustomerApp({ onOpenCase, trackId, setTrackId }: { onOpenCase?: (id: string) => void; trackId: string | null; setTrackId: (id: string | null) => void }) {
   const { t } = useT();
@@ -53,9 +72,14 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId }: { onOpenCase?: 
   );
 }
 
-function Steps({ step }: { step: Step }) {
+function Steps({ step, self }: { step: Step; self: boolean }) {
   const { t } = useT();
-  const order: [Step[], TKey][] = [[['car'], 'stepCar'], [['pkg', 'quote'], 'stepPackage'], [['form'], 'stepForm'], [['done'], 'stepDone']];
+  const order: [Step[], TKey][] = [
+    [['car'], 'stepCar'],
+    [['pkg', 'quote'], 'stepPackage'],
+    [['form'], 'stepForm'],
+    [['done', 'checkout'], self ? 'stepPay' : 'stepDone'],
+  ];
   const cur = order.findIndex(([s]) => s.includes(step));
   return (
     <ol className="steps" aria-label="steps">
@@ -72,6 +96,7 @@ function Steps({ step }: { step: Step }) {
 function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const { t, lang } = useT();
   const [step, setStep] = useState<Step>('car');
+  const [code, setCode] = useState<UsageCode | ''>('');
   const [brandId, setBrandId] = useState('');
   const [modelId, setModelId] = useState('');
   const [year, setYear] = useState(0);
@@ -83,30 +108,44 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [customer, setCustomer] = useState<CustomerT>(SAMPLE_CUSTOMER);
   const [errors, setErrors] = useState<Partial<Record<keyof CustomerT, string>>>({});
   const [doneId, setDoneId] = useState<string | null>(null);
-  // Car not in the list: the customer types it in and goes straight to a quote request.
+  // Car not in the list (or a non-catalogue code): typed in by the customer, quote request only.
   const [custom, setCustom] = useState(false);
   const [cBrand, setCBrand] = useState('');
   const [cModel, setCModel] = useState('');
   const [cYear, setCYear] = useState(0);
-  const [cBody, setCBody] = useState<BodyType>('sedan');
+  const [cCode, setCCode] = useState<UsageCode>('110');
   const [quoteErr, setQuoteErr] = useState<string | null>(null);
 
   const picked = modelId ? modelById(modelId) : undefined;
-  const ready = !!(brandId && picked && year);
+  const ready = !!(code && brandId && picked && year);
   // Later steps are only reachable once the car is fully chosen.
   const model = picked ?? MODELS[0];
+  const usage: UsageCode = custom ? cCode : code || '110';
   const si = ready ? suggestedSumInsured(model, year) : 0;
-  const pkgs = useMemo(() => (ready ? packagesFor(model, year, si) : []), [ready, model, year, si]);
+  const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si) : []), [ready, model, usage, year, si]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
-  const source = pkg ? 'package' : 'quote';
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
+  const self = !!pkg && isSelfType(pkg.type);
+  const source = pkg ? (self ? 'self' : 'package') : 'quote';
   const vehicle: Vehicle = custom
-    ? { brandId: 'other', modelId: CUSTOM_MODEL_ID, year: cYear, sumInsured: quoteSI, custom: { brand: cBrand.trim(), model: cModel.trim(), body: cBody } }
-    : { brandId, modelId, year, sumInsured: si };
+    ? { brandId: 'other', modelId: CUSTOM_MODEL_ID, year: cYear, sumInsured: quoteSI, usage, custom: { brand: cBrand.trim(), model: cModel.trim() } }
+    : { brandId, modelId, year, sumInsured: si, usage };
   const carName = custom || ready ? vehicleText(vehicle) : '';
-  const cmi = cmiPremium(custom ? cBody : model.body);
+  const cmi = cmiPremium(usage);
+  const brands = code ? brandsFor(code) : [];
 
+  const pickCode = (c: UsageCode) => {
+    setCode(c);
+    if (brandId && !brandsFor(c).some((b) => b.id === brandId)) {
+      setBrandId('');
+      setModelId('');
+      setYear(0);
+    } else if (picked && !picked.codes.includes(c)) {
+      setModelId('');
+      setYear(0);
+    }
+  };
   const pickBrand = (id: string) => {
     if (id === brandId) return;
     setBrandId(id);
@@ -132,12 +171,13 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
     setQuoteErr(null);
     setStep('quote');
   };
-  const goCustomQuote = () => {
+  const goCustomQuote = (withCode?: UsageCode) => {
     setPkg(null);
     setCustom(true);
     setCBrand(brandId ? brandById(brandId).name : '');
     setCModel('');
     setCYear(0);
+    setCCode(withCode ?? (code || '110'));
     setQuoteSI(0);
     setQuoteType('T1');
     setQuoteErr(null);
@@ -149,6 +189,17 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
     if (needsSI && !(quoteSI > 0)) return setQuoteErr(t('errSI'));
     setQuoteErr(null);
     setStep('form');
+  };
+  const restart = () => {
+    setStep('car');
+    setCustomer(SAMPLE_CUSTOMER());
+    setPkg(null);
+    setCode('');
+    setBrandId('');
+    setModelId('');
+    setYear(0);
+    setCustom(false);
+    setDoneId(null);
   };
 
   const validate = () => {
@@ -170,12 +221,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
       vehicle: { ...vehicle, sumInsured: source === 'quote' ? quoteSI || si : si },
       coverage,
       pkg: pkg ?? undefined,
-      addCmi: coverage !== 'CMI' && addCmi,
+      addCmi: coverage !== 'CMI' && addCmi && cmi !== undefined,
       desiredSI: source === 'quote' ? quoteSI || si : undefined,
       customer: { ...customer, idCard: customer.idCard.replace(/[\s-]/g, ''), phone: customer.phone.replace(/[\s-]/g, '') },
     });
     setDoneId(id);
-    setStep('done');
+    setStep(self ? 'checkout' : 'done');
   };
 
   const set = (k: keyof CustomerT) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -188,58 +239,99 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
       </Field>
     </div>
   );
+  const cmiToggle = (id: string) =>
+    cmi !== undefined && (
+      <label className="check">
+        <input id={id} type="checkbox" checked={addCmi} onChange={(e) => setAddCmi(e.target.checked)} />
+        {t('addCmi', { price: fmtBaht(cmi, lang) })}
+      </label>
+    );
 
   return (
     <div className="buy">
-      <Steps step={step} />
+      <Steps step={step} self={self} />
 
       {step === 'car' && (
         <section className="panel">
           <h2>{t('carTitle')}</h2>
           <p className="lead">{t('carLead')}</p>
-          <div className="brand-grid" role="radiogroup" aria-label={t('brand')}>
-            {BRANDS.map((b) => (
-              <button key={b.id} type="button" role="radio" aria-checked={brandId === b.id} className={`brand-btn${brandId === b.id ? ' on' : ''}`} onClick={() => pickBrand(b.id)}>
-                {b.name}
+
+          <div className="car-section">
+            <div className="section-label"><span className="section-n">1</span>{t('usageCode')}</div>
+            <p className="hint">{t('usageLead')}</p>
+            <div className="usage-grid" role="radiogroup" aria-label={t('usageCode')}>
+              {CATALOGUE_CODES.map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={code === c} className={`usage-card${code === c ? ' on' : ''}`} onClick={() => pickCode(c)}>
+                  <UsageIcon code={c} />
+                  <span className="usage-code num">{c}</span>
+                  <span className="usage-name">{USAGE_LABEL[lang][c]}</span>
+                  <span className="usage-hint">{USAGE_HINT[lang][c]}</span>
+                </button>
+              ))}
+              <button type="button" className="usage-card other" onClick={() => goCustomQuote('120')}>
+                <UsageIcon code="other" />
+                <span className="usage-code">{t('otherCode')}</span>
+                <span className="usage-name">{t('otherCodeHint')}</span>
               </button>
-            ))}
+            </div>
           </div>
-          <div className="grid-2">
-            <Field htmlFor="car-model" label={t('model')} hint={!brandId ? t('pickBrandFirst') : undefined}>
-              <select id="car-model" key={brandId} className={brandId ? 'pop' : ''} value={modelId} disabled={!brandId} onChange={(e) => pickModel(e.target.value)}>
-                <option value="">{t('pickModel')}</option>
-                {brandId &&
-                  modelsOf(brandId).map((x) => (
-                    <option key={x.id} value={x.id}>{x.name}</option>
-                  ))}
-              </select>
-            </Field>
-            <Field htmlFor="car-year" label={t('year')} hint={picked ? t('soldYears', { from: picked.yearFrom, to: picked.yearTo }) : t('pickModelFirst')}>
-              <select id="car-year" key={modelId} className={picked ? 'pop' : ''} value={year || ''} disabled={!picked} onChange={(e) => setYear(Number(e.target.value))}>
-                <option value="">{t('pickYear')}</option>
-                {picked &&
-                  yearsOf(picked).map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-              </select>
-            </Field>
+
+          <div className={`car-section${code ? '' : ' locked'}`}>
+            <div className="section-label"><span className="section-n">2</span>{t('brand')}</div>
+            {code ? (
+              <div className="brand-grid reveal" key={code} role="radiogroup" aria-label={t('brand')}>
+                {brands.map((b) => (
+                  <button key={b.id} type="button" role="radio" aria-checked={brandId === b.id} className={`brand-btn${brandId === b.id ? ' on' : ''}`} onClick={() => pickBrand(b.id)}>
+                    <BrandIcon id={b.id} />
+                    <span>{b.name}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="hint">{t('pickCodeFirst')}</p>
+            )}
           </div>
+
+          <div className="car-section">
+            <div className="section-label"><span className="section-n">3</span>{t('model')} / {t('year')}</div>
+            <div className="grid-2">
+              <Field htmlFor="car-model" label={t('model')} hint={!brandId ? t(code ? 'pickBrandFirst' : 'pickCodeFirst') : undefined}>
+                <select id="car-model" key={`${brandId}-${code}`} className={brandId ? 'pop' : ''} value={modelId} disabled={!brandId || !code} onChange={(e) => pickModel(e.target.value)}>
+                  <option value="">{t('pickModel')}</option>
+                  {brandId && code &&
+                    modelsOf(brandId, code).map((x) => (
+                      <option key={x.id} value={x.id}>{x.name}</option>
+                    ))}
+                </select>
+              </Field>
+              <Field htmlFor="car-year" label={t('year')} hint={picked ? t('soldYears', { from: picked.yearFrom, to: picked.yearTo }) : t('pickModelFirst')}>
+                <select id="car-year" key={modelId} className={picked ? 'pop' : ''} value={year || ''} disabled={!picked} onChange={(e) => setYear(Number(e.target.value))}>
+                  <option value="">{t('pickYear')}</option>
+                  {picked &&
+                    yearsOf(picked).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                </select>
+              </Field>
+            </div>
+          </div>
+
           {ready ? (
-            <div className="si-box reveal" key={`${modelId}-${year}`}>
+            <div className="si-box reveal" key={`${modelId}-${year}-${code}`}>
               <div>
                 <div className="eyebrow">{t('suggestedSI', { year: CURRENT_YEAR })}</div>
                 <div className="si-value num"><CountUp value={si} format={(n) => fmtBaht(n, lang)} /></div>
                 <div className="hint">{t('siNote', { price: fmtBaht(model.newPrice, lang) })}</div>
               </div>
               <div className="car-meta">
-                <span className="chip">{t(BODY_KEY[model.body])}</span>
-                <span className="chip">{brandById(brandId).name} {model.name} · {year}</span>
+                <span className="chip"><BrandIcon id={brandId} size={18} /> {brandById(brandId).name} {model.name} · {year}</span>
+                <span className="chip">{usageText(usage, lang)}</span>
               </div>
             </div>
           ) : (
             <div className="si-pending" aria-live="polite">
               <ul>
-                {([['brand', !!brandId], ['model', !!picked], ['year', !!year]] as const).map(([k, ok]) => (
+                {([['usageCode', !!code], ['brand', !!brandId], ['model', !!picked], ['year', !!year]] as const).map(([k, ok]) => (
                   <li key={k} className={ok ? 'ok' : ''}>
                     <span className="tick" aria-hidden="true">{ok ? '✓' : ''}</span>
                     {t(k)}
@@ -254,7 +346,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           </div>
           <div className="quote-cta subtle">
             <span>{t('carNotListed')}</span>
-            <button className="btn" type="button" onClick={goCustomQuote}>{t('requestQuote')}</button>
+            <button className="btn" type="button" onClick={() => goCustomQuote()}>{t('requestQuote')}</button>
           </div>
         </section>
       )}
@@ -265,7 +357,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             <div>
               <h2>{t('pkgTitle', { car: carName })}</h2>
               <p className="lead">
-                {t('sumInsured')} <b className="num">{fmtBaht(si, lang)}</b>
+                {usageText(usage, lang)} · {t('sumInsured')} <b className="num">{fmtBaht(si, lang)}</b>
                 {pkgs.length > 0 && <> · {t('pkgCount', { n: pkgs.length })}</>}
               </p>
             </div>
@@ -293,10 +385,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                     </button>
                   ))}
                 </div>
-                <label className="check">
-                  <input id="add-cmi" type="checkbox" checked={addCmi} onChange={(e) => setAddCmi(e.target.checked)} />
-                  {t('addCmi', { price: fmtBaht(cmi, lang) })}
-                </label>
+                {cmiToggle('add-cmi')}
               </div>
               <div className="pkg-grid">
                 {shown.map((p) => (
@@ -321,6 +410,13 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             <div className="custom-car">
               <div className="eyebrow">{t('customCarTitle')}</div>
               <div className="grid-2">
+                <Field htmlFor="c-code" label={t('usageCode')}>
+                  <select id="c-code" value={cCode} onChange={(e) => setCCode(e.target.value as UsageCode)}>
+                    {ALL_CODES.map((c) => (
+                      <option key={c} value={c}>{usageText(c, lang)}</option>
+                    ))}
+                  </select>
+                </Field>
                 <Field htmlFor="c-brand" label={t('brand')}>
                   <input id="c-brand" list="c-brand-list" value={cBrand} onChange={(e) => setCBrand(e.target.value)} placeholder="Toyota, Volvo, Tesla…" />
                   <datalist id="c-brand-list">
@@ -340,18 +436,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                     ))}
                   </select>
                 </Field>
-                <Field htmlFor="c-body" label={t('bodyType')}>
-                  <select id="c-body" value={cBody} onChange={(e) => setCBody(e.target.value as BodyType)}>
-                    {(Object.keys(BODY_KEY) as BodyType[]).map((b) => (
-                      <option key={b} value={b}>{t(BODY_KEY[b])}</option>
-                    ))}
-                  </select>
-                </Field>
               </div>
             </div>
           ) : (
             <div className="si-box compact">
-              <span className="chip">{carName}</span>
+              <span className="chip"><BrandIcon id={brandId} size={18} /> {carName}</span>
+              <span className="chip">{usageText(usage, lang)}</span>
               <span className="chip">{t(BODY_KEY[model.body])}</span>
             </div>
           )}
@@ -367,10 +457,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <input id="q-si" type="number" min={0} step={10000} value={quoteSI || ''} onChange={(e) => setQuoteSI(Number(e.target.value))} />
             </Field>
           </div>
-          <label className="check">
-            <input id="q-cmi" type="checkbox" checked={addCmi} onChange={(e) => setAddCmi(e.target.checked)} />
-            {t('addCmi', { price: fmtBaht(cmi, lang) })}
-          </label>
+          {cmiToggle('q-cmi')}
           {quoteErr && <p className="error" role="alert">{quoteErr}</p>}
           <div className="actions">
             <button className="btn primary" type="button" onClick={quoteNext}>{t('next')} →</button>
@@ -393,11 +480,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <div className="summary-main">
                 <TypeTag type={coverage} /> {carName}
                 {pkg?.repair && <span className="muted"> · {t(pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage')}</span>}
-                {coverage !== 'CMI' && addCmi && <span className="muted"> {t('plusCmi')}</span>}
+                {coverage !== 'CMI' && addCmi && cmi !== undefined && <span className="muted"> {t('plusCmi')}</span>}
+                {self && <span className="self-badge">{t('selfBadge')}</span>}
               </div>
             </div>
             <div className="summary-price num">
-              {pkg ? fmtBaht(Math.round((pkg.premium + (coverage !== 'CMI' && addCmi ? cmi : 0)) * 100) / 100, lang) : t('waitingQuote')}
+              {pkg ? fmtBaht(Math.round((pkg.premium + (coverage !== 'CMI' && addCmi ? cmi ?? 0 : 0)) * 100) / 100, lang) : t('waitingQuote')}
             </div>
           </div>
           <div className="form-grid">
@@ -426,20 +514,24 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             {input('driver1', 'driver1', { optional: true })}
             {input('driver2', 'driver2', { optional: true })}
           </div>
-          <div className="docs-later">
-            <div className="eyebrow">{t('docsLaterTitle')} · {COVERAGE_LABEL[lang][coverage]}</div>
-            <ul>
-              {REQUIRED_DOCS[coverage].map((k) => (
-                <li key={k}>{DOC_LABEL[lang][k]}</li>
-              ))}
-            </ul>
-            <p className="hint">{t('docsLaterLead')} {t('uploadRule')}</p>
-          </div>
+          {!self && (
+            <div className="docs-later">
+              <div className="eyebrow">{t('docsLaterTitle')} · {COVERAGE_LABEL[lang][coverage]}</div>
+              <ul>
+                {REQUIRED_DOCS[coverage].map((k) => (
+                  <li key={k}>{DOC_LABEL[lang][k]}</li>
+                ))}
+              </ul>
+              <p className="hint">{t('docsLaterLead')} {t('uploadRule')}</p>
+            </div>
+          )}
           <div className="actions">
-            <button className="btn primary" type="submit">{t(pkg ? 'submitPackage' : 'submitQuote')}</button>
+            <button className="btn primary" type="submit">{t(self ? 'submitSelf' : pkg ? 'submitPackage' : 'submitQuote')}{self ? ' →' : ''}</button>
           </div>
         </form>
       )}
+
+      {step === 'checkout' && doneId && <CheckoutById id={doneId} onRestart={restart} />}
 
       {step === 'done' && doneId && (
         <section className="panel done">
@@ -450,7 +542,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
           <p className="hint">{t('doneEmail', { email: customer.email })}</p>
           <div className="actions center">
             <button className="btn primary" type="button" onClick={() => onTrack(doneId)}>{t('goTrack')}</button>
-            <button className="btn" type="button" onClick={() => { setStep('car'); setCustomer(SAMPLE_CUSTOMER()); setPkg(null); setBrandId(''); setModelId(''); setYear(0); setCustom(false); }}>{t('newRequest')}</button>
+            <button className="btn" type="button" onClick={restart}>{t('newRequest')}</button>
           </div>
         </section>
       )}
@@ -491,6 +583,7 @@ function PackageCard({ p, onChoose }: { p: Package; onChoose: () => void }) {
         <span className="muted">{t('perYear')}</span>
       </div>
       <div className="hint">{t('inclTax')}</div>
+      {isSelfType(p.type) && <div className="self-badge">⚡ {t('selfBadge')}</div>}
       <dl className="cover-list">
         {rows.map(([k, v]) => (
           <div key={k} className={v === t('notCovered') ? 'off' : ''}>
@@ -504,28 +597,263 @@ function PackageCard({ p, onChoose }: { p: Package; onChoose: () => void }) {
   );
 }
 
+/* ---------------- self-service checkout ---------------- */
+
+function CheckoutById({ id, onRestart }: { id: string; onRestart?: () => void }) {
+  const s = useStore();
+  const c = s.cases.find((x) => x.id === id);
+  if (!c) return null;
+  return <Checkout c={c} onRestart={onRestart} />;
+}
+
+function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () => void; embedded?: boolean }) {
+  const { t, lang } = useT();
+  const [method, setMethod] = useState<Delivery['method']>('pdf');
+  const [address, setAddress] = useState(c.customer.address);
+  const [email, setEmail] = useState(c.customer.email);
+  const [pay, setPay] = useState<'qr' | 'card'>('qr');
+  const [card, setCard] = useState({ no: '4242 4242 4242 4242', exp: '12/29', cvv: '123' });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const total = totalPremium(c) ?? 0;
+  const missing = docsMissing(c);
+  useEffect(() => {
+    if (!missing.length) setErr(null);
+  }, [missing.length]);
+
+  if (c.status === 'ISSUED') return <SelfDone c={c} onRestart={onRestart} />;
+
+  const doPay = () => {
+    if (missing.length) return setErr(t('payNeedDocs'));
+    if (method === 'paper' ? !address.trim() : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErr(t('errShip'));
+    if (pay === 'card' && (card.no.replace(/\s/g, '').length < 15 || !/^\d{2}\/\d{2}$/.test(card.exp) || card.cvv.length < 3)) return setErr(t('errCard'));
+    setErr(null);
+    setBusy(true);
+    setTimeout(() => {
+      payAndIssue(c.id, method === 'paper' ? { method, address: address.trim() } : { method, email: email.trim() }, {
+        method: pay,
+        last4: pay === 'card' ? card.no.replace(/\s/g, '').slice(-4) : undefined,
+      });
+      setBusy(false);
+    }, 1400);
+  };
+
+  return (
+    <section className={`panel wide checkout${embedded ? ' embedded' : ''}`}>
+      <div className="panel-head">
+        <div>
+          <div className="eyebrow num">{c.id}</div>
+          <h2>{t('checkoutTitle')}</h2>
+          <p className="lead">{t('checkoutLead')}</p>
+        </div>
+      </div>
+      <div className="checkout-grid">
+        <div className="checkout-main">
+          <div className="co-step">
+            <div className="section-label"><span className="section-n">1</span>{t('uploadTitle')}</div>
+            <Uploads c={c} bare />
+          </div>
+
+          <div className="co-step">
+            <div className="section-label"><span className="section-n">2</span>{t('deliveryTitle')}</div>
+            <div className="option-grid" role="radiogroup" aria-label={t('deliveryTitle')}>
+              {(['pdf', 'paper'] as const).map((m) => (
+                <button key={m} type="button" role="radio" aria-checked={method === m} className={`option-card${method === m ? ' on' : ''}`} onClick={() => setMethod(m)}>
+                  <span className="radio-dot" aria-hidden="true" />
+                  <span>
+                    <b>{t(m === 'pdf' ? 'deliveryPdf' : 'deliveryPaper')}</b>
+                    <small>{t(m === 'pdf' ? 'deliveryPdfHint' : 'deliveryPaperHint')}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {method === 'paper' ? (
+              <Field htmlFor={`ship-${c.id}`} label={t('shipTo')}>
+                <textarea id={`ship-${c.id}`} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
+              </Field>
+            ) : (
+              <Field htmlFor={`mail-${c.id}`} label={t('sendTo')}>
+                <input id={`mail-${c.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Field>
+            )}
+          </div>
+
+          <div className="co-step">
+            <div className="section-label"><span className="section-n">3</span>{t('payTitle')}</div>
+            <div className="option-grid" role="radiogroup" aria-label={t('payTitle')}>
+              {(['qr', 'card'] as const).map((m) => (
+                <button key={m} type="button" role="radio" aria-checked={pay === m} className={`option-card${pay === m ? ' on' : ''}`} onClick={() => setPay(m)}>
+                  <span className="radio-dot" aria-hidden="true" />
+                  <b>{t(m === 'qr' ? 'payQr' : 'payCard')}</b>
+                </button>
+              ))}
+            </div>
+            {pay === 'qr' ? (
+              <div className="qr-box">
+                <FakeQr seed={c.id} />
+                <div>
+                  <div className="qr-amount num">{fmtBaht(total, lang)}</div>
+                  <p className="hint">{t('qrHint')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="card-grid">
+                <Field htmlFor={`cn-${c.id}`} label={t('cardNo')}>
+                  <input id={`cn-${c.id}`} inputMode="numeric" value={card.no} onChange={(e) => setCard({ ...card, no: e.target.value })} />
+                </Field>
+                <Field htmlFor={`ce-${c.id}`} label={t('cardExp')}>
+                  <input id={`ce-${c.id}`} value={card.exp} onChange={(e) => setCard({ ...card, exp: e.target.value })} />
+                </Field>
+                <Field htmlFor={`cv-${c.id}`} label={t('cardCvv')}>
+                  <input id={`cv-${c.id}`} inputMode="numeric" value={card.cvv} onChange={(e) => setCard({ ...card, cvv: e.target.value })} />
+                </Field>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <aside className="order-summary">
+          <div className="eyebrow">{t('orderSummary')}</div>
+          <div className="os-car">{vehicleText(c.vehicle)}</div>
+          <div className="muted os-sub">{usageText(c.vehicle.usage, lang)}</div>
+          <dl>
+            {c.pkg && (
+              <div>
+                <dt><TypeTag type={c.coverage} /></dt>
+                <dd className="num">{fmtBaht(c.pkg.premium, lang)}</dd>
+              </div>
+            )}
+            {c.addCmi && (
+              <div>
+                <dt>{t('plusCmi')}</dt>
+                <dd className="num">{fmtBaht(cmiPremium(c.vehicle.usage) ?? 0, lang)}</dd>
+              </div>
+            )}
+            <div className="os-total">
+              <dt>{t('amountDue')}</dt>
+              <dd className="num">{fmtBaht(total, lang)}</dd>
+            </div>
+          </dl>
+          {missing.length > 0 && <p className="hint">{t('payNeedDocs')}</p>}
+          {err && <p className="error" role="alert">{err}</p>}
+          <button className={`btn primary block pay-btn${busy ? ' busy' : ''}`} type="button" disabled={busy} onClick={doPay}>
+            {busy ? <><span className="spinner" aria-hidden="true" /> {t('paying')}</> : t('payBtn', { amount: fmtBaht(total, lang) })}
+          </button>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function SelfDone({ c, onRestart }: { c: Case; onRestart?: () => void }) {
+  const { t, lang } = useT();
+  const [show, setShow] = useState(c.delivery?.method === 'pdf');
+  return (
+    <section className="panel wide done self-done">
+      <div className="done-mark pop-in" aria-hidden="true">✓</div>
+      <h2>{t('paidTitle')}</h2>
+      <div className="ref-big num">{c.policyNo}</div>
+      <p>
+        {c.delivery?.method === 'paper'
+          ? t('paidPaper', { no: c.delivery.trackingNo ?? '' })
+          : t('paidPdf', { email: c.delivery?.email ?? c.customer.email })}
+      </p>
+      <p className="hint">{t('paidBy')}: {t(c.payment?.method === 'card' ? 'payCard' : 'payQr')} · {fmtBaht(c.premium ?? 0, lang)}</p>
+      <div className="actions center">
+        <button className="btn" type="button" onClick={() => setShow((v) => !v)}>{t(show ? 'hidePolicy' : 'viewPolicy')}</button>
+        {onRestart && <button className="btn primary" type="button" onClick={onRestart}>{t('newRequest')}</button>}
+      </div>
+      {show && <PolicyDoc c={c} />}
+    </section>
+  );
+}
+
+function PolicyDoc({ c }: { c: Case }) {
+  const { t, lang } = useT();
+  const start = new Date(`${c.customer.startDate}T00:00:00+07:00`).getTime();
+  const end = start + 365 * 86400000;
+  const rows: [string, string][] = [
+    [t('insured'), `${c.customer.firstName} ${c.customer.lastName}`],
+    [t('car'), vehicleText(c.vehicle)],
+    [t('usageCode'), usageText(c.vehicle.usage, lang)],
+    [t('plate'), `${c.customer.plate} ${c.customer.province}`],
+    [t('chassis'), c.customer.chassis],
+    [t('coverage'), `${COVERAGE_LABEL[lang][c.coverage]}${c.addCmi ? ` ${t('plusCmi')}` : ''}`],
+    [t('coverPeriod'), `${fmtDate(start, lang, { day: 'numeric', month: 'short', year: 'numeric' })} – ${fmtDate(end, lang, { day: 'numeric', month: 'short', year: 'numeric' })}`],
+    [t('premium'), fmtBaht(c.premium ?? 0, lang)],
+  ];
+  if (c.pkg && c.pkg.ownDamage) rows.splice(6, 0, [t('ownDamage'), fmtBaht(c.pkg.ownDamage, lang)]);
+  return (
+    <div className="policy-doc reveal">
+      <div className="pd-head">
+        <div>
+          <b>ABC ประกันภัย · ABC Insurance</b>
+          <div className="muted">{t('policyDoc')}</div>
+        </div>
+        <div className="pd-no num">{c.policyNo}</div>
+      </div>
+      <dl>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="pd-foot muted">e-Policy · {fmtDateTime(c.stamps.issued ?? Date.now(), lang)} · DEMO</div>
+    </div>
+  );
+}
+
 /* ---------------- tracking ---------------- */
 
-const TIMELINE: Stage[] = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'issued'];
+const TIMELINE: Stage[] = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'paid', 'issued'];
 
 function Track({ selected, setSelected, onOpenCase }: { selected: string | null; setSelected: (id: string | null) => void; onOpenCase?: (id: string) => void }) {
   const { t } = useT();
   const s = useStore();
   const [q, setQ] = useState('');
+  const [results, setResults] = useState<string[] | null>(null);
   const [miss, setMiss] = useState<string | null>(null);
   const mine = s.mine.map((id) => s.cases.find((c) => c.id === id)).filter(Boolean) as Case[];
+  const found = results ? (results.map((id) => s.cases.find((c) => c.id === id)).filter(Boolean) as Case[]) : null;
   const current = selected ? s.cases.find((c) => c.id === selected) : undefined;
 
   const search = (e: React.FormEvent) => {
     e.preventDefault();
-    const ref = q.trim().toUpperCase();
-    if (!ref) return;
-    const hit = s.cases.find((c) => c.id === ref);
-    if (hit) {
-      setSelected(hit.id);
-      setMiss(null);
-    } else setMiss(ref);
+    const raw = q.trim();
+    if (!raw) return;
+    const ref = raw.toUpperCase();
+    const plate = normPlate(raw);
+    const hits = s.cases
+      .filter((c) => c.id === ref || normPlate(c.customer.plate) === plate)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    if (!hits.length) {
+      setMiss(raw);
+      setResults(null);
+      return;
+    }
+    setMiss(null);
+    setResults(hits.map((c) => c.id));
+    setSelected(hits[0].id);
   };
+
+  const list = (cases: Case[]) => (
+    <ul className="mine-list">
+      {cases.map((c) => (
+        <li key={c.id}>
+          <button type="button" className={`mine-item${c.id === selected ? ' on' : ''}`} onClick={() => setSelected(c.id)}>
+            <span className="num ref">{c.id}</span>
+            <span className="mine-car">
+              {vehicleText(c.vehicle)}
+              <small className="muted"> · {c.customer.plate}</small>
+            </span>
+            <StatusPill status={c.status} />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="track">
@@ -533,25 +861,26 @@ function Track({ selected, setSelected, onOpenCase }: { selected: string | null;
         <h2>{t('trackTitle')}</h2>
         <p className="lead">{t('trackLead')}</p>
         <form className="search-row" onSubmit={search}>
-          <label htmlFor="track-ref" className="sr-only">{t('colRef')}</label>
+          <label htmlFor="track-ref" className="sr-only">{t('trackTitle')}</label>
           <input id="track-ref" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('refPlaceholder')} />
           <button className="btn" type="submit">{t('search')}</button>
         </form>
         {miss && <p className="error">{t('notFound', { ref: miss })}</p>}
-        {mine.length === 0 ? (
+        {found ? (
+          <>
+            <div className="list-head">
+              <span className="eyebrow">{t('results', { n: found.length })}</span>
+              <button type="button" className="link" onClick={() => { setResults(null); setQ(''); }}>{t('clearSearch')}</button>
+            </div>
+            {list(found)}
+          </>
+        ) : mine.length === 0 ? (
           <p className="muted">{t('noMine')}</p>
         ) : (
-          <ul className="mine-list">
-            {mine.map((c) => (
-              <li key={c.id}>
-                <button type="button" className={`mine-item${c.id === selected ? ' on' : ''}`} onClick={() => setSelected(c.id)}>
-                  <span className="num ref">{c.id}</span>
-                  <span className="mine-car">{vehicleText(c.vehicle)}</span>
-                  <StatusPill status={c.status} />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="list-head"><span className="eyebrow">{t('myRequests')}</span></div>
+            {list(mine)}
+          </>
         )}
       </section>
       {current && <TrackDetail c={current} onOpenCase={onOpenCase} />}
@@ -561,13 +890,16 @@ function Track({ selected, setSelected, onOpenCase }: { selected: string | null;
 
 function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => void }) {
   const { t, lang } = useT();
+  const [showPolicy, setShowPolicy] = useState(false);
   const total = totalPremium(c);
+  if (c.status === 'AWAITING_PAYMENT') return <Checkout c={c} embedded />;
   return (
     <section className="panel track-detail">
       <div className="panel-head">
         <div>
           <div className="eyebrow num">{c.id}</div>
           <h2>{vehicleText(c.vehicle)}</h2>
+          <div className="muted">{usageText(c.vehicle.usage, lang)} · {c.customer.plate}</div>
         </div>
         <StatusPill status={c.status} />
       </div>
@@ -590,14 +922,23 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
         </div>
       )}
       {c.status === 'ISSUED' && c.policyNo && (
-        <div className="callout good"><b>✓ {t('policyIssued', { no: c.policyNo })}</b></div>
+        <div className="callout good">
+          <div>
+            <b>✓ {t('policyIssued', { no: c.policyNo })}</b>
+            {c.delivery && (
+              <p>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</p>
+            )}
+          </div>
+          <button className="btn small" type="button" onClick={() => setShowPolicy((v) => !v)}>{t(showPolicy ? 'hidePolicy' : 'viewPolicy')}</button>
+        </div>
       )}
+      {showPolicy && c.status === 'ISSUED' && <PolicyDoc c={c} />}
 
       <Uploads c={c} />
 
       <h3>{t('timeline')}</h3>
       <ol className="timeline">
-        {TIMELINE.filter((st) => c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')).map((st) => (
+        {TIMELINE.filter((st) => (c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')) && (c.source === 'self' ? st !== 'accepted' : st !== 'paid')).map((st) => (
           <li key={st} className={c.stamps[st] ? 'done' : ''}>
             <span className="dot" aria-hidden="true" />
             <span>{STAGE_LABEL[lang][st]}</span>
@@ -639,7 +980,7 @@ export function useFileUrl(key: string, version: number | undefined) {
   return url;
 }
 
-function Uploads({ c }: { c: Case }) {
+function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
   const { t, lang } = useT();
   const [errs, setErrs] = useState<string[]>([]);
   const required = REQUIRED_DOCS[c.coverage];
@@ -657,13 +998,13 @@ function Uploads({ c }: { c: Case }) {
   };
 
   return (
-    <div className="uploads">
+    <div className={`uploads${bare ? ' bare' : ''}`}>
       <div className="uploads-head">
-        <h3>{t('uploadTitle')}</h3>
+        {!bare && <h3>{t('uploadTitle')}</h3>}
         <span className="hint">{t('uploadRule')}</span>
       </div>
       {!allowed && missing.length > 0 && c.source === 'quote' && ['NEW', 'ACCEPTED', 'QUOTED'].includes(c.status) && <p className="muted">{t('uploadWaitQuote')}</p>}
-      {missing.length === 0 && <p className="ok-note">✓ {t('uploadDone')}</p>}
+      {missing.length === 0 && <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>}
       {errs.map((e) => (
         <p key={e} className="error" role="alert">{e}</p>
       ))}
@@ -694,7 +1035,6 @@ function DocTile({ caseId, k, meta, label, disabled, onFile }: { caseId: string;
     </div>
   );
 }
-
 
 /** Counts up to `value` once on mount (instant when the viewer prefers reduced motion). */
 function CountUp({ value, format, ms = 700 }: { value: number; format: (n: number) => string; ms?: number }) {

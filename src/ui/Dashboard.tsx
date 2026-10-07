@@ -91,7 +91,10 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const byBrand = BRANDS.map((b) => ({ key: b.id, label: b.name, value: value(issued.filter((c) => c.vehicle.brandId === b.id)) }))
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value);
-  const byStaff = STAFF.map((x) => ({ key: x.id, label: x[lang], value: value(issued.filter((c) => c.assignee === x.id)) })).sort((a, b) => b.value - a.value);
+  const byStaff = [
+    ...STAFF.map((x) => ({ key: x.id, label: x[lang], value: value(issued.filter((c) => c.assignee === x.id)) })),
+    { key: 'self', label: t('srcSelf'), value: value(issued.filter((c) => c.source === 'self')) },
+  ].sort((a, b) => b.value - a.value);
 
   const funnelCases = cohort.filter((c) => seg === 'all' || c.source === seg);
   const funnel = FUNNEL.map((st) => ({ st, n: funnelCases.filter((c) => c.stamps[st] !== undefined).length }));
@@ -206,6 +209,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
             <Segmented id="d-seg" label={t('colSource')} value={seg} onChange={setSeg} options={[
               { value: 'all', label: t('segAll') },
               { value: 'package', label: t('srcPackage') },
+              { value: 'self', label: t('srcSelf') },
               { value: 'quote', label: t('srcQuote') },
             ]} />
           </div>

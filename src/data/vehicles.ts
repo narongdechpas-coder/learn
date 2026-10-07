@@ -1,4 +1,4 @@
-import type { Brand, CarModel, Staff, Vehicle } from '../types';
+import type { BodyType, Brand, CarModel, Staff, UsageCode, Vehicle } from '../types';
 
 export const CURRENT_YEAR = 2026;
 
@@ -13,7 +13,15 @@ export const BRANDS: Brand[] = [
   { id: 'mg', name: 'MG' },
   { id: 'byd', name: 'BYD' },
   { id: 'suzuki', name: 'Suzuki' },
+  { id: 'hyundai', name: 'Hyundai' },
 ];
+
+/** Codes a customer can pick in the catalogue flow. */
+export const CATALOGUE_CODES: UsageCode[] = ['110', '210', '320'];
+/** Codes offered for cars outside the catalogue (quote only). */
+export const ALL_CODES: UsageCode[] = ['110', '120', '210', '220', '320', '340'];
+
+const codesFor = (body: BodyType): UsageCode[] => (body === 'pickup' ? ['320', '110'] : body === 'van' ? ['210'] : ['110']);
 
 const m = (
   brandId: string,
@@ -24,7 +32,7 @@ const m = (
   yearTo: number,
   newPrice: number,
   noPackage = false,
-): CarModel => ({ id: `${brandId}-${id}`, brandId, name, body, yearFrom, yearTo, newPrice, noPackage });
+): CarModel => ({ id: `${brandId}-${id}`, brandId, name, body, codes: codesFor(body), yearFrom, yearTo, newPrice, noPackage });
 
 /** Sample catalogue. yearFrom/yearTo is the period the model was sold in Thailand. */
 export const MODELS: CarModel[] = [
@@ -33,6 +41,8 @@ export const MODELS: CarModel[] = [
   m('toyota', 'camry', 'Camry', 'sedan', 2012, 2026, 1509000),
   m('toyota', 'hilux-revo', 'Hilux Revo', 'pickup', 2015, 2026, 859000),
   m('toyota', 'fortuner', 'Fortuner', 'suv', 2015, 2026, 1529000),
+  m('toyota', 'commuter', 'Hiace Commuter', 'van', 2012, 2026, 1329000),
+  m('toyota', 'majesty', 'Majesty', 'van', 2019, 2026, 1659000),
   m('honda', 'city', 'City', 'sedan', 2014, 2026, 649000),
   m('honda', 'civic', 'Civic', 'sedan', 2016, 2026, 1059000),
   m('honda', 'hr-v', 'HR-V', 'suv', 2014, 2026, 1009000),
@@ -46,6 +56,7 @@ export const MODELS: CarModel[] = [
   m('nissan', 'almera', 'Almera', 'sedan', 2012, 2026, 599000),
   m('nissan', 'kicks', 'Kicks e-Power', 'suv', 2020, 2026, 959000),
   m('nissan', 'navara', 'Navara', 'pickup', 2014, 2026, 849000),
+  m('nissan', 'urvan', 'Urvan', 'van', 2013, 2022, 1189000),
   m('mitsubishi', 'attrage', 'Attrage', 'sedan', 2013, 2026, 459000),
   m('mitsubishi', 'xpander', 'Xpander', 'suv', 2018, 2026, 859000),
   m('mitsubishi', 'triton', 'Triton', 'pickup', 2015, 2026, 799000),
@@ -61,6 +72,9 @@ export const MODELS: CarModel[] = [
   m('suzuki', 'swift', 'Swift', 'sedan', 2012, 2026, 549000),
   m('suzuki', 'ciaz', 'Ciaz', 'sedan', 2015, 2024, 549000),
   m('suzuki', 'ertiga', 'Ertiga', 'suv', 2019, 2026, 699000),
+  m('hyundai', 'creta', 'Creta', 'suv', 2023, 2026, 899000),
+  m('hyundai', 'h1', 'H-1', 'van', 2012, 2022, 1399000),
+  m('hyundai', 'staria', 'Staria', 'van', 2021, 2026, 1659000),
 ];
 
 export const STAFF: Staff[] = [
@@ -75,7 +89,9 @@ export const PROVINCES = ['กรุงเทพมหานคร', 'นนท�
 
 export const brandById = (id: string) => BRANDS.find((b) => b.id === id)!;
 export const modelById = (id: string) => MODELS.find((x) => x.id === id)!;
-export const modelsOf = (brandId: string) => MODELS.filter((x) => x.brandId === brandId);
+export const modelsOf = (brandId: string, code?: UsageCode) => MODELS.filter((x) => x.brandId === brandId && (!code || x.codes.includes(code)));
+export const brandsFor = (code: UsageCode) => BRANDS.filter((b) => MODELS.some((x) => x.brandId === b.id && x.codes.includes(code)));
+export const bodyForCode = (code: UsageCode): BodyType => (code === '320' || code === '340' ? 'pickup' : code === '210' || code === '220' ? 'van' : 'sedan');
 export const staffById = (id?: string) => STAFF.find((s) => s.id === id);
 
 export function yearsOf(model: CarModel): number[] {
@@ -105,7 +121,7 @@ export const MIN_CUSTOM_YEAR = 1990;
 /** Catalogue model for a vehicle, or a stand-in built from what the customer typed. */
 export function modelOfVehicle(v: Vehicle): CarModel {
   if (!v.custom) return modelById(v.modelId);
-  return { id: CUSTOM_MODEL_ID, brandId: v.brandId, name: v.custom.model, body: v.custom.body, yearFrom: v.year, yearTo: v.year, newPrice: 0, noPackage: true };
+  return { id: CUSTOM_MODEL_ID, brandId: v.brandId, name: v.custom.model, body: bodyForCode(v.usage), codes: [v.usage], yearFrom: v.year, yearTo: v.year, newPrice: 0, noPackage: true };
 }
 
 export const vehicleText = (v: Vehicle) => (v.custom ? `${v.custom.brand} ${v.custom.model} ${v.year}` : vehicleLabel(v.modelId, v.year));

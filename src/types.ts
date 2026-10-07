@@ -1,13 +1,17 @@
 export type Lang = 'th' | 'en';
 
-export type BodyType = 'sedan' | 'suv' | 'pickup' | 'ev';
+export type BodyType = 'sedan' | 'suv' | 'pickup' | 'ev' | 'van';
+
+/** Thai motor insurance vehicle code (รหัสรถ). The catalogue sells 110, 210 and 320; the rest are quote-only. */
+export type UsageCode = '110' | '120' | '210' | '220' | '320' | '340';
 
 export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI';
 
-export type Source = 'package' | 'quote';
+export type Source = 'package' | 'quote' | 'self';
 
 export type Status =
   | 'NEW'
+  | 'AWAITING_PAYMENT'
   | 'ACCEPTED'
   | 'QUOTED'
   | 'AWAITING_DOCS'
@@ -16,7 +20,7 @@ export type Status =
   | 'CANCELLED';
 
 /** Milestones recorded on a case; the funnel and SLA are computed from these. */
-export type Stage = 'submitted' | 'accepted' | 'quoted' | 'confirmed' | 'docsComplete' | 'issued' | 'cancelled';
+export type Stage = 'submitted' | 'accepted' | 'quoted' | 'confirmed' | 'docsComplete' | 'paid' | 'issued' | 'cancelled';
 
 export type DocKey = 'front' | 'back' | 'left' | 'right' | 'regbook' | 'idcard';
 
@@ -30,6 +34,8 @@ export interface CarModel {
   brandId: string;
   name: string;
   body: BodyType;
+  /** Vehicle codes this model can be registered under. */
+  codes: UsageCode[];
   yearFrom: number;
   yearTo: number;
   /** Showroom price of a new car in THB. */
@@ -43,8 +49,9 @@ export interface Vehicle {
   modelId: string;
   year: number;
   sumInsured: number;
+  usage: UsageCode;
   /** A car that is not in the catalogue, typed in by the customer (quote request only). */
-  custom?: { brand: string; model: string; body: BodyType };
+  custom?: { brand: string; model: string };
 }
 
 export interface Package {
@@ -114,10 +121,20 @@ export interface Case {
   policyNo?: string;
   premium?: number;
   slaAlerted?: string[];
+  delivery?: Delivery;
+  payment?: { method: 'qr' | 'card'; at: number; last4?: string };
   seeded?: boolean;
 }
 
+export interface Delivery {
+  method: 'paper' | 'pdf';
+  address?: string;
+  email?: string;
+  trackingNo?: string;
+}
+
 export type EmailTemplate =
+  | 'custSelfIssued'
   | 'custReceived'
   | 'custQuoted'
   | 'custDocsNeeded'
@@ -143,7 +160,7 @@ export interface Notification {
   id: string;
   at: number;
   caseId: string;
-  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined';
+  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self';
   params?: Record<string, string | number>;
   read: boolean;
 }

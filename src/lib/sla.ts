@@ -29,6 +29,8 @@ export interface SlaResult {
  * Returns null when the SLA does not apply to the case (yet).
  */
 export function slaFor(c: Case, key: SlaKey, now: number): SlaResult | null {
+  // Self-service purchases never wait on an agent.
+  if (c.source === 'self') return null;
   const s = c.stamps;
   let start: number | undefined;
   let end: number | undefined;

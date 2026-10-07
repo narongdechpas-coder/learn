@@ -15,6 +15,7 @@ export function useNow(intervalMs = 15000) {
 
 const STATUS_TONE: Record<Status, string> = {
   NEW: 'info',
+  AWAITING_PAYMENT: 'wait',
   ACCEPTED: 'neutral',
   QUOTED: 'neutral',
   AWAITING_DOCS: 'wait',
@@ -124,3 +125,5 @@ export function Toasts({ items, dismiss }: { items: Toast[]; dismiss: (id: strin
     </div>
   );
 }
+
+export const SOURCE_KEY = { package: 'srcPackage', quote: 'srcQuote', self: 'srcSelf' } as const;

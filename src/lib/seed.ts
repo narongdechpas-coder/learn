@@ -1,6 +1,6 @@
-import type { Case, CoverageType, Customer, Source } from '../types';
+import type { Case, CoverageType, Customer, Source, UsageCode } from '../types';
 import { CURRENT_YEAR, MODELS, PROVINCES, STAFF, suggestedSumInsured } from '../data/vehicles';
-import { estimateQuote, packagesFor, cmiPremium, REQUIRED_DOCS } from '../data/packages';
+import { estimateQuote, packagesFor, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
 import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay } from './time';
 import { SLA_KEYS, slaFor } from './sla';
 
@@ -38,7 +38,7 @@ export function seedCases(now: number): SeedResult {
 
   const brandWeights: [string, number][] = [
     ['toyota', 25], ['honda', 18], ['isuzu', 12], ['mazda', 7], ['nissan', 6],
-    ['mitsubishi', 7], ['ford', 8], ['mg', 6], ['byd', 7], ['suzuki', 4],
+    ['mitsubishi', 7], ['ford', 8], ['mg', 6], ['byd', 7], ['suzuki', 4], ['hyundai', 4],
   ];
   const staffWeights: [string, number][] = STAFF.map((s, i) => [s.id, [24, 22, 20, 18, 16][i]]);
 
@@ -58,7 +58,7 @@ export function seedCases(now: number): SeedResult {
       const submitted = bkkTime(p.y, p.mo, p.d, 0, Math.floor(minute));
       if (submitted > now - 10 * 60_000) continue;
 
-      const source: Source = rnd() < 0.34 ? 'quote' : 'package';
+      let source: Source = rnd() < 0.34 ? 'quote' : 'package';
       const brandId = weighted(brandWeights);
       let pool = MODELS.filter((x) => x.brandId === brandId && !x.noPackage);
       if (source === 'quote' && rnd() < 0.45) pool = MODELS.filter((x) => x.noPackage);
@@ -66,15 +66,19 @@ export function seedCases(now: number): SeedResult {
       const span = model.yearTo - model.yearFrom;
       const year = Math.max(model.yearFrom, model.yearTo - Math.floor(Math.pow(rnd(), 1.6) * (span + 1)));
       const si = suggestedSumInsured(model, year);
+      // Pickups are mostly registered as 320, some (4-door) as 110.
+      const usage: UsageCode = model.codes.length > 1 ? (rnd() < 0.7 ? model.codes[0] : model.codes[1]) : model.codes[0];
 
       let coverage: CoverageType;
       let pkg;
       if (source === 'package') {
-        const pkgs = packagesFor(model, year, si);
+        const pkgs = packagesFor(model, usage, year, si);
         const wanted = weighted<CoverageType>([['T1', 45], ['T2P', 20], ['T3P', 18], ['T2', 5], ['T3', 7], ['CMI', 5]]);
         const candidates = pkgs.filter((x) => x.type === wanted);
         pkg = candidates.length ? pick(candidates) : pick(pkgs.filter((x) => x.type !== 'CMI'));
         coverage = pkg.type;
+        // Most 2+ / 3+ / CMI buyers finish online by themselves.
+        if (SELF_SERVICE_TYPES.includes(coverage) && rnd() < 0.7) source = 'self';
       } else {
         coverage = weighted<CoverageType>([['T1', 70], ['T2P', 20], ['T3P', 10]]);
       }
@@ -104,7 +108,7 @@ export function seedCases(now: number): SeedResult {
         id,
         source,
         createdAt: submitted,
-        vehicle: { brandId, modelId: model.id, year, sumInsured: si },
+        vehicle: { brandId, modelId: model.id, year, sumInsured: si, usage },
         coverage,
         pkg,
         addCmi,
@@ -116,14 +120,50 @@ export function seedCases(now: number): SeedResult {
         log: [],
         seeded: true,
       };
-      if (source === 'package') {
+      if (source !== 'quote') {
         c.stamps.quoted = submitted;
         c.stamps.confirmed = submitted;
+      }
+      const cmiPrice = cmiPremium(usage) ?? 0;
+      const stale = now - submitted > 10 * DAY_MS;
+
+      if (source === 'self') {
+        // Self service: documents and payment within minutes, no agent involved.
+        c.stamps.accepted = submitted;
+        c.status = 'AWAITING_PAYMENT';
+        const docsAt = submitted + lognormal(6, 0.6) * 60_000;
+        const finishes = rnd() < 0.82;
+        if (!finishes || docsAt > now) {
+          if (!finishes && stale) {
+            c.status = 'CANCELLED';
+            c.stamps.cancelled = submitted + 7 * DAY_MS;
+          }
+          cases.push(c);
+          continue;
+        }
+        c.stamps.docsComplete = docsAt;
+        for (const k of REQUIRED_DOCS[coverage]) c.docs[k] = { name: `${k}.jpg`, size: 700_000, at: docsAt };
+        const paidAt = docsAt + lognormal(3, 0.5) * 60_000;
+        if (paidAt > now) {
+          cases.push(c);
+          continue;
+        }
+        const paper = rnd() < 0.35;
+        c.stamps.paid = paidAt;
+        c.stamps.issued = paidAt + 5_000;
+        c.status = 'ISSUED';
+        c.payment = { method: rnd() < 0.6 ? 'qr' : 'card', at: paidAt };
+        c.delivery = paper
+          ? { method: 'paper', address: customer.address, trackingNo: `EB${String(100000000 + seq * 7919).slice(-9)}TH` }
+          : { method: 'pdf', email: customer.email };
+        c.premium = Math.round((pkg!.premium + (addCmi ? cmiPrice : 0)) * 100) / 100;
+        c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`;
+        cases.push(c);
+        continue;
       }
 
       const staff = weighted(staffWeights);
       const pace = STAFF.find((s) => s.id === staff)!.pace;
-      const stale = now - submitted > 10 * DAY_MS;
       const cancelAt = (t: number) => {
         if (stale) {
           c.status = 'CANCELLED';
@@ -160,7 +200,7 @@ export function seedCases(now: number): SeedResult {
         }
         c.stamps.quoted = quoted;
         c.status = 'QUOTED';
-        c.quotedPremium = Math.round((estimateQuote(model, si, coverage) * (0.95 + rnd() * 0.15)) / 10) * 10;
+        c.quotedPremium = Math.round((estimateQuote(model, usage, si, coverage) * (0.95 + rnd() * 0.15)) / 10) * 10;
         if (rnd() > 0.62) {
           cancelAt(quoted);
           cases.push(c);
@@ -205,7 +245,7 @@ export function seedCases(now: number): SeedResult {
       c.stamps.issued = issued;
       c.status = 'ISSUED';
       const base = pkg ? pkg.premium : c.quotedPremium!;
-      c.premium = Math.round((base + (addCmi ? cmiPremium(model.body) : 0)) * 100) / 100;
+      c.premium = Math.round((base + (addCmi ? cmiPrice : 0)) * 100) / 100;
       c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`;
       cases.push(c);
     }
