@@ -287,11 +287,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
 
       {step === 'car' && <Hero />}
       {step === 'car' && (
-        <section className="panel">
+        <section className="panel wide car-panel">
           <h2>{t('carTitle')}</h2>
           <p className="lead">{t('carLead')}</p>
 
-          <div className="car-section">
+          <div className="car-grid">
+          <div className="car-section area-code">
             <div className="section-label"><span className="section-n">1</span>{t('usageQuestion')} <span className="muted section-sub">({t('usageCode')})</span></div>
             <p className="hint">{t('usageLead')}</p>
             <div className="usage-grid" role="radiogroup" aria-label={t('usageCode')}>
@@ -311,7 +312,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             </div>
           </div>
 
-          <div className={`car-section${code ? '' : ' locked'}`}>
+          <div className={`car-section area-brand${code ? '' : ' locked'}`}>
             <div className="section-label"><span className="section-n">2</span>{t('brand')}</div>
             {code ? (
               <div className="brand-grid reveal" key={code} role="radiogroup" aria-label={t('brand')}>
@@ -323,11 +324,21 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                 ))}
               </div>
             ) : (
-              <p className="hint">{t('pickCodeFirst')}</p>
+              <>
+                <p className="hint">{t('pickCodeFirst')}</p>
+                <div className="brand-grid" aria-hidden="true">
+                  {BRANDS.map((b) => (
+                    <span key={b.id} className="brand-btn placeholder">
+                      <BrandIcon id={b.id} />
+                      <span>{b.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 
-          <div className="car-section">
+          <div className="car-section area-model">
             <div className="section-label"><span className="section-n">3</span>{t('model')} / {t('year')}</div>
             <div className="grid-2">
               <Field htmlFor="car-model" label={t('model')} hint={!brandId ? t(code ? 'pickBrandFirst' : 'pickCodeFirst') : undefined}>
@@ -349,8 +360,23 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                 </select>
               </Field>
             </div>
+            <div className={`car-preview${ready ? ' ready' : ''}`} key={ready ? `${modelId}-${year}` : 'empty'}>
+              <CarArt kind={usage === '320' ? 'pickup' : usage === '210' ? 'van' : 'sedan'} ghost={!ready} className="car-preview-art" />
+              {ready && (
+                <div className="car-meta">
+                  <span className="chip"><BrandIcon id={brandId} size={18} /> {brandById(brandId).name} {model.name} · {year}</span>
+                  <span className="chip">{usageText(usage, lang)}</span>
+                </div>
+              )}
+            </div>
+            <div className="quote-cta subtle">
+              <span>{t('carNotListed')}</span>
+              <button className="btn" type="button" onClick={() => goCustomQuote()}>{t('requestQuote')}</button>
+            </div>
           </div>
 
+          <div className="car-section area-si">
+            <div className="section-label"><span className="section-n">4</span>{t('sumInsured')}</div>
           {ready ? (
             <div className="si-box reveal" key={`${modelId}-${year}-${code}`}>
               <div className="si-main">
@@ -378,10 +404,6 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                   </div>
                 </div>
               </div>
-              <div className="car-meta">
-                <span className="chip"><BrandIcon id={brandId} size={18} /> {brandById(brandId).name} {model.name} · {year}</span>
-                <span className="chip">{usageText(usage, lang)}</span>
-              </div>
             </div>
           ) : (
             <div className="si-pending" aria-live="polite">
@@ -396,12 +418,24 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <p>{t('siPending')}</p>
             </div>
           )}
+          <div className="pkg-teaser">
+            {ready && pkgs.length > 0 && (
+              <div className="teaser-head reveal" key={`${modelId}-${year}-${si}`}>
+                <b>{t('teaserFound', { n: pkgs.length })}</b>
+                <span className="teaser-price num">{t('teaserFrom', { price: fmtBaht(Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium)), lang) })}</span>
+              </div>
+            )}
+            {ready && pkgs.length === 0 && <p className="teaser-none">{t('teaserNone')}</p>}
+            <ul className="teaser-list">
+              {(['bInstall', 'bOnline', 'bCompare'] as TKey[]).map((k) => (
+                <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
+              ))}
+            </ul>
+          </div>
           <div className="actions">
             <button className="btn primary" type="button" disabled={!ready} onClick={goPackages}>{t('seePackages')} →</button>
           </div>
-          <div className="quote-cta subtle">
-            <span>{t('carNotListed')}</span>
-            <button className="btn" type="button" onClick={() => goCustomQuote()}>{t('requestQuote')}</button>
+          </div>
           </div>
         </section>
       )}

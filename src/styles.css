@@ -808,3 +808,49 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .claim-modal { width: min(560px, 100%); display: grid; gap: 12px; }
 .claim-done { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 20px 0; }
 .funnel li.pre .fn-fill { background: color-mix(in srgb, var(--series) 55%, transparent); }
+
+/* car step: two equal main columns — (code | brand) on top, (model+year | sum insured) below */
+.car-panel { padding: 32px; }
+.car-grid { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'code brand' 'model si'; gap: 28px 32px; align-items: stretch; }
+.area-code { grid-area: code; }
+.area-brand { grid-area: brand; }
+.area-model { grid-area: model; }
+.area-si { grid-area: si; }
+.car-grid > .car-section { margin-top: 0; padding: 22px; border-radius: var(--r); background: var(--surface-2); align-content: start; min-width: 0; }
+.car-grid .usage-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.car-grid .usage-card { padding: 12px 10px; background: var(--surface); }
+.car-grid .usage-icon.car-art { width: 100%; max-width: 92px; }
+.car-grid .brand-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); margin: 4px 0 0; }
+.car-grid .brand-btn { padding: 12px 8px; background: var(--surface); }
+.car-grid .brand-btn.on { background: var(--accent-soft); }
+.area-model .quote-cta.subtle { margin-top: auto; background: var(--surface); border-style: dashed; }
+.area-model { display: flex; flex-direction: column; gap: 12px; }
+.area-model .grid-2 { gap: 14px; }
+.car-grid .si-box, .car-grid .si-pending { margin-top: 0; background: var(--surface); }
+.car-grid .si-box { flex-direction: column; align-items: stretch; }
+.car-grid .si-adjust { max-width: none; }
+.area-si .actions { margin-top: 4px; }
+.area-si .actions .btn { width: 100%; }
+@media (max-width: 1080px) { .car-grid .usage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  .car-grid { grid-template-columns: 1fr; grid-template-areas: 'code' 'brand' 'model' 'si'; gap: 16px; }
+  .car-panel { padding: 22px; }
+}
+@media (max-width: 480px) { .car-grid > .car-section { padding: 16px; } .car-panel { padding: 18px; } }
+.car-grid .si-box { justify-content: flex-start; gap: 12px; flex: 0 0 auto; }
+.area-si { display: flex; flex-direction: column; gap: 12px; }
+.area-si .actions { margin-top: auto; }
+.car-preview { flex: 1; min-height: 150px; display: grid; place-items: center; gap: 10px; padding: 14px; border-radius: var(--r-sm); background: linear-gradient(180deg, var(--surface) 70%, color-mix(in srgb, var(--accent) 10%, var(--surface))); }
+.car-preview-art { width: min(300px, 80%); }
+.car-preview.ready .car-preview-art { animation: drivein 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
+@keyframes drivein { from { transform: translateX(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.car-preview .car-meta { justify-content: center; }
+.car-grid .si-main { flex: 0 0 auto; }
+.brand-btn.placeholder { cursor: default; filter: grayscale(1); opacity: 0.6; pointer-events: none; }
+.pkg-teaser { display: grid; gap: 10px; padding: 16px; border-radius: var(--r-sm); background: var(--surface); }
+.teaser-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.teaser-head b { font-family: var(--f-display); font-weight: 500; }
+.teaser-price { color: var(--accent); font-weight: 700; }
+.teaser-none { color: var(--warn); font-size: 0.88rem; }
+.teaser-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.86rem; color: var(--ink-2); }
+.teaser-list li { display: flex; align-items: center; gap: 8px; }
