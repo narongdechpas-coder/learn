@@ -152,7 +152,6 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
   const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
-  const gridCols = useGridCols();
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
   const self = !!pkg && isSelfType(pkg.type);
   const source = pkg ? (self ? 'self' : 'package') : 'quote';
@@ -505,11 +504,8 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                       onChoose={() => { setPkg(p); setStep('form'); }}
                     />
                   ))}
-                  {/* The lead box fills whatever is left of the last row so every row ends flush. */}
-                  <div className="lead-cell" style={{ gridColumn: `span ${shown.length % gridCols ? gridCols - (shown.length % gridCols) : gridCols}` }}>
-                    <LeadBox vehicle={vehicle} fromPrice={Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium).concat(pkgs[0].premium))} popularId={badges.popular} />
-                  </div>
                 </div>
+                <LeadBox vehicle={vehicle} fromPrice={Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium).concat(pkgs[0].premium))} popularId={badges.popular} />
                 {compare.length > 0 && (
                   <div className="compare-bar" role="region" aria-label={t('compareTitle')}>
                     <span><b>{t('compareBar', { n: compare.length })}</b> <span className="muted">· {t('compareMax')}</span></span>
@@ -910,6 +906,8 @@ function LeadBox({ vehicle, fromPrice, popularId }: { vehicle: Vehicle; fromPric
       <div className="lead-text">
         <b>{t('leadTitle')}</b>
         <p>{t('leadLead')}</p>
+      </div>
+      <div className="lead-form">
         {sent ? (
           <p className="ok-note" role="status">✓ {t('leadDone', { contact: sent })}</p>
         ) : (
@@ -973,18 +971,6 @@ function ChatBubble() {
       </button>
     </div>
   );
-}
-
-/** Package grid columns; mirrors the .pkg-panel .pkg-grid breakpoints in styles.css. */
-function useGridCols() {
-  const calc = () => (typeof window === 'undefined' ? 3 : window.innerWidth > 1180 ? 3 : window.innerWidth > 560 ? 2 : 1);
-  const [cols, setCols] = useState(calc);
-  useEffect(() => {
-    const on = () => setCols(calc());
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return cols;
 }
 
 /* ---------------- self-service checkout ---------------- */

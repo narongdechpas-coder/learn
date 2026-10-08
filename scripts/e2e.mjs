@@ -104,8 +104,8 @@ const cards = customer.locator('.pkg-card');
 assert.ok((await cards.count()) >= 6, 'expected several packages');
 const cols = await customer.locator('.pkg-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
 assert.equal(cols, 3, 'packages in 3 columns next to the summary sidebar');
-const lastRowFilled = await customer.locator('.pkg-panel .pkg-grid').evaluate((g) => { const kids = [...g.children]; const rights = kids.map((k) => Math.round(k.getBoundingClientRect().right)); return Math.max(...rights) === rights[rights.length - 1]; });
-assert.ok(lastRowFilled, 'lead box fills the end of the last row');
+const leadBox = await customer.locator('.lead-box').boundingBox();
+assert.ok(leadBox.height < 140, `lead box is a compact horizontal strip (${Math.round(leadBox.height)}px tall)`);
 assert.ok(await customer.locator('.pkg-side .quote-side').getByRole('button', { name: 'ขอเสนอราคา' }).isVisible(), 'quote request sits in the sidebar');
 await customer.getByText('฿380,000').first().waitFor();
 // recommendations, instalments, plain-language cover
