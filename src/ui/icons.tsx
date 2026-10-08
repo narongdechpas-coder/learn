@@ -79,7 +79,9 @@ export function UsageIcon({ code }: { code: UsageCode | 'other' }) {
   const kind = USAGE_KIND[code] ?? 'sedan';
   return (
     <span className="usage-icon car-art" aria-hidden="true">
-      <img src={CAR_IMG[kind]} alt="" draggable={false} />
+      <span className="car-pic">
+        <img src={CAR_IMG[kind]} alt="" draggable={false} />
+      </span>
     </span>
   );
 }
@@ -88,7 +90,9 @@ export function UsageIcon({ code }: { code: UsageCode | 'other' }) {
 export function CarArt({ kind, flip = false, ghost = false, className = '' }: { kind: CarKind; flip?: boolean; ghost?: boolean; className?: string }) {
   return (
     <span className={`car-art${flip ? ' flip' : ''}${ghost ? ' ghost' : ''} ${className}`} aria-hidden="true">
-      <img src={CAR_IMG[kind]} alt="" draggable={false} />
+      <span className="car-pic">
+        <img src={CAR_IMG[kind]} alt="" draggable={false} />
+      </span>
     </span>
   );
 }

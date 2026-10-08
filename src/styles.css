@@ -974,3 +974,18 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .chart { overflow: hidden; }
 .usage-icon.car-art, .car-grid .usage-icon.car-art { width: 100%; max-width: none; height: 46px; display: flex; align-items: flex-end; }
 .usage-icon.car-art img { height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: left bottom; }
+
+/* Car pictures: transparent cut-outs; the ground shadow is drawn here so each theme controls it. */
+:root { --car-shadow: rgba(23, 37, 31, 0.36); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { --car-shadow: rgba(0, 0, 0, 0.85); } }
+:root[data-theme='dark'] { --car-shadow: rgba(0, 0, 0, 0.85); }
+.car-pic { position: relative; display: inline-block; line-height: 0; max-width: 100%; }
+.car-art > .car-pic { display: block; }
+.car-pic img { position: relative; z-index: 1; }
+.car-pic::before {
+  content: ''; position: absolute; left: 4%; right: 4%; bottom: -5%; height: 14%;
+  background: radial-gradient(closest-side, var(--car-shadow), transparent);
+}
+.car-art.ghost .car-pic::before { display: none; }
+.usage-icon.car-art .car-pic { height: 100%; }
+.usage-icon.car-art .car-pic::before { bottom: -5px; height: 11px; }

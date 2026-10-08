@@ -111,6 +111,16 @@ export async function fakePhoto(angle: DocKey): Promise<File> {
   const w = (img.width / img.height) * h;
   const x = (1280 - w) / 2;
   const y = 690 - h;
+  // Soft ground shadow: a radial gradient squashed into a flat ellipse under the wheels.
+  g.save();
+  g.translate(640, y + h - 4);
+  g.scale(1, 0.08);
+  const shadow = g.createRadialGradient(0, 0, 0, 0, 0, w * 0.55);
+  shadow.addColorStop(0, 'rgba(20,24,26,0.5)');
+  shadow.addColorStop(1, 'rgba(20,24,26,0)');
+  g.fillStyle = shadow;
+  g.fillRect(-w * 0.55, -w * 0.55, w * 1.1, w * 1.1);
+  g.restore();
   g.save();
   if (a.flip) {
     g.translate(1280, 0);
