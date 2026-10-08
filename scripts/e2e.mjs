@@ -72,7 +72,7 @@ log('vehicle code filters brands and models (Revo under 110 and 320, Camry 110 o
 await customer.getByRole('radio', { name: 'Toyota' }).click();
 await customer.locator('#car-model').selectOption('toyota-camry');
 await customer.locator('#car-year').selectOption('2019');
-await customer.locator('.quote-cta.subtle').getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
+await customer.locator('.not-listed').getByRole('button', { name: /ขอเสนอราคา/ }).click();
 assert.equal(await customer.locator('#c-code').inputValue(), '110');
 assert.equal(await customer.locator('#c-brand').inputValue(), 'Toyota');
 assert.equal(await customer.locator('#c-model').inputValue(), 'Camry');
@@ -103,9 +103,10 @@ await customer.getByRole('heading', { name: /แพ็กเกจสำหร�
 const cards = customer.locator('.pkg-card');
 assert.ok((await cards.count()) >= 6, 'expected several packages');
 const cols = await customer.locator('.pkg-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
-assert.equal(cols, 4, 'packages in 4 columns on desktop');
-const ctaY = (await customer.locator('.quote-cta.top').boundingBox()).y;
-assert.ok(ctaY < (await cards.first().boundingBox()).y, 'quote bar sits above the packages');
+assert.equal(cols, 3, 'packages in 3 columns next to the summary sidebar');
+const lastRowFilled = await customer.locator('.pkg-panel .pkg-grid').evaluate((g) => { const kids = [...g.children]; const rights = kids.map((k) => Math.round(k.getBoundingClientRect().right)); return Math.max(...rights) === rights[rights.length - 1]; });
+assert.ok(lastRowFilled, 'lead box fills the end of the last row');
+assert.ok(await customer.locator('.pkg-side .quote-side').getByRole('button', { name: 'ขอเสนอราคา' }).isVisible(), 'quote request sits in the sidebar');
 await customer.getByText('฿380,000').first().waitFor();
 // recommendations, instalments, plain-language cover
 assert.equal(await customer.locator('.pkg-card.badge-popular').count(), 1, 'one best seller');
@@ -327,7 +328,7 @@ log('mailbox lists the emails (incl. renewal reminder and claim receipt)');
 await customer.bringToFront();
 await customer.getByRole('tab', { name: 'ซื้อประกัน' }).click();
 await customer.getByRole('button', { name: 'เริ่มคำขอใหม่', exact: true }).click().catch(() => {});
-await customer.locator('.quote-cta.subtle').getByRole('button', { name: 'ขอเสนอราคา', exact: true }).click();
+await customer.locator('.not-listed').getByRole('button', { name: /ขอเสนอราคา/ }).click();
 await customer.getByRole('button', { name: /ถัดไป/ }).click();
 await customer.getByText('กรุณากรอกยี่ห้อ รุ่น และปีรถให้ครบ').waitFor();
 await customer.locator('#c-brand').fill('Volvo');

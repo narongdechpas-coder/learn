@@ -49,6 +49,7 @@ const SAMPLE_CUSTOMER = (): CustomerT => ({
 });
 
 const isSelfType = (t: CoverageType) => SELF_SERVICE_TYPES.includes(t);
+const TYPE_DESC: Record<CoverageType, TKey> = { T1: 'descT1', T2P: 'descT2P', T3P: 'descT3P', T2: 'descT2', T3: 'descT3', CMI: 'descCMI' };
 const CALLBACK_KEY: Record<CallbackSlot, TKey> = { none: 'cbNone', asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' };
 const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
@@ -151,6 +152,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
   const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
+  const gridCols = useGridCols();
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
   const self = !!pkg && isSelfType(pkg.type);
   const source = pkg ? (self ? 'self' : 'package') : 'quote';
@@ -360,18 +362,19 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                 </select>
               </Field>
             </div>
-            <div className={`car-preview${ready ? ' ready' : ''}`} key={ready ? `${modelId}-${year}` : 'empty'}>
-              <CarArt kind={usage === '320' ? 'pickup' : usage === '210' ? 'van' : 'sedan'} ghost={!ready} className="car-preview-art" />
-              {ready && (
-                <div className="car-meta">
-                  <span className="chip"><BrandIcon id={brandId} size={18} /> {brandById(brandId).name} {model.name} · {year}</span>
-                  <span className="chip">{usageText(usage, lang)}</span>
+            <div className="pkg-teaser">
+              {ready && pkgs.length > 0 && (
+                <div className="teaser-head reveal" key={`${modelId}-${year}-${si}`}>
+                  <b>{t('teaserFound', { n: pkgs.length })}</b>
+                  <span className="teaser-price num">{t('teaserFrom', { price: fmtBaht(Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium)), lang) })}</span>
                 </div>
               )}
-            </div>
-            <div className="quote-cta subtle">
-              <span>{t('carNotListed')}</span>
-              <button className="btn" type="button" onClick={() => goCustomQuote()}>{t('requestQuote')}</button>
+              {ready && pkgs.length === 0 && <p className="teaser-none">{t('teaserNone')}</p>}
+              <ul className="teaser-list">
+                {(['bInstall', 'bOnline', 'bCompare'] as TKey[]).map((k) => (
+                  <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
+                ))}
+              </ul>
             </div>
           </div>
 
@@ -418,96 +421,114 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <p>{t('siPending')}</p>
             </div>
           )}
-          <div className="pkg-teaser">
-            {ready && pkgs.length > 0 && (
-              <div className="teaser-head reveal" key={`${modelId}-${year}-${si}`}>
-                <b>{t('teaserFound', { n: pkgs.length })}</b>
-                <span className="teaser-price num">{t('teaserFrom', { price: fmtBaht(Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium)), lang) })}</span>
-              </div>
-            )}
-            {ready && pkgs.length === 0 && <p className="teaser-none">{t('teaserNone')}</p>}
-            <ul className="teaser-list">
-              {(['bInstall', 'bOnline', 'bCompare'] as TKey[]).map((k) => (
-                <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
-              ))}
-            </ul>
-          </div>
           <div className="actions">
             <button className="btn primary" type="button" disabled={!ready} onClick={goPackages}>{t('seePackages')} →</button>
           </div>
           </div>
           </div>
+          <div className="not-listed">
+            <span>{t('carNotListed')}</span>
+            <button className="link" type="button" onClick={() => goCustomQuote()}>{t('requestQuote')} →</button>
+          </div>
         </section>
       )}
 
       {step === 'pkg' && (
-        <section className="panel wide">
-          <div className="panel-head">
-            <div>
-              <h2>{t('pkgTitle', { car: carName })}</h2>
-              <p className="lead">
-                {usageText(usage, lang)} · {t('sumInsured')} <b className="num">{fmtBaht(si, lang)}</b>
-                {pkgs.length > 0 && <> · {t('pkgCount', { n: pkgs.length })}</>}
-              </p>
-            </div>
-            <button className="btn ghost" type="button" onClick={() => setStep('car')}>← {t('back')}</button>
-          </div>
-
+        <section className="panel wide pkg-panel">
           {pkgs.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-mark" aria-hidden="true">?</div>
-              <h3>{t('noPkgTitle')}</h3>
-              <p>{t('noPkgLead')}</p>
-              <button className="btn primary" type="button" onClick={goQuote}>{t('requestQuote')}</button>
-            </div>
-          ) : (
             <>
-              <div className="quote-cta top">
-                <span>{t('wantQuote')}</span>
-                <button className="btn" type="button" onClick={goQuote}>{t('requestQuote')}</button>
-              </div>
-              <div className="pkg-toolbar">
-                <div className="chips-row" role="radiogroup" aria-label={t('coverage')}>
-                  {(['all', ...types] as (CoverageType | 'all')[]).map((x) => (
-                    <button key={x} type="button" role="radio" aria-checked={filter === x} className={`filter-chip${filter === x ? ' on' : ''}`} onClick={() => setFilter(x)}>
-                      {x === 'all' ? t('all') : COVERAGE_LABEL[lang][x]}
-                    </button>
-                  ))}
+              <div className="panel-head">
+                <div>
+                  <h2>{t('pkgTitle', { car: carName })}</h2>
+                  <p className="lead">{usageText(usage, lang)} · {t('sumInsured')} <b className="num">{fmtBaht(si, lang)}</b></p>
                 </div>
-                {cmiToggle('add-cmi')}
+                <button className="btn ghost" type="button" onClick={() => setStep('car')}>← {t('back')}</button>
               </div>
-              <div className="pkg-grid">
-                {shown.map((p) => (
-                  <PackageCard
-                    key={p.id}
-                    p={p}
-                    badge={p.id === badges.popular ? 'popular' : p.id === badges.value ? 'value' : undefined}
-                    compared={compare.includes(p.id)}
-                    canCompare={compare.length < 3 || compare.includes(p.id)}
-                    onCompare={() => setCompare((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id].slice(0, 3)))}
-                    onChoose={() => { setPkg(p); setStep('form'); }}
-                  />
-                ))}
+              <div className="empty-state">
+                <div className="empty-mark" aria-hidden="true">?</div>
+                <h3>{t('noPkgTitle')}</h3>
+                <p>{t('noPkgLead')}</p>
+                <button className="btn primary" type="button" onClick={goQuote}>{t('requestQuote')}</button>
               </div>
-              <LeadBox vehicle={vehicle} fromPrice={Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium).concat(pkgs[0].premium))} popularId={badges.popular} />
-              {compare.length > 0 && (
-                <div className="compare-bar" role="region" aria-label={t('compareTitle')}>
-                  <span><b>{t('compareBar', { n: compare.length })}</b> <span className="muted">· {t('compareMax')}</span></span>
-                  <span className="compare-actions">
-                    <button type="button" className="btn ghost small" onClick={() => setCompare([])}>{t('compareClear')}</button>
-                    <button type="button" className="btn primary" disabled={compare.length < 2} onClick={() => setComparing(true)}>{t('compareOpen')}</button>
-                  </span>
-                </div>
-              )}
-              {comparing && (
-                <CompareModal
-                  pkgs={compare.map((id) => pkgs.find((p) => p.id === id)!).filter(Boolean)}
-                  badges={badges}
-                  onClose={() => setComparing(false)}
-                  onChoose={(p) => { setComparing(false); setPkg(p); setStep('form'); }}
-                />
-              )}
             </>
+          ) : (
+            <div className="pkg-layout">
+              <aside className="pkg-side">
+                <div className="side-card car-summary">
+                  <div className="eyebrow">{t('yourCar')}</div>
+                  <CarArt kind={usage === '320' ? 'pickup' : usage === '210' ? 'van' : 'sedan'} className="summary-car" />
+                  <b className="summary-name"><BrandIcon id={brandId} size={18} /> {carName}</b>
+                  <span className="chip">{usageText(usage, lang)}</span>
+                  <div className="summary-si">
+                    <span className="muted">{t('sumInsured')}</span>
+                    <b className="num">{fmtBaht(si, lang)}</b>
+                  </div>
+                  <button className="link" type="button" onClick={() => setStep('car')}>← {t('changeCar')}</button>
+                </div>
+
+                <div className="side-card">
+                  <div className="eyebrow">{t('coverage')}</div>
+                  <div className="type-filter" role="radiogroup" aria-label={t('coverage')}>
+                    {(['all', ...types] as (CoverageType | 'all')[]).map((x) => (
+                      <button key={x} type="button" role="radio" aria-checked={filter === x} className={`type-opt${filter === x ? ' on' : ''}`} onClick={() => setFilter(x)}>
+                        <span className="type-name">
+                          {x === 'all' ? t('all') : COVERAGE_LABEL[lang][x]}
+                          {x !== 'all' && <small>{t(TYPE_DESC[x])}</small>}
+                        </span>
+                        <span className="type-count num">{x === 'all' ? pkgs.length : pkgs.filter((p) => p.type === x).length}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {cmiToggle('add-cmi')}
+                </div>
+
+                <div className="side-card quote-side">
+                  <b>{t('wantQuote')}</b>
+                  <button className="btn" type="button" onClick={goQuote}>{t('requestQuote')}</button>
+                </div>
+              </aside>
+
+              <div className="pkg-main">
+                <div className="pkg-main-head">
+                  <h2>{t('pkgTitle', { car: carName })}</h2>
+                  <p className="lead">{t('pkgCount', { n: shown.length })}</p>
+                </div>
+                <div className="pkg-grid">
+                  {shown.map((p) => (
+                    <PackageCard
+                      key={p.id}
+                      p={p}
+                      badge={p.id === badges.popular ? 'popular' : p.id === badges.value ? 'value' : undefined}
+                      compared={compare.includes(p.id)}
+                      canCompare={compare.length < 3 || compare.includes(p.id)}
+                      onCompare={() => setCompare((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id].slice(0, 3)))}
+                      onChoose={() => { setPkg(p); setStep('form'); }}
+                    />
+                  ))}
+                  {/* The lead box fills whatever is left of the last row so every row ends flush. */}
+                  <div className="lead-cell" style={{ gridColumn: `span ${shown.length % gridCols ? gridCols - (shown.length % gridCols) : gridCols}` }}>
+                    <LeadBox vehicle={vehicle} fromPrice={Math.min(...pkgs.filter((p) => p.type !== 'CMI').map((p) => p.premium).concat(pkgs[0].premium))} popularId={badges.popular} />
+                  </div>
+                </div>
+                {compare.length > 0 && (
+                  <div className="compare-bar" role="region" aria-label={t('compareTitle')}>
+                    <span><b>{t('compareBar', { n: compare.length })}</b> <span className="muted">· {t('compareMax')}</span></span>
+                    <span className="compare-actions">
+                      <button type="button" className="btn ghost small" onClick={() => setCompare([])}>{t('compareClear')}</button>
+                      <button type="button" className="btn primary" disabled={compare.length < 2} onClick={() => setComparing(true)}>{t('compareOpen')}</button>
+                    </span>
+                  </div>
+                )}
+                {comparing && (
+                  <CompareModal
+                    pkgs={compare.map((id) => pkgs.find((p) => p.id === id)!).filter(Boolean)}
+                    badges={badges}
+                    onClose={() => setComparing(false)}
+                    onChoose={(p) => { setComparing(false); setPkg(p); setStep('form'); }}
+                  />
+                )}
+              </div>
+            </div>
           )}
         </section>
       )}
@@ -952,6 +973,18 @@ function ChatBubble() {
       </button>
     </div>
   );
+}
+
+/** Package grid columns; mirrors the .pkg-panel .pkg-grid breakpoints in styles.css. */
+function useGridCols() {
+  const calc = () => (typeof window === 'undefined' ? 3 : window.innerWidth > 1180 ? 3 : window.innerWidth > 560 ? 2 : 1);
+  const [cols, setCols] = useState(calc);
+  useEffect(() => {
+    const on = () => setCols(calc());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return cols;
 }
 
 /* ---------------- self-service checkout ---------------- */
