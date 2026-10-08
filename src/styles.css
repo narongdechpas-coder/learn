@@ -933,3 +933,8 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .brand-slot .brand-icon { width: 26px; height: 26px; }
 .brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand-btn:hover, .car-grid .brand-btn:hover { transform: none; box-shadow: var(--shadow); border-color: var(--ink-2); }
+/* brand marks sit on a small white tile so dark logos (Mazda, Ford) stay visible in dark mode */
+.brand-logo { display: inline-grid; place-items: center; flex: none; border-radius: 8px; background: #fff; box-shadow: inset 0 0 0 1px rgba(16, 24, 20, 0.1); }
+.brand-slot { width: 30px; height: 30px; }
+.brand-slot .brand-logo { width: 30px !important; height: 30px !important; }
+.brand-slot .brand-icon { width: 24px; height: 24px; }

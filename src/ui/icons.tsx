@@ -1,4 +1,5 @@
 import type { UsageCode } from '../types';
+import { BRAND_LOGOS } from '../data/brandLogos';
 
 /**
  * Neutral monogram emblems for each brand (not the manufacturers' trademarks).
@@ -19,6 +20,15 @@ const EMBLEM: Record<string, { color: string; text: string; shape: 'oval' | 'cir
 };
 
 export function BrandIcon({ id, size = 30 }: { id: string; size?: number }) {
+  const logo = BRAND_LOGOS[id];
+  if (logo)
+    return (
+      <span className="brand-logo" style={{ width: size, height: size }} aria-hidden="true">
+        <svg viewBox="0 0 24 24" width={Math.round(size * 0.74)} height={Math.round(size * 0.74)}>
+          <path fill={logo.hex} d={logo.path} />
+        </svg>
+      </span>
+    );
   const e = EMBLEM[id] ?? { color: '#6b7280', text: '?', shape: 'circle' as const };
   const shape = (() => {
     switch (e.shape) {
@@ -39,93 +49,142 @@ export function BrandIcon({ id, size = 30 }: { id: string; size?: number }) {
     }
   })();
   return (
-    <svg className="brand-icon" viewBox="0 0 40 40" width={size} height={size} aria-hidden="true">
+    <span className="brand-logo" style={{ width: size, height: size }} aria-hidden="true">
+    <svg className="brand-icon" viewBox="0 0 40 40" width={Math.round(size * 0.8)} height={Math.round(size * 0.8)}>
       {shape}
       <text x="20" y="20" dy="0.36em" textAnchor="middle" fill="#fff" fontSize={e.text.length > 1 ? 12 : 16} fontWeight="700" fontFamily="var(--f-display)">
         {e.text}
       </text>
     </svg>
+    </span>
   );
 }
 
 export type CarKind = 'sedan' | 'van' | 'pickup' | 'truck' | 'front' | 'rear';
 
-const wheel = (cx: number, r = 8) =>
-  `<circle cx="${cx}" cy="44" r="${r + 1.5}" fill="#1d2326"/><circle cx="${cx}" cy="44" r="${r}" fill="#2b3236"/>` +
-  `<circle cx="${cx}" cy="44" r="${r * 0.55}" fill="#c9d2d8"/><circle cx="${cx}" cy="44" r="${r * 0.55}" fill="none" stroke="#9aa6ad" stroke-width="1"/>` +
-  `<circle cx="${cx}" cy="44" r="1.6" fill="#59656c"/>`;
+type Paint = [string, string, string];
 
-const glass = (id: string) =>
-  `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7ecfa"/><stop offset="1" stop-color="#8fb6d1"/></linearGradient>`;
-const paint = (id: string, c1: string, c2: string) =>
-  `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`;
+const defsFor = (u: string, paint: Paint) =>
+  `<linearGradient id="p-${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${paint[0]}"/><stop offset=".45" stop-color="${paint[1]}"/><stop offset="1" stop-color="${paint[2]}"/></linearGradient>` +
+  `<linearGradient id="g-${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4f2fc"/><stop offset=".55" stop-color="#9cc3de"/><stop offset="1" stop-color="#5f8fb2"/></linearGradient>` +
+  `<radialGradient id="s-${u}" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".32"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
+  `<radialGradient id="r-${u}" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#f2f5f7"/><stop offset=".7" stop-color="#b9c3ca"/><stop offset="1" stop-color="#7d8a92"/></radialGradient>` +
+  `<linearGradient id="l-${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff8d6"/><stop offset="1" stop-color="#ffd76a"/></linearGradient>`;
+
+/** Tyre, alloy rim with spokes, and the dark wheel arch cut into the body. */
+const wheel = (u: string, cx: number, r = 8, arch = true) => {
+  let spokes = '';
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 72 - 90) * (Math.PI / 180);
+    spokes += `<path d="M${cx} 44 L${(cx + Math.cos(a) * r * 0.55).toFixed(2)} ${(44 + Math.sin(a) * r * 0.55).toFixed(2)}" stroke="#8d989f" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+  const ar = r + 2.6;
+  return (
+    (arch ? `<path d="M${cx - ar} 45.5 A${ar} ${ar} 0 0 1 ${cx + ar} 45.5 Z" fill="#0b1114" opacity=".55"/>` : '') +
+    `<circle cx="${cx}" cy="44" r="${r}" fill="#20272b"/><circle cx="${cx}" cy="44" r="${r - 1.4}" fill="#2e373c"/>` +
+    `<circle cx="${cx}" cy="44" r="${r * 0.62}" fill="url(#r-${u})"/>${spokes}` +
+    `<circle cx="${cx}" cy="44" r="${r * 0.2}" fill="#5c676e"/>` +
+    `<path d="M${cx - r * 0.45} ${44 - r * 0.35} A${r * 0.6} ${r * 0.6} 0 0 1 ${cx + r * 0.1} ${44 - r * 0.58}" stroke="#fff" stroke-opacity=".55" stroke-width=".9" fill="none"/>`
+  );
+};
+
+/** Lower-body shade and shoulder highlight, both clipped to the body outline. */
+const shading = (u: string, body: string, shoulderY: number, sillY = 39) =>
+  `<clipPath id="c-${u}"><path d="${body}"/></clipPath>` +
+  `<g clip-path="url(#c-${u})"><rect x="0" y="${sillY}" width="120" height="10" fill="#000" opacity=".2"/>` +
+  `<rect x="0" y="${shoulderY}" width="120" height="1.6" fill="#fff" opacity=".45"/>` +
+  `<rect x="0" y="${shoulderY + 1.6}" width="120" height="1.2" fill="#000" opacity=".12"/></g>`;
+
+const glare = (pts: string) => `<polygon points="${pts}" fill="#fff" opacity=".42"/>`;
 
 /**
  * Side / front / rear car illustrations as SVG markup. Kept as strings so the same drawing
  * renders inline and can be painted onto a canvas for the simulated phone photos.
  */
 export function carSvg(kind: CarKind, uid: string = kind): string {
-  const g = `g-${uid}`;
-  const p = `p-${uid}`;
-  const shadow = `<ellipse cx="60" cy="53" rx="54" ry="3.5" fill="#000" opacity="0.13"/>`;
+  const u = uid.replace(/[^a-zA-Z0-9-]/g, '');
+  const shadow = `<ellipse cx="60" cy="52.5" rx="56" ry="4.2" fill="url(#s-${u})"/>`;
+  let paint: Paint = ['#6ea6ea', '#3570c2', '#1d4378'];
   let body = '';
-  let defs = glass(g);
   switch (kind) {
-    case 'sedan':
-      defs += paint(p, '#4f8ad0', '#24508a');
+    case 'sedan': {
+      // Rear deck and hood are about the same length so the cabin sits in the middle.
+      const outline =
+        'M9 46C7 46 6 45 6 43V37C6 34 8 32 12 31L30 29C33 28.5 35 27.5 37 25.5L44 18C46 16 49 15 52 15H69C72 15 75 16 77 18L85 26C87 28 89 29 92 29.5L107 31.5C111 32 114 34 114 38V43C114 45 113 46 111 46Z';
       body =
-        `<path d="M7 41c0-5 2-8 8-9l15-3 13-12c3-2 6-3 10-3h22c5 0 9 2 13 5l10 9 10 2c5 1 7 4 7 8v4c0 1-1 2-2 2H9c-1 0-2-1-2-2Z" fill="url(#${p})"/>` +
-        `<path d="M36 29l11-10c2-1 3-2 6-2h8v12Z" fill="url(#${g})"/><path d="M64 17h11c4 0 7 1 10 4l8 8H64Z" fill="url(#${g})"/>` +
-        `<path d="M62 30v14M33 31v12" stroke="#1b3f6e" stroke-width="1"/><rect x="66" y="33" width="6" height="1.6" rx=".8" fill="#1b3f6e"/><rect x="39" y="33" width="6" height="1.6" rx=".8" fill="#1b3f6e"/>` +
-        `<path d="M12 35h100" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/>` +
-        `<path d="M106 33l7 1.5v3h-7Z" fill="#fff3c4"/><path d="M8 34h5v3H7Z" fill="#e2463a"/>` +
-        wheel(31) + wheel(93);
+        `<path d="${outline}" fill="url(#p-${u})"/>` +
+        shading(u, outline, 31.2) +
+        `<path d="M40 27.5L46.5 20C47.5 19 49 18.5 50.5 18.5H59V27.5Z" fill="url(#g-${u})"/>` +
+        `<path d="M62 18.5H69.5C71 18.5 72.5 19 73.5 20L81 27.5H62Z" fill="url(#g-${u})"/>` +
+        glare('48,19.5 53,19.5 47,27 42,27') + glare('66,19.5 70,19.5 64,27 62,27 62,24') +
+        `<path d="M50.5 16H70" stroke="#fff" stroke-opacity=".5" stroke-width="1.2" stroke-linecap="round"/>` +
+        `<path d="M60.5 28v16M37.5 29.5v13.5M84.5 29v13" stroke="#0f2b52" stroke-opacity=".55" stroke-width=".8"/>` +
+        `<rect x="49" y="32" width="5" height="1.4" rx=".7" fill="#0f2b52" opacity=".7"/><rect x="70" y="32" width="5" height="1.4" rx=".7" fill="#0f2b52" opacity=".7"/>` +
+        `<path d="M80 25.5h4.2l.8 2.6h-4.6Z" fill="#163a66"/>` +
+        `<path d="M107.5 32.8l6 1.1v2.8h-6.4Z" fill="url(#l-${u})"/><path d="M6.4 33h4.8v3.2H6.2Z" fill="#e2463a"/>` +
+        wheel(u, 31) + wheel(u, 90);
       break;
-    case 'van':
-      defs += paint(p, '#f4f6f8', '#c3ccd3');
+    }
+    case 'van': {
+      paint = ['#ffffff', '#e6ebee', '#b4bfc6'];
+      const outline = 'M8 46C7 46 6 45 6 44V19C6 14 9 11 14 11H84C89 11 92 13 95 16.5L106 29L111 30.5C113.5 31.3 114.5 33 114.5 36V44C114.5 45 113.5 46 112.5 46Z';
       body =
-        `<path d="M6 44V20c0-6 3-9 9-9h70c5 0 8 2 11 5l11 13 6 2c2 1 3 3 3 6v7c0 1-1 2-2 2H8c-1 0-2-1-2-2Z" fill="url(#${p})" stroke="#9aa6ad" stroke-width="1"/>` +
-        `<rect x="11" y="15" width="19" height="11" rx="2" fill="url(#${g})"/><rect x="33" y="15" width="19" height="11" rx="2" fill="url(#${g})"/><rect x="55" y="15" width="19" height="11" rx="2" fill="url(#${g})"/>` +
-        `<path d="M77 15h8c3 0 5 1 7 3l8 9H77Z" fill="url(#${g})"/>` +
-        `<path d="M53 28v16M76 28v16" stroke="#9aa6ad" stroke-width="1"/><path d="M6 33h107" stroke="#6b7a84" stroke-width="2.4" stroke-opacity=".6"/>` +
-        `<path d="M108 32l6 1v3h-6Z" fill="#fff3c4"/><path d="M6 25h3v5H6Z" fill="#e2463a"/>` +
-        wheel(25, 7.5) + wheel(94, 7.5);
+        `<path d="${outline}" fill="url(#p-${u})" stroke="#9aa6ad" stroke-width=".8"/>` +
+        shading(u, outline, 30) +
+        `<rect x="11" y="15" width="19" height="11" rx="2" fill="url(#g-${u})"/><rect x="33" y="15" width="19" height="11" rx="2" fill="url(#g-${u})"/><rect x="55" y="15" width="19" height="11" rx="2" fill="url(#g-${u})"/>` +
+        `<path d="M77 15H85C88 15 90 16 92 18L100 27H77Z" fill="url(#g-${u})"/>` +
+        glare('14,16 19,16 15,25 12,25') + glare('36,16 41,16 37,25 34,25') + glare('58,16 63,16 59,25 56,25') + glare('81,16 86,16 82,26 78,26') +
+        `<path d="M14 12.4H82" stroke="#fff" stroke-width="1.2"/>` +
+        `<path d="M53.5 27v18M75.5 27v18" stroke="#8a969d" stroke-width=".8"/><rect x="64" y="31" width="6" height="1.4" rx=".7" fill="#6b7880"/>` +
+        `<path d="M108.5 32l6 1.2v3h-6Z" fill="url(#l-${u})"/><path d="M6 24h3v6H6Z" fill="#e2463a"/>` +
+        wheel(u, 25, 7.6) + wheel(u, 94, 7.6);
       break;
-    case 'pickup':
-      defs += paint(p, '#e0583f', '#9c2d1d');
+    }
+    case 'pickup': {
+      paint = ['#f3826a', '#cc4128', '#7c2213'];
+      const outline = 'M8 46C7 46 6 45 6 44V30H52V22C52 19.5 54 17 57 17H80C84 17 87.5 18.5 90 21L99 29L108 31C112 32 114 34 114 38V44C114 45 113 46 112 46Z';
       body =
-        `<path d="M6 44V31h46v-8c0-3 2-5 5-5h23c4 0 8 1 11 4l9 8 10 2c3 1 4 3 4 6v6c0 1-1 2-2 2H8c-1 0-2-1-2-2Z" fill="url(#${p})"/>` +
-        `<path d="M56 21h12v9H56v-6c0-2 0-3 0-3Z" fill="url(#${g})"/><path d="M71 21h9c3 0 6 1 8 3l7 6H71Z" fill="url(#${g})"/>` +
-        `<path d="M6 31h46" stroke="#6e1f13" stroke-width="2"/><path d="M52 23v21M70 31v13" stroke="#7a2214" stroke-width="1"/>` +
-        `<path d="M10 36h104" stroke="#fff" stroke-opacity=".3" stroke-width="1.2"/>` +
-        `<path d="M107 33l7 1v3h-7Z" fill="#fff3c4"/><path d="M6 33h4v4H6Z" fill="#ffb3a6"/>` +
-        wheel(27, 8.5) + wheel(93, 8.5);
+        `<path d="${outline}" fill="url(#p-${u})"/>` +
+        shading(u, outline, 31.5) +
+        `<path d="M6 29.4H52.5" stroke="#5f180b" stroke-width="1.6"/>` +
+        `<path d="M56 21C56 20 57 20 58 20H68V29H56Z" fill="url(#g-${u})"/><path d="M71 20H80C83 20 85.5 21 87.5 23L94 29H71Z" fill="url(#g-${u})"/>` +
+        glare('59,21 63,21 59,28 57,28') + glare('74,21 78,21 74,28 72,28') +
+        `<path d="M58 18.3H80" stroke="#fff" stroke-opacity=".5" stroke-width="1.1"/>` +
+        `<path d="M52 23v22M69.5 30v15" stroke="#5f180b" stroke-opacity=".6" stroke-width=".8"/><rect x="61" y="33" width="5" height="1.4" rx=".7" fill="#5f180b"/>` +
+        `<path d="M108 32.6l6 1.1v3h-6Z" fill="url(#l-${u})"/><path d="M6 32h4v4H6Z" fill="#ffb3a6"/>` +
+        wheel(u, 27, 8.6) + wheel(u, 93, 8.6);
       break;
-    case 'truck':
-      defs += paint(p, '#f3b04a', '#d1801b');
+    }
+    case 'truck': {
+      paint = ['#f9c46a', '#ec9c2e', '#b5670f'];
+      const box = 'M4 41V11C4 9.9 4.9 9 6 9H70C71.1 9 72 9.9 72 11V41Z';
+      const cab = 'M74 46V20C74 18 75 17 77 17H95C98 17 100 18 102 21L109 30C112 31 114.5 33 114.5 36V44C114.5 45 113.5 46 112.5 46Z';
       body =
-        `<rect x="4" y="9" width="68" height="33" rx="2" fill="url(#${p})"/><path d="M10 15h56M10 21h56" stroke="#fff" stroke-opacity=".35"/>` +
-        `<path d="M74 44V20c0-2 1-3 3-3h18c3 0 5 1 7 4l7 9c3 1 5 3 5 6v6c0 1-1 2-2 2Z" fill="#eef1f3" stroke="#9aa6ad"/>` +
-        `<path d="M79 21h15c2 0 4 1 5 3l5 7H79Z" fill="url(#${g})"/>` +
-        `<path d="M109 33l5 1v3h-5Z" fill="#fff3c4"/><path d="M4 42h110" stroke="#59656c" stroke-width="2"/>` +
-        wheel(22, 7.5) + wheel(50, 7.5) + wheel(96, 7.5);
+        `<path d="${box}" fill="url(#p-${u})"/>` + shading(u, box, 12, 36) +
+        `<path d="M10 16H66M10 22H66M10 28H66" stroke="#fff" stroke-opacity=".3"/>` +
+        `<path d="${cab}" fill="#f3f6f8" stroke="#9aa6ad" stroke-width=".8"/>` +
+        `<path d="M79 21H94C96 21 97.5 22 99 24L104 31H79Z" fill="url(#g-${u})"/>` + glare('82,22 87,22 83,30 80,30') +
+        `<path d="M4 41.5H74" stroke="#4d585e" stroke-width="2.4"/>` +
+        `<path d="M109 32.5l5.5 1v3H109Z" fill="url(#l-${u})"/>` +
+        wheel(u, 22, 7.6, false) + wheel(u, 50, 7.6, false) + wheel(u, 96, 7.6);
       break;
+    }
     case 'front':
     case 'rear': {
       const rear = kind === 'rear';
-      defs += paint(p, '#4f8ad0', '#24508a');
+      const outline = 'M22 47V33C22 29 24 27 27 26L34 13C35 11 37 10 40 10H80C83 10 85 11 86 13L93 26C96 27 98 29 98 33V47Z';
       body =
-        `<path d="M22 46V33c0-4 2-6 5-7l7-13c1-2 3-3 6-3h40c3 0 5 1 6 3l7 13c3 1 5 3 5 7v13Z" fill="url(#${p})"/>` +
-        `<path d="M37 14h46l6 12H31Z" fill="url(#${g})"/>` +
+        `<path d="${outline}" fill="url(#p-${u})"/>` + shading(u, outline, 27.5, 40) +
+        `<path d="M37 14H83L89 25H31Z" fill="url(#g-${u})"/>` + glare('44,15 54,15 46,24 37,24') +
         (rear
-          ? `<rect x="26" y="31" width="14" height="6" rx="2" fill="#e2463a"/><rect x="80" y="31" width="14" height="6" rx="2" fill="#e2463a"/><rect x="48" y="36" width="24" height="7" rx="1" fill="#fff"/>`
-          : `<ellipse cx="32" cy="34" rx="7" ry="4" fill="#fff3c4"/><ellipse cx="88" cy="34" rx="7" ry="4" fill="#fff3c4"/><rect x="44" y="31" width="32" height="8" rx="3" fill="#1d2326"/><path d="M47 35h26" stroke="#59656c"/>`) +
-        `<rect x="24" y="44" width="12" height="7" rx="2" fill="#1d2326"/><rect x="84" y="44" width="12" height="7" rx="2" fill="#1d2326"/>` +
-        `<path d="M22 22h-6v4h7M98 22h6v4h-7" fill="#24508a"/>`;
+          ? `<rect x="25" y="30" width="15" height="6" rx="2" fill="#e2463a"/><rect x="80" y="30" width="15" height="6" rx="2" fill="#e2463a"/><rect x="48" y="35" width="24" height="7" rx="1" fill="#fff" stroke="#9aa6ad" stroke-width=".6"/>`
+          : `<ellipse cx="32" cy="33" rx="7" ry="3.8" fill="url(#l-${u})"/><ellipse cx="88" cy="33" rx="7" ry="3.8" fill="url(#l-${u})"/><rect x="44" y="30" width="32" height="8" rx="3" fill="#1d2326"/><path d="M47 32.5h26M47 35.5h26" stroke="#59656c"/>`) +
+        `<rect x="23" y="46" width="13" height="7" rx="2" fill="#1d2326"/><rect x="84" y="46" width="13" height="7" rx="2" fill="#1d2326"/>` +
+        `<path d="M22 21h-6v4h7M98 21h6v4h-7" fill="#1d4378"/>`;
       break;
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 58"><defs>${defs}</defs>${shadow}${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 58"><defs>${defsFor(u, paint)}</defs>${shadow}${body}</svg>`;
 }
 
 const USAGE_KIND: Record<string, CarKind> = { '110': 'sedan', '210': 'van', '320': 'pickup', other: 'truck' };
