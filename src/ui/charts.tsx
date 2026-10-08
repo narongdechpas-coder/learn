@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
-  const [w, setW] = useState(600);
+  const [w, setW] = useState(320);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

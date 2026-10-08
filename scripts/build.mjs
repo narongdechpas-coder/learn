@@ -10,6 +10,7 @@ const out = await build({
   format: 'iife',
   target: 'es2020',
   jsx: 'automatic',
+  loader: { '.webp': 'dataurl' },
   define: { 'process.env.NODE_ENV': '"production"' },
   legalComments: 'none',
 });

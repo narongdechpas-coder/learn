@@ -4,7 +4,7 @@ import { COVERAGE_LABEL, DOC_LABEL, fmtBaht, fmtDate, usageText, useT, type TKey
 import { fileClaim, sendRenewalPreview, setReminders, uploadDoc } from '../store';
 import { vehicleText } from '../data/vehicles';
 import { addBizMinutes, bkkParts, startOfBkkDay } from '../lib/time';
-import { CarArt, FakeQr, carSvg, type CarKind } from './icons';
+import { CAR_IMG, CarArt, FakeQr, type CarKind } from './icons';
 import { Field } from './common';
 
 /* ---------- photo → form (simulated OCR) ---------- */
@@ -86,23 +86,42 @@ export function AngleGuide({ angle }: { angle: DocKey }) {
 /** Paints a believable "photo" of the car for one angle and returns it as a JPEG file. */
 export async function fakePhoto(angle: DocKey): Promise<File> {
   const a = ANGLE_KIND[angle];
-  const car = carSvg(a.kind, `shot-${angle}`).replace('<svg ', '<svg x="140" y="250" width="1000" height="483" ');
-  const carG = a.flip ? `<g transform="translate(1280 0) scale(-1 1)">${car}</g>` : car;
-  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960">` +
-    `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcdcf5"/><stop offset="1" stop-color="#eef6fb"/></linearGradient>` +
-    `<linearGradient id="road" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3a8"/><stop offset="1" stop-color="#6d767b"/></linearGradient></defs>` +
-    `<rect width="1280" height="960" fill="url(#sky)"/><rect y="560" width="1280" height="400" fill="url(#road)"/>` +
-    `<rect x="60" y="300" width="220" height="260" fill="#d9e2e7"/><rect x="980" y="260" width="240" height="300" fill="#cfd9df"/>` +
-    `${carG}<text x="1240" y="920" text-anchor="end" font-family="sans-serif" font-size="28" fill="#ffffff" opacity="0.85">${stamp}</text></svg>`;
   const img = new Image();
-  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  img.src = CAR_IMG[a.kind];
   await img.decode();
   const canvas = document.createElement('canvas');
   canvas.width = 1280;
   canvas.height = 960;
-  canvas.getContext('2d')!.drawImage(img, 0, 0);
+  const g = canvas.getContext('2d')!;
+  const sky = g.createLinearGradient(0, 0, 0, 600);
+  sky.addColorStop(0, '#bcdcf5');
+  sky.addColorStop(1, '#eef6fb');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, 1280, 600);
+  const road = g.createLinearGradient(0, 560, 0, 960);
+  road.addColorStop(0, '#9aa3a8');
+  road.addColorStop(1, '#6d767b');
+  g.fillStyle = road;
+  g.fillRect(0, 560, 1280, 400);
+  g.fillStyle = '#d9e2e7';
+  g.fillRect(60, 300, 220, 260);
+  g.fillStyle = '#cfd9df';
+  g.fillRect(980, 260, 240, 300);
+  const h = a.kind === 'front' || a.kind === 'rear' ? 520 : 400;
+  const w = (img.width / img.height) * h;
+  const x = (1280 - w) / 2;
+  const y = 690 - h;
+  g.save();
+  if (a.flip) {
+    g.translate(1280, 0);
+    g.scale(-1, 1);
+  }
+  g.drawImage(img, x, y, w, h);
+  g.restore();
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.font = '28px sans-serif';
+  g.textAlign = 'right';
+  g.fillText(new Date().toISOString().slice(0, 16).replace('T', ' '), 1240, 920);
   const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.82));
   return new File([blob], `${angle}-${Date.now()}.jpg`, { type: 'image/jpeg' });
 }

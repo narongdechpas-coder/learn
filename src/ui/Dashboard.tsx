@@ -88,9 +88,13 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   }, [issued, gran, from, to, metric, lang]);
 
   const byType = COVERAGE_TYPES.map((k) => ({ key: k, label: COVERAGE_LABEL[lang][k], value: value(issued.filter((c) => c.coverage === k)) }));
-  const byBrand = BRANDS.map((b) => ({ key: b.id, label: b.name, value: value(issued.filter((c) => c.vehicle.brandId === b.id)) }))
+  // Every breakdown shows six rows so the three columns end level: top five brands + the rest.
+  const brandRows = BRANDS.map((b) => ({ key: b.id, label: b.name, value: value(issued.filter((c) => c.vehicle.brandId === b.id)) }))
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value);
+  const byBrand = brandRows.length > 6
+    ? [...brandRows.slice(0, 5), { key: 'other', label: t('otherBrands', { n: brandRows.length - 5 }), value: brandRows.slice(5).reduce((a, r) => a + r.value, 0) }]
+    : brandRows;
   const byStaff = [
     ...STAFF.map((x) => ({ key: x.id, label: x[lang], value: value(issued.filter((c) => c.assignee === x.id)) })),
     { key: 'self', label: t('srcSelf'), value: value(issued.filter((c) => c.source === 'self')) },
@@ -241,22 +245,22 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
             <p className="muted">{t('noData')}</p>
           ) : (
             <ol className="funnel">
+              <li className="fn-head" aria-hidden="true">
+                <span />
+                <span />
+                <span className="fn-num">{t('fnShare')}</span>
+                <span className="fn-step">{t('fnStep')}</span>
+              </li>
               {funnel.map((f, i) => {
                 const prev = i ? funnel[i - 1].n : f.n;
                 return (
-                  <li key={f.key} className={i < funnel.length - caseSteps.length ? 'pre' : ''}>
-                    <div className="fn-label">
-                      <span>{f.label}</span>
-                      <span className="num"><b>{fmtNum(f.n, lang)}</b> <span className="muted">· {fmtNum((f.n / funnel[0].n) * 100, lang, 0)}% {t('ofStart')}</span></span>
-                    </div>
-                    <div className="fn-track">
+                  <li key={f.key} className={i < funnel.length - caseSteps.length ? 'pre' : ''} title={i > 0 ? `${prev ? fmtNum((f.n / prev) * 100, lang, 0) : 0}% ${t('stepConv')}` : undefined}>
+                    <span className="fn-name">{f.label}</span>
+                    <span className="fn-track">
                       <span className="fn-fill" style={{ width: `${(f.n / funnel[0].n) * 100}%` }} />
-                    </div>
-                    {i > 0 && (
-                      <div className={`fn-step num${prev && f.n / prev < 0.7 ? ' low' : ''}`}>
-                        ↳ {prev ? fmtNum((f.n / prev) * 100, lang, 0) : 0}% {t('stepConv')}
-                      </div>
-                    )}
+                    </span>
+                    <span className="fn-num num"><b>{fmtNum(f.n, lang)}</b> <span className="muted">{fmtNum((f.n / funnel[0].n) * 100, lang, 0)}%</span></span>
+                    <span className={`fn-step num${i > 0 && prev && f.n / prev < 0.7 ? ' low' : ''}`}>{i > 0 ? `${prev ? fmtNum((f.n / prev) * 100, lang, 0) : 0}%` : '—'}</span>
                   </li>
                 );
               })}
