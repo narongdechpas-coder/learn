@@ -925,3 +925,11 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
   .lead-box { grid-template-columns: auto minmax(0, 1fr); }
   .lead-form { grid-column: 1 / -1; }
 }
+
+/* brand buttons: left-aligned rows with a fixed icon slot, one height and padding everywhere */
+.car-grid .brand-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.brand-btn, .car-grid .brand-btn { display: flex; justify-content: flex-start; align-items: center; gap: 10px; height: 48px; padding: 0 12px; text-align: left; font-family: var(--f-display); font-size: 0.92rem; font-weight: 500; min-width: 0; }
+.brand-slot { flex: none; width: 28px; height: 28px; display: grid; place-items: center; }
+.brand-slot .brand-icon { width: 26px; height: 26px; }
+.brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-btn:hover, .car-grid .brand-btn:hover { transform: none; box-shadow: var(--shadow); border-color: var(--ink-2); }

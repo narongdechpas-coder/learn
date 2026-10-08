@@ -319,8 +319,8 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               <div className="brand-grid reveal" key={code} role="radiogroup" aria-label={t('brand')}>
                 {brands.map((b) => (
                   <button key={b.id} type="button" role="radio" aria-checked={brandId === b.id} className={`brand-btn${brandId === b.id ? ' on' : ''}`} onClick={() => pickBrand(b.id)}>
-                    <BrandIcon id={b.id} />
-                    <span>{b.name}</span>
+                    <span className="brand-slot"><BrandIcon id={b.id} size={26} /></span>
+                    <span className="brand-name">{b.name}</span>
                   </button>
                 ))}
               </div>
@@ -330,8 +330,8 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                 <div className="brand-grid" aria-hidden="true">
                   {BRANDS.map((b) => (
                     <span key={b.id} className="brand-btn placeholder">
-                      <BrandIcon id={b.id} />
-                      <span>{b.name}</span>
+                      <span className="brand-slot"><BrandIcon id={b.id} size={26} /></span>
+                      <span className="brand-name">{b.name}</span>
                     </span>
                   ))}
                 </div>
