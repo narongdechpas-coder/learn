@@ -20,6 +20,8 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, type Scenario } from '../data/packages';
 import { packagesFor } from '../data/products';
+import { ProductCatalog } from './Catalog';
+import { EXTRA_KEY, productName } from './Products';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
@@ -70,7 +72,8 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
   openLogin?: boolean;
 }) {
   const { t } = useT();
-  const [tab, setTab] = useState<'buy' | 'track'>('buy');
+  const [tab, setTab] = useState<'buy' | 'products' | 'track'>('buy');
+  const [prefType, setPrefType] = useState<{ type: CoverageType; n: number } | undefined>();
   const [login, setLogin] = useState(openLogin);
   useEffect(() => {
     if (trackId) setTab('track');
@@ -80,6 +83,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
       <div className="cust-top">
         <div className="subtabs" role="tablist">
           <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
+          <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>{t('ctTab')}</button>
           <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
         </div>
         {onPartner && (
@@ -89,9 +93,15 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
         )}
       </div>
       {login && onPartner && <PartnerLogin onClose={() => setLogin(false)} onDone={(id) => { setLogin(false); onPartner(id); }} />}
-      {tab === 'buy' ? (
-        <Buy onTrack={(id) => { setTrackId(id); setTab('track'); }} />
-      ) : (
+      {/* Buy stays mounted while browsing products, so the car already picked is kept. */}
+      {tab !== 'track' && (
+        <div hidden={tab !== 'buy'}>
+          <Buy prefType={prefType} onTrack={(id) => { setTrackId(id); setTab('track'); }} />
+        </div>
+      )}
+      {tab === 'products' ? (
+        <ProductCatalog channel="self" onCheck={(type) => { setPrefType({ type, n: Date.now() }); setTab('buy'); window.scrollTo({ top: 0 }); }} />
+      ) : tab === 'buy' ? null : (
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
       <SubmitDocsHost />
@@ -121,7 +131,7 @@ function Steps({ step, self }: { step: Step; self: boolean }) {
   );
 }
 
-function Buy({ onTrack }: { onTrack: (id: string) => void }) {
+function Buy({ onTrack, prefType }: { onTrack: (id: string) => void; prefType?: { type: CoverageType; n: number } }) {
   const { t, lang } = useT();
   const s = useStore();
   const [step, setStep] = useState<Step>('car');
@@ -131,7 +141,11 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const [year, setYear] = useState(0);
   const [pkg, setPkg] = useState<Package | null>(null);
   const [addCmi, setAddCmi] = useState(true);
-  const [filter, setFilter] = useState<CoverageType | 'all'>('all');
+  const [filter, setFilter] = useState<CoverageType | 'all'>(prefType?.type ?? 'all');
+  // Picking a class in the product catalogue filters the packages to it.
+  useEffect(() => {
+    if (prefType) setFilter(prefType.type);
+  }, [prefType]);
   const [quoteType, setQuoteType] = useState<CoverageType>('T1');
   const [quoteSI, setQuoteSI] = useState(0);
   const [customer, setCustomer] = useState<CustomerT>(SAMPLE_CUSTOMER);
@@ -174,7 +188,9 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const siPct = suggested ? ((si - suggested) / suggested) * 100 : 0;
   const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si, { channel: 'self' }) : []), [ready, model, usage, year, si, s.products]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
-  const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
+  // A class picked from the product catalogue may not be offered for this car: show everything then.
+  const activeFilter = filter !== 'all' && !types.includes(filter) ? 'all' : filter;
+  const shown = pkgs.filter((p) => activeFilter === 'all' || p.type === activeFilter);
   const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
   const docsNeeded = pkg?.docs ?? REQUIRED_DOCS[coverage];
@@ -214,7 +230,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
     setPkg(null);
     setCustom(false);
     setCompare([]);
-    setFilter('all');
+    setFilter(prefType?.type ?? 'all');
     setStep('pkg');
   };
   const goQuote = () => {
@@ -494,7 +510,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
                   <div className="eyebrow">{t('coverage')}</div>
                   <div className="type-filter" role="radiogroup" aria-label={t('coverage')}>
                     {(['all', ...types] as (CoverageType | 'all')[]).map((x) => (
-                      <button key={x} type="button" role="radio" aria-checked={filter === x} className={`type-opt${filter === x ? ' on' : ''}`} onClick={() => setFilter(x)}>
+                      <button key={x} type="button" role="radio" aria-checked={activeFilter === x} className={`type-opt${activeFilter === x ? ' on' : ''}`} onClick={() => setFilter(x)}>
                         <span className="type-name">
                           {x === 'all' ? t('all') : COVERAGE_LABEL[lang][x]}
                           {x !== 'all' && <small>{t(TYPE_DESC[x])}</small>}
@@ -752,8 +768,12 @@ function coverRows(p: Package, t: (k: TKey, v?: Record<string, string | number>)
       ];
 }
 
-function Scenarios({ type }: { type: CoverageType }) {
+/** Flood follows the product (it is an extra); the rest follows the class. */
+const covers = (p: Package, sc: Scenario) => (sc === 'flood' && p.extras ? p.flood : SCENARIO_COVER[p.type][sc]);
+
+function Scenarios({ p }: { p: Package }) {
   const { t } = useT();
+  const type = p.type;
   if (type === 'CMI')
     return (
       <ul className="scenarios">
@@ -763,7 +783,7 @@ function Scenarios({ type }: { type: CoverageType }) {
   return (
     <ul className="scenarios">
       {SCENARIOS.map((sc) => {
-        const yes = SCENARIO_COVER[type][sc];
+        const yes = covers(p, sc);
         return (
           <li key={sc} className={yes ? 'yes' : 'no'}>
             <span className="sc-mark" aria-hidden="true">{yes ? '✓' : '✕'}</span>
@@ -799,6 +819,7 @@ function PackageCard({
       {badge && <div className="pkg-ribbon">{t(badge === 'popular' ? 'badgePopular' : 'badgeValue')}</div>}
       <header>
         <TypeTag type={p.type} />
+        {p.badge === 'new' && <span className="mini-badge badge-new">{t('pdBadgeNew')}</span>}
         <div className="pkg-tags">
           {p.repair && <span className="chip">{t(p.repair === 'dealer' ? 'repairDealer' : 'repairGarage')}</span>}
           {p.type !== 'CMI' && (
@@ -808,6 +829,7 @@ function PackageCard({
           )}
         </div>
       </header>
+      {p.nameTh && <h3 className="pkg-name">{productName(p, lang)}</h3>}
       <div className="pkg-price">
         <span className="num">{fmtBaht(p.premium, lang)}</span>
         <span className="muted">{t('perYear')}</span>
@@ -819,7 +841,12 @@ function PackageCard({
       )}
       {isSelfType(p.type) && <div className="self-badge">⚡ {t('selfBadge')}</div>}
       <div className="eyebrow sc-head">{t('whenCovered')}</div>
-      <Scenarios type={p.type} />
+      <Scenarios p={p} />
+      {!!p.extras?.filter((x) => x !== 'flood').length && (
+        <div className="pkg-extras">
+          {p.extras.filter((x) => x !== 'flood').map((x) => <span key={x} className="chip">+ {t(EXTRA_KEY[x])}</span>)}
+        </div>
+      )}
       <button type="button" className="link details-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         {t(open ? 'hideDetails' : 'showDetails')} {open ? '▴' : '▾'}
       </button>
@@ -855,7 +882,7 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
   const rows: [string, (p: Package) => React.ReactNode][] = [
     [t('repairType'), (p) => (p.repair ? t(p.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')],
     [t('deductible'), (p) => (p.type === 'CMI' ? '—' : p.deductible ? fmtBaht(p.deductible, lang) : t('none'))],
-    ...SCENARIOS.map((sc) => [t(SCENARIO_KEY[sc]), (p: Package) => cell(SCENARIO_COVER[p.type][sc])] as [string, (p: Package) => React.ReactNode]),
+    ...SCENARIOS.map((sc) => [t(SCENARIO_KEY[sc]), (p: Package) => cell(covers(p, sc))] as [string, (p: Package) => React.ReactNode]),
     [t('ownDamage'), (p) => (p.ownDamage ? fmtBaht(p.ownDamage, lang) : '—')],
     [t('fireTheft'), (p) => (p.fireTheft ? fmtBaht(p.fireTheft, lang) : '—')],
     [t('tppd'), (p) => (p.tppd ? fmtBaht(p.tppd, lang) : '—')],
@@ -878,6 +905,7 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
                     <div className="cmp-head">
                       <div className="cmp-tags">
                         <TypeTag type={p.type} />
+                        {p.nameTh && <span className="cmp-name">{productName(p, lang)}</span>}
                         {(p.id === badges.popular || p.id === badges.value) && (
                           <span className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</span>
                         )}

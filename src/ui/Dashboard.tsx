@@ -9,6 +9,7 @@ import { DAY_MS, bkkParts, bkkTime, dayKey, monthKey, startOfBkkDay } from '../l
 import { BarChart, HBars, type BarDatum } from './charts';
 import { Segmented, SlaChip, useNow } from './common';
 import { AgentSections } from './DashAgents';
+import { ProductSection } from './DashProducts';
 import { MARKETING } from '../data/agents';
 
 type Range = '7' | '30' | '90' | 'month';
@@ -237,6 +238,8 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           </div>
         </div>
       </section>
+
+      <ProductSection cases={base} proposals={s.proposals.filter((p) => inChannel(p.agentId))} from={from} to={to} />
 
       <AgentSections
         cases={base}

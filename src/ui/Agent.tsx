@@ -3,6 +3,7 @@ import type { Agent, Case, CoverageType, Customer, Package, Proposal, RenewalIte
 import { CATALOGUE_CODES, brandsFor, modelById, modelsOf, siRange, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
 import { QUOTE_TYPES, cmiPremium } from '../data/packages';
 import { packagesFor } from '../data/products';
+import { ProductCatalog } from './Catalog';
 import { caseCommission, rateOf, commissionReceived, mktById, optionPrice, payInfo, settled, type PayState } from '../data/agents';
 import { COVERAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtNum, usageText, useT, type TKey } from '../i18n';
 import { acceptProposal, agentCollected, agentRemitNotice, createProposal, customerConfirm, submitCase, totalPremium, useStore } from '../store';
@@ -14,7 +15,7 @@ import { ShareBox } from './Offer';
 import { RenewalReport } from './AgentRenewals';
 import { SubmitDocsHost } from './SubmitDocs';
 
-type Tab = 'sell' | 'offers' | 'cases' | 'renew' | 'perf';
+type Tab = 'sell' | 'products' | 'offers' | 'cases' | 'renew' | 'perf';
 
 export const agentName = (a: Agent | undefined, lang: 'th' | 'en') => (a ? a[lang] : '—');
 
@@ -85,6 +86,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
 
   const tabs: [Tab, TKey, number?][] = [
     ['sell', 'agTabSell'],
+    ['products', 'ctTab'],
     ['offers', 'agTabOffers', myOffers.filter((p) => proposalState(p, now) === 'viewed').length || undefined],
     ['cases', 'agTabCases', todo || undefined],
     ['renew', 'agTabRenew', renewTodo || undefined],
@@ -117,6 +119,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
         ))}
       </div>
 
+      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={() => setTab('sell')} />}
       {tab === 'sell' && (
         <Sell
           key={`${agent.id}-${prefill?.renewalOf ?? ''}`}
