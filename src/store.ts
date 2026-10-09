@@ -10,7 +10,7 @@ import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
 
-export const STAFF_EMAIL = 'motor-ops@abc.example';
+export const STAFF_EMAIL = 'motor-ops@jacky.example';
 
 export interface State {
   version: number;
@@ -33,7 +33,7 @@ export interface State {
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 8;
+const VERSION = 9;
 
 function fresh(): State {
   const now = Date.now();
@@ -206,7 +206,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const now = Date.now();
   const seq = base.seq + 1;
   const p = bkkParts(now);
-  const id = `ABC-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+  const id = `JKY-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
   const self = input.source === 'self';
   const renewal = !!input.renewalOf;
   const c: Case = {
@@ -370,7 +370,7 @@ export function requestReupload(id: string, keys: DocKey[], note: string, staffI
     s.emails = mail(s, 'custReupload', c, { docs: keys.join(','), note });
     // The partner who sold it handles the documents too, so they hear about it as well.
     const ag = c.agentId ? s.agents.find((a) => a.id === c.agentId) : undefined;
-    if (ag) s.emails = mail(s, 'custReupload', c, { docs: keys.join(','), note }, `${ag.code.toLowerCase()}@agents.abc.example`);
+    if (ag) s.emails = mail(s, 'custReupload', c, { docs: keys.join(','), note }, `${ag.code.toLowerCase()}@agents.jacky.example`);
     return { emails: s.emails };
   });
 }
@@ -690,7 +690,7 @@ export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: stri
     commit({
       ...base,
       renewals: base.renewals.map((x) => (x.id === refId ? { ...x, nudgedAt: now } : x)),
-      emails: mail(base, 'agentNudge', { id: r.policyNo, customer: { firstName: ag.th } as Customer }, { policyNo: r.policyNo, customer: r.customerName, expiry: r.expiry, mkt: mktId }, `${ag.code.toLowerCase()}@agents.abc.example`),
+      emails: mail(base, 'agentNudge', { id: r.policyNo, customer: { firstName: ag.th } as Customer }, { policyNo: r.policyNo, customer: r.customerName, expiry: r.expiry, mkt: mktId }, `${ag.code.toLowerCase()}@agents.jacky.example`),
     });
     return;
   }
@@ -701,7 +701,7 @@ export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: stri
   commit({
     ...base,
     cases,
-    emails: mail(base, 'agentRemit', { id: c.id, customer: { firstName: ag.th } as Customer }, { customer: `${c.customer.firstName} ${c.customer.lastName}`, premium: totalPremium(c) ?? 0, mkt: mktId }, `${ag.code.toLowerCase()}@agents.abc.example`),
+    emails: mail(base, 'agentRemit', { id: c.id, customer: { firstName: ag.th } as Customer }, { customer: `${c.customer.firstName} ${c.customer.lastName}`, premium: totalPremium(c) ?? 0, mkt: mktId }, `${ag.code.toLowerCase()}@agents.jacky.example`),
   });
 }
 

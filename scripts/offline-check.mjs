@@ -47,7 +47,7 @@ await office.bringToFront();
 await office.locator('.toast', { hasText: ref }).waitFor({ timeout: 5000 });
 console.log('  back-office tab got the real-time alert');
 
-await office.locator('.mainnav .nav-dashboard').click();
+await office.locator('.abc-side .nav-dashboard').click();
 await office.getByRole('heading', { name: 'Performance Report' }).waitFor();
 assert.ok((await office.locator('.chart .bar').count()) > 5, 'dashboard charts render');
 console.log('  dashboard renders');

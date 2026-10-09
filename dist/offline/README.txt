@@ -1,4 +1,4 @@
-ABC Motor Insurance Demo (ฉบับ Offline)
+Jacky Motor Insurance Demo (ฉบับ Offline)
 ========================================
 
 วิธีเปิด
@@ -22,7 +22,7 @@ ABC Motor Insurance Demo (ฉบับ Offline)
   (สัญญาอนุญาต SIL Open Font License)
 
 
-ABC Motor Insurance Demo (offline edition)
+Jacky Motor Insurance Demo (offline edition)
 ------------------------------------------
 Unzip anywhere and double-click abc-motor-insurance-demo.html (Chrome or Edge
 recommended). No internet or installation needed. Data stays in the browser

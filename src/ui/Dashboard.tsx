@@ -139,7 +139,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
       <div className="dash-head">
         <div>
           <h2>{t('dashTitle')}</h2>
-          <p className="lead">ABC · {t('dashLead', { time: fmtDateTime(now, lang) })}</p>
+          <p className="lead">Jacky · {t('dashLead', { time: fmtDateTime(now, lang) })}</p>
         </div>
       </div>
 

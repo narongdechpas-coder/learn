@@ -37,12 +37,17 @@ export function BackOffice({
   focusId,
   setFocusId,
   compact = false,
+  tab: tabProp,
+  onTab,
 }: {
   staffId: string;
   setStaffId: (id: string) => void;
   focusId: string | null;
   setFocusId: (id: string | null) => void;
   compact?: boolean;
+  /** Set by the side menu; without it (split view) the back office shows its own tabs. */
+  tab?: 'cases' | 'leads' | 'remit';
+  onTab?: (tab: 'cases' | 'leads' | 'remit') => void;
 }) {
   const { t, lang } = useT();
   const s = useStore();
@@ -53,7 +58,9 @@ export function BackOffice({
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(30);
   const [bellOpen, setBellOpen] = useState(false);
-  const [tab, setTab] = useState<'cases' | 'leads' | 'remit'>('cases');
+  const [ownTab, setOwnTab] = useState<'cases' | 'leads' | 'remit'>('cases');
+  const tab = tabProp ?? ownTab;
+  const setTab = (tb: 'cases' | 'leads' | 'remit') => (onTab ? onTab(tb) : setOwnTab(tb));
   const [channel, setChannel] = useState('all');
   const openLeads = s.leads.filter((l) => !l.caseId && !l.contacted).length;
   const remitDue = s.cases.filter((c) => c.collect === 'agent' && c.stamps.issued && !c.remittedAt && payInfo(c, now)?.state === 'overdue').length;
@@ -149,7 +156,7 @@ export function BackOffice({
         </div>
       </div>
 
-      <div className="subtabs bo-tabs" role="tablist">
+      {!onTab && <div className="subtabs bo-tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'cases'} className={tab === 'cases' ? 'on' : ''} onClick={() => setTab('cases')}>{t('tabCases')}</button>
         <button role="tab" aria-selected={tab === 'leads'} className={tab === 'leads' ? 'on' : ''} onClick={() => setTab('leads')}>
           {t('tabLeads')} {openLeads > 0 && <span className="nav-badge num">{openLeads}</span>}
@@ -157,7 +164,7 @@ export function BackOffice({
         <button role="tab" aria-selected={tab === 'remit'} className={tab === 'remit' ? 'on' : ''} onClick={() => setTab('remit')}>
           {t('tabRemit')} {remitDue > 0 && <span className="nav-badge num">{remitDue}</span>}
         </button>
-      </div>
+      </div>}
 
       {tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
       <div className="filters">

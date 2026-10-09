@@ -33,6 +33,16 @@ const watch = (p) => {
 
 let step = 0;
 const log = (s) => console.log(`  ${++step}. ${s}`);
+// Jacky screens live under the "Jacky system" top menu, in its side menu.
+const abc = async (p, view) => {
+  if (!(await p.locator('.abc-side').count())) await p.locator('.mainnav .nav-abc').click();
+  if (await p.locator('.side-show').count()) await p.locator('.side-show').click();
+  await p.locator(`.abc-side .nav-${view}`).click();
+};
+const tools = async (p, item) => {
+  await p.locator('.nav-tools').click();
+  await p.getByRole('menuitem', { name: item }).click();
+};
 
 const customer = await ctx.newPage();
 watch(customer);
@@ -43,7 +53,7 @@ await office.goto(url + '#backoffice');
 await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
 log('customer and back-office tabs open');
 await customer.getByRole('button', { name: 'คุยกับเจ้าหน้าที่' }).click();
-await customer.getByText('@abc-demo').waitFor();
+await customer.getByText('@jacky-demo').waitFor();
 await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
 
 // ---- Path A: choose a package (Class 1) ----
@@ -163,15 +173,15 @@ await customer.getByText('เบอร์มือถือต้องมี 10
 await customer.locator('#f-phone').fill('0812345678');
 await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
 const refA = (await customer.locator('.ref-big').innerText()).trim();
-assert.match(refA, /^ABC-\d{4}-\d{4}$/);
+assert.match(refA, /^JKY-\d{4}-\d{4}$/);
 log(`package case submitted: ${refA}`);
 
 // back office tab gets a realtime toast + bell
 await office.locator('.toast', { hasText: refA }).waitFor({ timeout: 5000 });
 log('back office received realtime toast');
-await office.getByRole('tab', { name: /ผู้สนใจ/ }).click();
+await abc(office, 'leads');
 await office.locator('.leads-table tr', { hasText: '0812345678' }).first().getByText(refA).waitFor();
-await office.getByRole('tab', { name: 'งาน', exact: true }).click();
+await abc(office, 'backoffice');
 log('lead marked as converted once the same customer submitted');
 
 // email to customer and staff
@@ -265,7 +275,7 @@ await customer.bringToFront();
 await customer.getByText(/ออกกรมธรรม์แล้ว เลขที่/).waitFor({ timeout: 5000 });
 log('customer tab updated to issued');
 // after issue: digital card, claim, renewal, referral
-await customer.locator('.digital-card', { hasText: refA === '' ? 'x' : 'ABC' }).waitFor();
+await customer.locator('.digital-card', { hasText: refA === '' ? 'x' : 'Jacky' }).waitFor();
 await customer.getByRole('button', { name: 'แจ้งเคลม' }).click();
 await customer.getByRole('button', { name: 'ส่งเรื่องแจ้งเคลม' }).click();
 await customer.getByText('กรุณาระบุสถานที่เกิดเหตุ').waitFor();
@@ -277,7 +287,7 @@ await customer.locator('.claim-modal').getByRole('button', { name: 'ปิด', 
 await office.locator('.toast', { hasText: 'แจ้งเคลม' }).waitFor({ timeout: 5000 });
 await customer.getByRole('button', { name: /ดูตัวอย่างอีเมลเตือน/ }).click();
 await customer.getByText('ส่งตัวอย่างไปที่กล่องอีเมลจำลองแล้ว').waitFor();
-assert.match(await customer.locator('.refer-row code').innerText(), /^ABC-/);
+assert.match(await customer.locator('.refer-row code').innerText(), /^JKY-/);
 if (shots) await customer.screenshot({ path: `${shots}/2d-issued.png`, fullPage: true });
 log('digital card, claim report (back office alerted), renewal reminder and referral code');
 
@@ -333,7 +343,7 @@ await office.locator('.case-detail .pill', { hasText: 'ออกกรมธร�
 log('quote case confirmed, paid and issued');
 
 // ---- Dashboard + language ----
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 await office.getByRole('heading', { name: 'Performance Report' }).waitFor();
 const kpi = await office.locator('.kpi-value').first().innerText();
 assert.ok(Number(kpi.replace(/\D/g, '')) > 0, 'dashboard shows issued policies');
@@ -349,7 +359,7 @@ await office.getByText('Policies issued', { exact: true }).waitFor();
 await office.getByRole('button', { name: 'Customer', exact: true }).waitFor();
 log('dashboard renders and switches to English');
 
-await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
+await tools(office, /Mail outbox/);
 await office.locator('.mail-row', { hasText: refB }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Time to renew|ใกล้ถึงเวลาต่ออายุ/ }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Claim CL-|รับเรื่องแจ้งเคลม/ }).first().waitFor();
@@ -375,7 +385,7 @@ await customer.getByText('Volvo XC60 2021').waitFor();
 await customer.getByRole('button', { name: 'ส่งคำขอเสนอราคา', exact: true }).click();
 const refC = (await customer.locator('.ref-big').innerText()).trim();
 await office.bringToFront();
-await office.locator('.mainnav .nav-backoffice').click();
+await abc(office, 'backoffice');
 await office.locator('#bo-q').fill(refC);
 await office.locator('.case-row', { hasText: 'Volvo XC60 2021' }).click();
 await office.getByText('Not in catalogue').waitFor();
@@ -528,25 +538,26 @@ await agent.getByText(/กรอกข้อมูลจากกรมธรร
 assert.equal(await agent.locator('#ag-c-firstName').inputValue(), renewName.split(' ')[0], 'renewal prefills the customer');
 await agent.getByRole('tab', { name: /ขาย/ }).click();
 log('renewal report: 1/2/3-month summary, list by priority, premium received and expected; renewal prefills a quotation');
-// Renewing with ABC: no documents, payment issues the new policy.
+// Renewing with Jacky: no documents, payment issues the new policy.
 await agent.getByRole('radio', { name: 'ซื้อเลย' }).click();
 await agent.locator('.ag-pkg-table tbody tr').first().click();
-await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง ABC ภายใน 15 วัน').first().click();
+await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').first().click();
 await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
-await agent.getByText(/ต่ออายุกับ ABC ไม่ต้องแนบเอกสาร/).waitFor();
+await agent.getByText(/ต่ออายุกับ Jacky ไม่ต้องแนบเอกสาร/).waitFor();
 assert.equal(await agent.locator('.ag-case-detail .uploads').count(), 0, 'renewal asks for no documents');
 await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
 await agent.locator('.ag-case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor({ timeout: 5000 });
-log('renewal with ABC: no documents, the partner collected the money and the new policy was issued');
+log('renewal with Jacky: no documents, the partner collected the money and the new policy was issued');
 
 const buyer = await ctx.newPage();
 watch(buyer);
 await buyer.goto(url + `?c=1#offer/${quoteId}`);
 await thai(buyer);
 await buyer.getByText('หน้าที่ลูกค้าเห็นเมื่อเปิดลิงก์').waitFor();
-assert.equal(await buyer.locator('.offer-opt').count(), 3);
-assert.ok((await buyer.locator('.offer-opt s').count()) >= 2, 'full price shown struck through next to the discounted price');
+assert.equal(await buyer.locator('.offer-cover-table thead .oc-opt').count(), 3, 'three options side by side in the cover table');
+assert.equal(await buyer.locator('.offer-opt').count(), 0, 'no separate option cards');
+assert.ok((await buyer.locator('.offer-cover-table s').count()) >= 2, 'full price shown struck through next to the discounted price');
 assert.equal(await buyer.getByText(/คอมมิชชัน|คอมฯ/).count(), 0, 'customer never sees commission');
 await agent.bringToFront();
 await agent.getByRole('tab', { name: /ใบเสนอราคา/ }).click();
@@ -554,13 +565,14 @@ await agent.locator('tr', { hasText: quoteId }).getByText('ลูกค้าเ
 log('customer opened the link; the agent sees it opened');
 
 await buyer.bringToFront();
-await buyer.locator('.offer-opt').nth(1).click();
+await buyer.locator('.oc-pick').nth(1).click();
+assert.equal(await buyer.locator('.offer-cover-table thead th.pick').innerText().then((x) => x.includes('แบบที่ 2')), true, 'picked column highlighted');
 await buyer.getByRole('button', { name: 'เลือกแบบนี้และยืนยัน' }).click();
 await buyer.getByRole('button', { name: /ยืนยันซื้อ/ }).click();
 await buyer.getByText('กรอกรหัส OTP 6 หลัก').waitFor();
 await buyer.getByRole('button', { name: 'ใส่รหัสตัวอย่าง' }).click();
 await buyer.getByRole('button', { name: /ยืนยันซื้อ/ }).click();
-const refD = (await buyer.locator('.ok-note').first().innerText()).match(/ABC-[\d-]+/)[0];
+const refD = (await buyer.locator('.ok-note').first().innerText()).match(/JKY-[\d-]+/)[0];
 await buyer.getByRole('button', { name: 'ชำระเงิน (จำลอง)' }).click();
 await buyer.getByText(/ชำระเงินแล้ว/).waitFor();
 const inputsD = buyer.locator('.uploads input[type=file]');
@@ -574,7 +586,7 @@ await buyer.getByRole('dialog', { name: 'ยืนยันการส่งข
 log(`customer chose option 2 with OTP, paid through the link and attached documents: ${refD}`);
 
 await office.bringToFront();
-await office.locator('.nav-backoffice').click();
+await abc(office, 'backoffice');
 await office.locator('#bo-channel').selectOption('a3');
 await office.locator('#bo-q').fill(refD);
 await office.locator('.case-row', { hasText: refD }).locator('.src-agent').waitFor();
@@ -597,12 +609,12 @@ await agent.locator('#ag-year').selectOption('2024');
 const rows2 = agent.locator('.ag-pkg-table tbody tr');
 const types2 = await rows2.locator('.type-tag').allInnerTexts();
 await rows2.nth(types2.findIndex((x) => x.includes('3+'))).click();
-await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง ABC ภายใน 15 วัน').first().click();
+await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').first().click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
 await agent.getByText('ติ๊กยืนยันว่าลูกค้ายินยอมก่อน').waitFor();
 await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
-const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/ABC-[\d-]+/)[0];
+const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/JKY-[\d-]+/)[0];
 await agent.locator('.ag-case-detail .uploads').getByRole('button', { name: /ใช้ข้อมูลจำลอง/ }).click();
 await agent.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor({ timeout: 15000 });
 await agent.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
@@ -623,13 +635,13 @@ await agent.bringToFront();
 await agent.getByRole('button', { name: 'แจ้งว่านำส่งเบี้ยแล้ว' }).click();
 await office.bringToFront();
 await office.locator('.toast', { hasText: /แจ้งนำส่งเบี้ยงาน/ }).first().waitFor({ timeout: 5000 });
-await office.getByRole('tab', { name: /นำส่งเบี้ย/ }).click();
+await abc(office, 'remit');
 await office.locator('tr', { hasText: refE }).getByText('ตัวแทนแจ้งว่าโอนแล้ว').waitFor();
 await office.locator('tr', { hasText: refE }).getByRole('button', { name: 'บันทึกรับเงินนำส่ง' }).click();
 await office.locator('#bo-remit-show').selectOption('all');
 await office.locator('tr', { hasText: refE }).getByText('ตามเกณฑ์').waitFor();
 await agent.bringToFront();
-await agent.getByText(/ABC ได้รับเงินนำส่งแล้ว/).waitFor({ timeout: 5000 });
+await agent.getByText(/Jacky ได้รับเงินนำส่งแล้ว/).waitFor({ timeout: 5000 });
 log('agent reported the remittance; back office was alerted and recorded it');
 
 // Marketing: performance, targets, suspension, reminders.
@@ -672,7 +684,7 @@ await mkt.getByText('✓ ทวงแล้ว').first().waitFor();
 log('marketing sees own partners, renewal rate overall and per partner, changed a target, suspended/reactivated a partner, sent reminders');
 
 await office.bringToFront();
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 await office.getByRole('heading', { name: 'อันดับ Business Partner' }).waitFor();
 await office.getByRole('heading', { name: 'Funnel ตัวแทน' }).waitFor();
 await office.getByRole('heading', { name: 'Performance งานต่ออายุ' }).waitFor();
@@ -683,7 +695,8 @@ await office.locator('#d-mkt').selectOption('m2');
 assert.equal(await office.locator('.agent-table tbody tr').count(), 2, 'marketing filter narrows the ranking');
 await office.locator('#d-mkt').selectOption('all');
 await office.locator('#d-channel').selectOption('all');
-await office.getByRole('button', { name: 'อีเมลจำลอง', exact: true }).click();
+await tools(office, /อีเมลจำลอง/);
+assert.equal(await office.locator('.abc-side').count(), 0, 'demo tools sit outside the Jacky menu');
 await office.getByRole('radio', { name: 'ถึงตัวแทน' }).click();
 await office.locator('.mail-row').first().waitFor();
 await office.getByRole('radio', { name: 'ทั้งหมด' }).click();
@@ -691,7 +704,13 @@ await office.locator('.mail-row', { hasText: quoteId }).first().waitFor();
 log('dashboard shows agent ranking, funnel, payments and renewals; emails to agents and the quotation email');
 
 // VP: marketing targets, ranking, rolling 12 months, partner performance.
-await office.locator('.nav-vp').click();
+await abc(office, 'vp');
+await office.getByRole('button', { name: /ซ่อนเมนู/ }).click();
+assert.equal(await office.locator('.abc-side').isVisible(), false, 'side menu hidden');
+await office.reload();
+assert.equal(await office.locator('.abc-side').isVisible(), false, 'hidden side menu remembered');
+await office.getByRole('button', { name: /แสดงเมนู/ }).click();
+await office.locator('.abc-side .nav-vp.on').waitFor();
 await office.getByRole('heading', { name: 'ภาพรวมช่องทาง Business Partner' }).waitFor();
 assert.equal(await office.locator('.vp-mkt').count(), 3, 'three marketing officers under the VP');
 assert.equal(await office.locator('.vp-agents tbody tr').count(), 6, 'all six partners');
@@ -718,7 +737,7 @@ log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, rene
 // ---- Products: edit, versions, commission, end date, Excel round trip ----
 const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')));
 const prod = (st, id) => st.products.find((p) => p.id === id);
-await office.locator('.nav-products').click();
+await abc(office, 'products');
 assert.equal(await office.locator('.pd-table tbody tr').count(), 11, 'catalogue starts with 11 products');
 const offered = (await state(office)).proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000');
 assert.ok(offered, 'the earlier quotation offered Class 2+ 200,000');
@@ -877,13 +896,13 @@ assert.equal(prod(st, 'T2').channels.self, true, 'sheet with an error skipped');
 assert.equal(st.productLog[0].note, 'import');
 log('Excel export (13 sheets) edited and re-imported: review shows the price change and the bad sheet; only the good one saved');
 
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 assert.ok((await office.locator('.dash-products tbody tr').count()) > 3, 'dashboard sales by product');
 log('dashboard shows sales by product with partner share, commission and win rate');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });
-  await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await abc(office, 'dashboard');
   await office.screenshot({ path: `${shots}/5-dashboard-dark.png`, fullPage: true });
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await phone.goto(url + '#customer');
