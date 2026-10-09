@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
-import type { CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Source, TrafficDay, Vehicle } from './types';
-import { seedCases, seedLeads, seedTraffic } from './lib/seed';
+import type { Agent, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
+import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic } from './lib/seed';
+import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { CURRENT_YEAR } from './data/vehicles';
@@ -20,15 +21,32 @@ export interface State {
   mine: string[];
   leads: Lead[];
   traffic: Record<string, TrafficDay>;
+  agents: Agent[];
+  proposals: Proposal[];
+  renewals: RenewalItem[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 4;
+const VERSION = 5;
 
 function fresh(): State {
   const now = Date.now();
   const { cases, seq } = seedCases(now);
-  return { version: VERSION, seededAt: now, seq, cases, emails: [], notifications: [], mine: [], leads: seedLeads(cases, now), traffic: seedTraffic(cases, now) };
+  const proposals = seedAgentWork(cases, now);
+  return {
+    version: VERSION,
+    seededAt: now,
+    seq,
+    cases,
+    emails: [],
+    notifications: [],
+    mine: [],
+    leads: seedLeads(cases, now),
+    traffic: seedTraffic(cases, now),
+    agents: AGENTS.map((a) => ({ ...a })),
+    proposals,
+    renewals: seedRenewals(now),
+  };
 }
 
 function load(): State | null {
@@ -105,13 +123,13 @@ export function useStore(): State {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-function mail(s: State, template: EmailTemplate, c: Case, params: Record<string, string | number> = {}): Email[] {
+function mail(s: State, template: EmailTemplate, c: Pick<Case, 'id' | 'customer'>, params: Record<string, string | number> = {}, agentTo?: string): Email[] {
   const staff = template.startsWith('staff');
   const e: Email = {
     id: uid(),
     at: Date.now(),
-    to: staff ? STAFF_EMAIL : c.customer.email,
-    audience: staff ? 'staff' : 'customer',
+    to: agentTo ?? (staff ? STAFF_EMAIL : c.customer.email),
+    audience: agentTo ? 'agent' : staff ? 'staff' : 'customer',
     template,
     caseId: c.id,
     params: { name: c.customer.firstName, ...params },
@@ -139,7 +157,7 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
-  return Math.round((base + (c.addCmi ? (cmiPremium(c.vehicle.usage) ?? 0) : 0)) * 100) / 100;
+  return Math.round((base + (c.addCmi ? (cmiPremium(c.vehicle.usage) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
 };
 
 export const requiredDocs = (c: Case) => REQUIRED_DOCS[c.coverage];
@@ -160,9 +178,13 @@ export interface SubmitInput {
   desiredSI?: number;
   customer: Customer;
   callback?: CallbackSlot;
+  agentId?: string;
+  discount?: number;
+  collect?: Case['collect'];
+  proposalId?: string;
 }
 
-export function submitCase(input: SubmitInput): string {
+export function submitCase(input: SubmitInput, mine = true): string {
   const base = load() ?? state;
   const now = Date.now();
   const seq = base.seq + 1;
@@ -179,9 +201,9 @@ export function submitCase(input: SubmitInput): string {
         ? { submitted: now }
         : { submitted: now, quoted: now, confirmed: now, ...(self ? { accepted: now } : {}) },
     docs: {},
-    log: [{ at: now, by: 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
+    log: [{ at: now, by: input.agentId ?? 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
-  const s: State = { ...base, seq, cases: [c, ...base.cases], mine: [id, ...base.mine] };
+  const s: State = { ...base, seq, cases: [c, ...base.cases], mine: mine ? [id, ...base.mine] : base.mine };
   // A lead that comes back and submits counts as converted.
   const phone = input.customer.phone.replace(/\D/g, '');
   const email = input.customer.email.trim().toLowerCase();
@@ -194,7 +216,7 @@ export function submitCase(input: SubmitInput): string {
   }
   s.emails = mail(s, 'custReceived', c);
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
-  s.notifications = notify(s, 'new', id, { source: c.source });
+  s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
   return id;
 }
@@ -233,13 +255,14 @@ export function sendQuote(id: string, premium: number, staffId: string) {
   });
 }
 
-export function customerConfirm(id: string) {
+export function customerConfirm(id: string, by = 'customer', collect?: Case['collect']) {
   update(id, (c, s) => {
     if (c.status !== 'QUOTED') return;
     const now = Date.now();
     c.stamps.confirmed = now;
     c.status = 'AWAITING_DOCS';
-    c.log.push({ at: now, by: 'customer', action: 'confirm' });
+    if (collect) c.collect = collect;
+    c.log.push({ at: now, by, action: 'confirm' });
     s.emails = mail(s, 'staffConfirmed', c);
     return { emails: mail(s, 'custDocsNeeded', c), notifications: notify(s, 'confirmed', id) };
   });
@@ -256,12 +279,12 @@ export function customerDecline(id: string) {
   });
 }
 
-export async function uploadDoc(id: string, key: DocKey, file: File) {
+export async function uploadDoc(id: string, key: DocKey, file: File, by = 'customer') {
   await putFile(`${id}:${key}`, file);
   update(id, (c, s) => {
     const now = Date.now();
     c.docs[key] = { name: file.name, size: file.size, at: now };
-    c.log.push({ at: now, by: 'customer', action: 'upload', text: key });
+    c.log.push({ at: now, by, action: 'upload', text: key });
     if (docsMissing(c).length === 0 && !c.stamps.docsComplete) {
       c.stamps.docsComplete = now;
       if (c.source === 'self') return;
@@ -439,6 +462,169 @@ export function checkSlaBreaches() {
     }
   });
   if (s) commit(s);
+}
+
+// ---- Sub-agent channel ----
+
+const nextProposalId = (base: State) => {
+  const p = bkkParts(Date.now());
+  const n = base.proposals.filter((x) => !x.seeded).length + 1;
+  return `Q-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(n).padStart(3, '0')}${uid().slice(0, 2).toUpperCase()}`;
+};
+
+export interface ProposalInput {
+  agentId: string;
+  vehicle: Vehicle;
+  customer: Customer;
+  options: ProposalOption[];
+  discountPct: number;
+  renewalOf?: string;
+}
+
+/** An agent's quotation (1-5 packages) for a customer. */
+export function createProposal(input: ProposalInput): string {
+  const base = load() ?? state;
+  const now = Date.now();
+  const id = nextProposalId(base);
+  const pr: Proposal = { id, ...input, createdAt: now, expiresAt: now + PROPOSAL_DAYS * 86_400_000, sentVia: [], status: 'open' };
+  const renewals = input.renewalOf ? base.renewals.map((r) => (r.id === input.renewalOf && r.status === 'open' ? { ...r, status: 'quoted' as const, proposalId: id } : r)) : base.renewals;
+  commit({ ...base, proposals: [pr, ...base.proposals], renewals });
+  return id;
+}
+
+const updateProposal = (id: string, fn: (p: Proposal) => Proposal) => {
+  const base = load() ?? state;
+  commit({ ...base, proposals: base.proposals.map((p) => (p.id === id ? fn(p) : p)) });
+};
+
+/** Agent shared the quotation: link, PDF or LINE. The link also goes to the customer by email. */
+export function markProposalSent(id: string, via: Proposal['sentVia'][number]) {
+  const base = load() ?? state;
+  const pr = base.proposals.find((p) => p.id === id);
+  if (!pr) return;
+  const proposals = base.proposals.map((p) => (p.id === id && !p.sentVia.includes(via) ? { ...p, sentVia: [...p.sentVia, via] } : p));
+  const emails = via === 'link' && !pr.sentVia.includes('link')
+    ? mail(base, 'custOffer', { id, customer: pr.customer }, { n: pr.options.length, expiry: pr.expiresAt, agent: pr.agentId })
+    : base.emails;
+  commit({ ...base, proposals, emails });
+}
+
+/** The customer opened the link (the agent's own preview does not count). */
+export function viewProposal(id: string) {
+  const base = load() ?? state;
+  if (base.proposals.find((p) => p.id === id)?.viewedAt) return;
+  updateProposal(id, (p) => ({ ...p, viewedAt: Date.now() }));
+}
+
+export function declineProposal(id: string) {
+  updateProposal(id, (p) => (p.status === 'open' ? { ...p, status: 'declined' } : p));
+}
+
+/**
+ * Customer (from the link) or agent (in front of the customer, with consent) picks one option.
+ * The sale then runs through the back office like any package sale.
+ */
+export function acceptProposal(id: string, choice: number, by: 'customer' | 'agent', collect: 'link' | 'agent'): string | null {
+  const base = load() ?? state;
+  const pr = base.proposals.find((p) => p.id === id);
+  if (!pr || pr.status !== 'open' || Date.now() > pr.expiresAt) return null;
+  const o = pr.options[choice];
+  const price = optionPrice(o, pr.discountPct, pr.vehicle.usage);
+  const caseId = submitCase(
+    {
+      source: 'package',
+      vehicle: pr.vehicle,
+      coverage: o.pkg.type,
+      pkg: o.pkg,
+      addCmi: o.addCmi && o.pkg.type !== 'CMI',
+      customer: pr.customer,
+      agentId: pr.agentId,
+      discount: price.discount || undefined,
+      collect,
+      proposalId: id,
+    },
+    by === 'customer',
+  );
+  const after = load() ?? state;
+  const now = Date.now();
+  commit({
+    ...after,
+    proposals: after.proposals.map((p) => (p.id === id ? { ...p, status: 'accepted', acceptedAt: now, acceptedBy: by, chosen: choice, caseId } : p)),
+    renewals: pr.renewalOf ? after.renewals.map((r) => (r.id === pr.renewalOf ? { ...r, status: 'renewed' } : r)) : after.renewals,
+  });
+  return caseId;
+}
+
+/** Customer pays ABC through the quotation link (simulated). */
+export function payByLink(id: string, method: 'qr' | 'card', last4?: string, months?: number) {
+  update(id, (c) => {
+    if (c.paidAt) return;
+    const now = Date.now();
+    c.paidAt = now;
+    c.payment = { method, at: now, last4, months };
+    c.log.push({ at: now, by: 'customer', action: 'paid', text: method });
+  });
+}
+
+/** Agent took the customer's money; it still has to be remitted to ABC. */
+export function agentCollected(id: string) {
+  update(id, (c) => {
+    if (c.paidAt) return;
+    const now = Date.now();
+    c.paidAt = now;
+    c.log.push({ at: now, by: c.agentId ?? 'agent', action: 'collected' });
+  });
+}
+
+/** Back office received the agent's remittance. */
+export function recordRemit(id: string, staffId: string) {
+  update(id, (c) => {
+    if (c.remittedAt) return;
+    const now = Date.now();
+    c.remittedAt = now;
+    c.paidAt = c.paidAt ?? now;
+    c.log.push({ at: now, by: staffId, action: 'remitted' });
+  });
+}
+
+/** Agent tells the back office the money has been transferred. */
+export function agentRemitNotice(id: string) {
+  update(id, (c, s) => {
+    const now = Date.now();
+    c.log.push({ at: now, by: c.agentId ?? 'agent', action: 'remitNotice' });
+    return { notifications: notify(s, 'remit', id, { agent: c.agentId ?? '' }) };
+  });
+}
+
+/** Marketing reminds an agent about a renewal due or a late remittance. */
+export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: string) {
+  const base = load() ?? state;
+  const now = Date.now();
+  if (kind === 'renewal') {
+    const r = base.renewals.find((x) => x.id === refId);
+    const ag = base.agents.find((a) => a.id === r?.agentId);
+    if (!r || !ag) return;
+    commit({
+      ...base,
+      renewals: base.renewals.map((x) => (x.id === refId ? { ...x, nudgedAt: now } : x)),
+      emails: mail(base, 'agentNudge', { id: r.policyNo, customer: { firstName: ag.th } as Customer }, { policyNo: r.policyNo, customer: r.customerName, expiry: r.expiry, mkt: mktId }, `${ag.code.toLowerCase()}@agents.abc.example`),
+    });
+    return;
+  }
+  const c = base.cases.find((x) => x.id === refId);
+  const ag = base.agents.find((a) => a.id === c?.agentId);
+  if (!c || !ag) return;
+  const cases = base.cases.map((x) => (x.id === refId ? { ...x, log: [...x.log, { at: now, by: mktId, action: 'nudge' }] } : x));
+  commit({
+    ...base,
+    cases,
+    emails: mail(base, 'agentRemit', { id: c.id, customer: { firstName: ag.th } as Customer }, { customer: `${c.customer.firstName} ${c.customer.lastName}`, premium: totalPremium(c) ?? 0, mkt: mktId }, `${ag.code.toLowerCase()}@agents.abc.example`),
+  });
+}
+
+export function updateAgent(id: string, patch: Partial<Pick<Agent, 'target' | 'active' | 'mktId'>>) {
+  const base = load() ?? state;
+  commit({ ...base, agents: base.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)) });
 }
 
 export async function resetDemo() {

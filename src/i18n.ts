@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { CoverageType, DocKey, EmailTemplate, Lang, Stage, Status, UsageCode } from './types';
 import type { SlaKey, SlaState } from './lib/sla';
+import { agentEn, agentTh } from './i18nAgent';
 
-const th = {
+const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
   cbNone: 'ไม่ต้องโทร ส่งทางอีเมลอย่างเดียว',
   cbAsap: 'เร็วที่สุด',
@@ -471,9 +472,11 @@ const th = {
   openCase: 'เปิดงาน',
 } as const;
 
+const th = { ...thBase, ...agentTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
+  ...agentEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',
@@ -1030,6 +1033,9 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[ลูกค้ายืนยัน] {ref}', body: 'คุณ{name} ยืนยันใบเสนอราคา {ref} แล้ว กำลังรอเอกสาร' },
     staffDocsComplete: { subject: '[เอกสารครบ] {ref}', body: 'คุณ{name} แนบเอกสารครบสำหรับ {ref} กรุณาตรวจและออกกรมธรรม์ภายใน 1 วันทำการ' },
     staffSla: { subject: '[เกิน SLA] {ref} ({sla})', body: 'งาน {ref} ของคุณ{name} เกิน SLA ขั้น{sla}แล้ว กรุณาดำเนินการด่วน' },
+    custOffer: { subject: 'ใบเสนอราคาประกันรถ {car} ({ref})', body: 'เรียนคุณ{name}\n\n{agent} ตัวแทนของ ABC ประกันภัย ส่งใบเสนอราคาประกันรถ {car} ให้คุณ {n} แบบ\nเปิดลิงก์เพื่อดูรายละเอียด เลือกแบบที่ต้องการ และยืนยันได้ทันที ใบเสนอราคานี้ใช้ได้ถึง {expiry}' },
+    agentNudge: { subject: '[ต่ออายุ] {policyNo} ของ{customer} ครบกำหนด {expiry}', body: 'เรียน{name}\n\nกรมธรรม์ {policyNo} ของลูกค้า{customer} จะครบกำหนด {expiry} ยังไม่ได้เสนอราคาต่ออายุ\nกรุณาติดต่อลูกค้าและออกใบเสนอราคาต่ออายุจากหน้า "ผลงานของฉัน"\n\n{mkt} (Marketing ABC)' },
+    agentRemit: { subject: '[นำส่งเบี้ย] {ref} เกินกำหนด', body: 'เรียน{name}\n\nเบี้ยประกัน {premium} ของลูกค้า{customer} (งาน {ref}) ยังไม่ได้นำส่ง ABC และเกินกำหนดแล้ว\nกรุณานำส่งและแจ้งในหน้า "งานของฉัน"\n\n{mkt} (Marketing ABC)' },
   },
   en: {
     custRenewal: { subject: 'Time to renew {policyNo}', body: 'Hello {name},\n\nPolicy {policyNo} for {car} expires on {expiry}.\nRenew now for {price} (5% no-claim discount included) from “Track a request”.' },
@@ -1046,6 +1052,9 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[Quote accepted] {ref}', body: '{name} accepted quote {ref}. Waiting for documents.' },
     staffDocsComplete: { subject: '[Documents complete] {ref}', body: '{name} attached all documents for {ref}. Please check and issue within 1 business day.' },
     staffSla: { subject: '[SLA breached] {ref} ({sla})', body: 'Case {ref} for {name} is past its {sla} SLA. Please act now.' },
+    custOffer: { subject: 'Your motor insurance quotation for {car} ({ref})', body: 'Dear {name},\n\n{agent}, an ABC Insurance agent, sent you {n} options for {car}.\nOpen the link to see the details, pick one and confirm. This quotation is valid until {expiry}.' },
+    agentNudge: { subject: '[Renewal] {policyNo} for {customer} due {expiry}', body: 'Dear {name},\n\nPolicy {policyNo} for {customer} expires on {expiry} and has no renewal quotation yet.\nPlease contact the customer and send a renewal quotation from “My performance”.\n\n{mkt} (ABC Marketing)' },
+    agentRemit: { subject: '[Remittance] {ref} overdue', body: 'Dear {name},\n\nThe premium {premium} you collected from {customer} (case {ref}) has not reached ABC and is overdue.\nPlease transfer it and confirm under “My cases”.\n\n{mkt} (ABC Marketing)' },
   },
 };
 

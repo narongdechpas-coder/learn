@@ -129,7 +129,92 @@ export interface Case {
   claims?: Claim[];
   reminders?: { renewal: boolean; tax: boolean };
   payment?: { method: 'qr' | 'card'; at: number; last4?: string; months?: number };
+  /** Sold through a sub-agent (ตัวแทนช่วง); absent for direct sales. */
+  agentId?: string;
+  proposalId?: string;
+  /** Discount the agent gave, THB, taken out of the agent's commission. */
+  discount?: number;
+  /** Who takes the money: the customer pays ABC through the link, or the agent collects and remits. */
+  collect?: 'link' | 'agent';
+  /** Customer paid (link) or the agent collected the money. */
+  paidAt?: number;
+  /** Agent handed the collected premium over to ABC. */
+  remittedAt?: number;
   seeded?: boolean;
+}
+
+export type AgentKind = 'person' | 'company';
+
+/** ABC marketing officer who looks after a group of sub-agents. */
+export interface Marketing {
+  id: string;
+  th: string;
+  en: string;
+  phone: string;
+}
+
+/** Sub-agent (ตัวแทนช่วง): a person or a company selling ABC motor insurance. */
+export interface Agent {
+  id: string;
+  code: string;
+  kind: AgentKind;
+  th: string;
+  en: string;
+  /** Contact person for a company. */
+  contactTh?: string;
+  contactEn?: string;
+  license: string;
+  province: string;
+  phone: string;
+  line: string;
+  mktId: string;
+  /** Monthly premium target, THB. */
+  target: number;
+  active: boolean;
+}
+
+export interface ProposalOption {
+  pkg: Package;
+  addCmi: boolean;
+}
+
+/** A quotation an agent prepares for a customer: 1 to 5 packages, valid for 15 days. */
+export interface Proposal {
+  id: string;
+  agentId: string;
+  createdAt: number;
+  expiresAt: number;
+  vehicle: Vehicle;
+  customer: Customer;
+  options: ProposalOption[];
+  /** Discount as % of net premium; each option is capped at its commission rate. */
+  discountPct: number;
+  sentVia: ('link' | 'pdf' | 'line')[];
+  viewedAt?: number;
+  status: 'open' | 'accepted' | 'declined';
+  acceptedAt?: number;
+  acceptedBy?: 'customer' | 'agent';
+  chosen?: number;
+  caseId?: string;
+  /** Renewal book entry this proposal renews. */
+  renewalOf?: string;
+  seeded?: boolean;
+}
+
+/** A policy coming up for renewal (the in-force book, simplified). */
+export interface RenewalItem {
+  id: string;
+  agentId?: string;
+  policyNo: string;
+  customerName: string;
+  phone: string;
+  vehicle: Vehicle;
+  coverage: CoverageType;
+  premium: number;
+  expiry: number;
+  status: 'open' | 'quoted' | 'renewed' | 'lost';
+  proposalId?: string;
+  nudgedAt?: number;
 }
 
 export type CallbackSlot = 'none' | 'asap' | 'morning' | 'afternoon' | 'evening';
@@ -173,6 +258,9 @@ export interface Lead {
 
 export type EmailTemplate =
   | 'custRenewal'
+  | 'custOffer'
+  | 'agentNudge'
+  | 'agentRemit'
   | 'custClaim'
   | 'custLead'
   | 'custSelfIssued'
@@ -191,7 +279,7 @@ export interface Email {
   id: string;
   at: number;
   to: string;
-  audience: 'customer' | 'staff';
+  audience: 'customer' | 'staff' | 'agent';
   template: EmailTemplate;
   caseId: string;
   params: Record<string, string | number>;
@@ -201,7 +289,7 @@ export interface Notification {
   id: string;
   at: number;
   caseId: string;
-  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead' | 'claim';
+  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead' | 'claim' | 'remit';
   params?: Record<string, string | number>;
   read: boolean;
 }

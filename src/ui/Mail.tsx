@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { DocKey, Email } from '../types';
 import { vehicleText } from '../data/vehicles';
-import { COVERAGE_LABEL, DOC_LABEL, EMAIL_TEXT, SLA_LABEL, fmtBaht, fmtDateTime, translate, useT } from '../i18n';
+import { COVERAGE_LABEL, DOC_LABEL, EMAIL_TEXT, SLA_LABEL, fmtBaht, fmtDate, fmtDateTime, translate, useT } from '../i18n';
 import { useStore } from '../store';
 import { Segmented } from './common';
 
@@ -15,6 +15,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
   const render = (e: Email) => {
     const c = s.cases.find((x) => x.id === e.caseId);
     const lead = c ? undefined : s.leads.find((x) => x.id === e.caseId);
+    const offer = s.proposals.find((x) => x.id === e.caseId);
     const p: Record<string, string | number> = { ...e.params, ref: e.caseId };
     if (lead) p.car = vehicleText(lead.vehicle);
     if (typeof e.params.price === 'number') p.price = fmtBaht(e.params.price, lang);
@@ -24,6 +25,9 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
       p.source = translate(lang, c.source === 'package' ? 'srcPackage' : c.source === 'self' ? 'srcSelf' : 'srcQuote');
     }
     if (typeof e.params.premium === 'number') p.premium = fmtBaht(e.params.premium, lang);
+    if (offer) p.car = vehicleText(offer.vehicle);
+    if (typeof e.params.expiry === 'number') p.expiry = fmtDate(e.params.expiry, lang, { day: 'numeric', month: 'short', year: 'numeric' });
+    if (e.params.agent) p.agent = s.agents.find((a) => a.id === e.params.agent)?.[lang] ?? String(e.params.agent);
     if (e.params.sla) p.sla = SLA_LABEL[lang][e.params.sla as 'accept'];
     if (e.template === 'custSelfIssued')
       p.delivery = e.params.deliveryMethod === 'paper' ? translate(lang, 'paidPaper', { no: e.params.trackingNo }) : translate(lang, 'paidPdf', { email: e.params.sendTo });
@@ -44,6 +48,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
           { value: 'all', label: t('filterAll') },
           { value: 'customer', label: t('toCustomer') },
           { value: 'staff', label: t('toStaff') },
+          { value: 'agent', label: t('toAgent') },
         ]} />
       </div>
       {list.length === 0 ? (
@@ -59,7 +64,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
             return (
               <li key={e.id} className={open ? 'open' : ''}>
                 <button type="button" className="mail-row" aria-expanded={open} onClick={() => setOpenId(open ? null : e.id)}>
-                  <span className={`aud aud-${e.audience}`}>{e.audience === 'staff' ? t('toStaff') : t('toCustomer')}</span>
+                  <span className={`aud aud-${e.audience}`}>{e.audience === 'staff' ? t('toStaff') : e.audience === 'agent' ? t('toAgent') : t('toCustomer')}</span>
                   <span className="mail-subject">{r.subject}</span>
                   <span className="muted num">{fmtDateTime(e.at, lang)}</span>
                 </button>

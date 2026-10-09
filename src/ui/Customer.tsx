@@ -33,7 +33,7 @@ const tomorrow = () => {
   return d.toISOString().slice(0, 10);
 };
 
-const SAMPLE_CUSTOMER = (): CustomerT => ({
+export const SAMPLE_CUSTOMER = (): CustomerT => ({
   firstName: 'สมชาย',
   lastName: 'ใจดี',
   idCard: '1103700123457',
@@ -1381,7 +1381,7 @@ export function useFileUrl(key: string, version: number | undefined) {
   return url;
 }
 
-function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
+export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?: string }) {
   const { t, lang } = useT();
   const [errs, setErrs] = useState<string[]>([]);
   const required = REQUIRED_DOCS[c.coverage];
@@ -1397,7 +1397,7 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
     if (!isJpg) return setErrs([t('errType', { file: file.name })]);
     if (file.size > MAX_UPLOAD_BYTES) return setErrs([t('errSize', { file: file.name, size: fmtSize(file.size) })]);
     setErrs([]);
-    await uploadDoc(c.id, key, file);
+    await uploadDoc(c.id, key, file, by);
   };
 
   return (

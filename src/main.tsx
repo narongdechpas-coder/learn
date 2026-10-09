@@ -7,11 +7,20 @@ import { CustomerApp } from './ui/Customer';
 import { BackOffice, notifText } from './ui/BackOffice';
 import { Dashboard } from './ui/Dashboard';
 import { Mail } from './ui/Mail';
+import { AgentApp } from './ui/Agent';
+import { MarketingApp } from './ui/Marketing';
+import { OfferPage, openOffer } from './ui/Offer';
+import { AGENTS, MARKETING } from './data/agents';
 import { Toasts, type Toast } from './ui/common';
 import { STAFF } from './data/vehicles';
 
-type View = 'customer' | 'backoffice' | 'dashboard' | 'mail' | 'split';
-const VIEWS: View[] = ['customer', 'backoffice', 'dashboard', 'mail', 'split'];
+type View = 'customer' | 'agent' | 'marketing' | 'backoffice' | 'dashboard' | 'mail' | 'split' | 'offer';
+const VIEWS: View[] = ['customer', 'agent', 'marketing', 'backoffice', 'dashboard', 'mail', 'split'];
+type OfferView = { id: string; asAgent: boolean; print: boolean };
+const hashOffer = (): OfferView | null => {
+  const m = typeof location !== 'undefined' ? /^#offer\/([\w-]+)/.exec(location.hash) : null;
+  return m ? { id: m[1], asAgent: false, print: false } : null;
+};
 
 const read = (k: string) => {
   try {
@@ -31,9 +40,14 @@ const write = (k: string, v: string) => {
 function App() {
   const [lang, setLangState] = useState<Lang>(() => (read('abc-lang') === 'en' ? 'en' : 'th'));
   const [view, setViewState] = useState<View>(() => {
+    if (hashOffer()) return 'offer';
     const h = (typeof location !== 'undefined' ? location.hash.slice(1) : '') as View;
     return VIEWS.includes(h) ? h : 'customer';
   });
+  const [offer, setOffer] = useState<OfferView | null>(hashOffer);
+  const [beforeOffer, setBeforeOffer] = useState<View>('customer');
+  const [agentId, setAgentId] = useState(() => read('abc-agent') ?? AGENTS[0].id);
+  const [mktId, setMktId] = useState(() => read('abc-mkt') ?? MARKETING[0].id);
   const [staffId, setStaffId] = useState(() => read('abc-staff') ?? STAFF[0].id);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [trackId, setTrackId] = useState<string | null>(null);
@@ -68,6 +82,26 @@ function App() {
     document.documentElement.lang = lang;
   }, [lang]);
   useEffect(() => write('abc-staff', staffId), [staffId]);
+  useEffect(() => write('abc-agent', agentId), [agentId]);
+  useEffect(() => write('abc-mkt', mktId), [mktId]);
+  // Quotations open from anywhere (agent screens, share box) as their own page.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const d = (e as CustomEvent<OfferView>).detail;
+      setOffer(d);
+      setViewState((v) => {
+        if (v !== 'offer') setBeforeOffer(v);
+        return 'offer';
+      });
+      try {
+        history.replaceState(null, '', `#offer/${d.id}`);
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('abc-open-offer', onOpen);
+    return () => window.removeEventListener('abc-open-offer', onOpen);
+  }, []);
 
   // Pop a toast for every notification that arrives while the page is open (from this tab or another).
   useEffect(() => {
@@ -100,6 +134,8 @@ function App() {
   const unread = s.notifications.filter((n) => !n.read).length;
   const nav: [View, Parameters<typeof translate>[1]][] = [
     ['customer', 'navCustomer'],
+    ['agent', 'navAgent'],
+    ['marketing', 'navMkt'],
     ['backoffice', 'navBack'],
     ['dashboard', 'navDash'],
     ['mail', 'navMail'],
@@ -146,6 +182,9 @@ function App() {
       )}
 
       <main className={`main view-${view}`}>
+        {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
+        {view === 'agent' && <AgentApp agentId={agentId} setAgentId={setAgentId} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
+        {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
         {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} />}
         {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}
         {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
