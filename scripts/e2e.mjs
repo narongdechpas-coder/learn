@@ -126,6 +126,8 @@ await modal.waitFor();
 assert.equal(await modal.locator('thead th').count(), 4, 'three packages side by side');
 assert.ok((await modal.innerText()).includes('ชนเอง / ไม่มีคู่กรณี'));
 if (shots) await customer.screenshot({ path: `${shots}/1b-compare.png` });
+const [sh, ch] = await customer.locator('.compare-modal').evaluate((e) => [e.scrollHeight, e.clientHeight]);
+assert.ok(sh <= ch, 'comparison fits without a scrollbar');
 await modal.getByRole('button', { name: /ปิด/ }).click();
 await customer.getByRole('button', { name: 'ล้าง', exact: true }).click();
 log('compare up to 3 packages side by side');

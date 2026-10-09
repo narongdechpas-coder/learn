@@ -847,8 +847,6 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
   }, [onClose]);
   const cell = (ok: boolean) => <span className={ok ? 'yes' : 'no'}>{ok ? '✓' : '✕'}</span>;
   const rows: [string, (p: Package) => React.ReactNode][] = [
-    [t('yearlyPremium'), (p) => <b className="num">{fmtBaht(p.premium, lang)}</b>],
-    [t('installment0'), (p) => { const pl = installmentPlan(p.premium); return pl ? <span className="num">{fmtBaht(pl.monthly, lang)}{t('perMonth')} × {pl.months}</span> : '—'; }],
     [t('repairType'), (p) => (p.repair ? t(p.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')],
     [t('deductible'), (p) => (p.type === 'CMI' ? '—' : p.deductible ? fmtBaht(p.deductible, lang) : t('none'))],
     ...SCENARIOS.map((sc) => [t(SCENARIO_KEY[sc]), (p: Package) => cell(SCENARIO_COVER[p.type][sc])] as [string, (p: Package) => React.ReactNode]),
@@ -858,7 +856,7 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
   ];
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={t('compareTitle')} onClick={(e) => e.stopPropagation()}>
+      <div className="modal compare-modal" role="dialog" aria-modal="true" aria-label={t('compareTitle')} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>{t('compareTitle')}</h3>
           <button type="button" className="btn ghost small" onClick={onClose}>{t('close')} ✕</button>
@@ -870,10 +868,21 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
                 <th />
                 {pkgs.map((p) => (
                   <th key={p.id}>
-                    <TypeTag type={p.type} />
-                    {(p.id === badges.popular || p.id === badges.value) && (
-                      <div className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</div>
-                    )}
+                    {/* Price, instalments and the choose button sit in the header so the table fits without scrolling. */}
+                    <div className="cmp-head">
+                      <div className="cmp-tags">
+                        <TypeTag type={p.type} />
+                        {(p.id === badges.popular || p.id === badges.value) && (
+                          <span className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</span>
+                        )}
+                      </div>
+                      <b className="cmp-price num">{fmtBaht(p.premium, lang)}<small>{t('perYear')}</small></b>
+                      <span className="cmp-inst num">{(() => { const pl = installmentPlan(p.premium); return pl ? `${t('installment0')} ${fmtBaht(pl.monthly, lang)}${t('perMonth')} × ${pl.months}` : '\u00a0'; })()}</span>
+                      <button type="button" className="btn primary small" aria-label={t('choose')} onClick={() => onChoose(p)}>
+                        <span className="cmp-long">{t('choose')}</span>
+                        <span className="cmp-short" aria-hidden="true">{t('cmpPick')}</span>
+                      </button>
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -887,12 +896,6 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
                   ))}
                 </tr>
               ))}
-              <tr>
-                <th />
-                {pkgs.map((p) => (
-                  <td key={p.id}><button type="button" className="btn primary small" onClick={() => onChoose(p)}>{t('choose')}</button></td>
-                ))}
-              </tr>
             </tbody>
           </table>
         </div>

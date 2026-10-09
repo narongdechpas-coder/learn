@@ -1301,3 +1301,36 @@ select.auto-w { width: auto; flex: none; }
 @media (max-width: 900px) { .vp-org-mkts { grid-template-columns: minmax(0, 1fr); } }
 .vp-org, .vp-mkt, .vp-mkt-agents { grid-template-columns: minmax(0, 1fr); }
 .vp-mkt-agents li > .num { flex: none; }
+/* Compare: everything fits in one view — compact rows, price and the choose button in the header. */
+.compare-modal { width: min(880px, 100%); max-height: calc(100dvh - 32px); padding: 16px 20px 18px; }
+.compare-modal .modal-head { margin-bottom: 8px; }
+.compare-modal .modal-head h3 { margin: 0; }
+.compare-modal .table-wrap { overflow: visible; }
+.compare-table { font-size: 0.86rem; table-layout: fixed; }
+.compare-table th, .compare-table td { padding: 6px 8px; line-height: 1.3; }
+.compare-table tbody th { min-width: 0; width: 30%; }
+.compare-table thead th { padding: 10px 8px; vertical-align: top; }
+.compare-table thead th:first-child { background: transparent; }
+.cmp-head { display: grid; gap: 4px; justify-items: center; }
+.cmp-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.cmp-tags .mini-badge { margin: 0; }
+.cmp-price { font: 600 1.15rem var(--f-display); color: var(--accent); }
+.cmp-price small { font: 400 0.75rem var(--f-body); color: var(--muted); margin-left: 2px; }
+.cmp-inst { font-size: 0.74rem; font-weight: 400; color: var(--ink-2); }
+.cmp-head .btn { margin-top: 2px; }
+@media (max-width: 640px) {
+  .compare-table { font-size: 0.78rem; }
+  .compare-table tbody th { width: 34%; }
+  .cmp-inst { display: none; }
+}
+.cmp-short { display: none; }
+@media (max-width: 640px) {
+  .compare-modal { padding: 14px 12px 14px; }
+  .compare-table thead th { padding: 8px 3px; }
+  .cmp-price { font-size: 0.95rem; }
+  .cmp-price small { display: none; }
+  .cmp-long { display: none; }
+  .cmp-short { display: inline; }
+  .cmp-head .btn { padding: 6px 12px; white-space: nowrap; }
+  .compare-table th, .compare-table td { padding: 5px 4px; }
+}
