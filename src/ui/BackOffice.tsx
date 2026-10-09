@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
-import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDateTime, usageText, useT, type TKey } from '../i18n';
+import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDate, fmtDateTime, usageText, useT, type TKey } from '../i18n';
 import {
   acceptCase,
   markLeadContacted,
@@ -10,6 +10,7 @@ import {
   assignCase,
   cancelCase,
   docsMissing,
+  requiredDocs,
   issuePolicy,
   markNotificationsRead,
   requestReupload,
@@ -20,6 +21,12 @@ import {
 import { SLA_KEYS, slaFor } from '../lib/sla';
 import { BizClock, CaseSla, Field, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
 import { useFileUrl } from './Customer';
+import { AGENTS, caseCommission, mktById, payInfo, settled } from '../data/agents';
+import { PAY_TONE, payKey } from './Agent';
+import { recordRemit } from '../store';
+
+const agentById = (id?: string) => AGENTS.find((a) => a.id === id);
+const byName = (by: string, lang: 'th' | 'en') => staffById(by)?.[lang] ?? agentById(by)?.[lang] ?? (by.startsWith('m') && by.length <= 3 ? mktById(by)?.[lang] : by);
 
 const OPEN: Status[] = ['NEW', 'AWAITING_PAYMENT', 'ACCEPTED', 'QUOTED', 'AWAITING_DOCS', 'DOCS_REVIEW'];
 const STATUSES: Status[] = [...OPEN, 'ISSUED', 'CANCELLED'];
@@ -46,8 +53,10 @@ export function BackOffice({
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(30);
   const [bellOpen, setBellOpen] = useState(false);
-  const [tab, setTab] = useState<'cases' | 'leads'>('cases');
+  const [tab, setTab] = useState<'cases' | 'leads' | 'remit'>('cases');
+  const [channel, setChannel] = useState('all');
   const openLeads = s.leads.filter((l) => !l.caseId && !l.contacted).length;
+  const remitDue = s.cases.filter((c) => c.collect === 'agent' && c.stamps.issued && !c.remittedAt && payInfo(c, now)?.state === 'overdue').length;
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -55,9 +64,10 @@ export function BackOffice({
       .filter((c) => (status === 'open' ? OPEN.includes(c.status) : status === 'all' ? true : c.status === status))
       .filter((c) => type === 'all' || c.coverage === type)
       .filter((c) => owner === 'all' || (owner === 'none' ? !c.assignee : c.assignee === owner))
+      .filter((c) => channel === 'all' || (channel === 'direct' ? !c.agentId : channel === 'agent' ? !!c.agentId : c.agentId === channel))
       .filter((c) => !needle || `${c.id} ${c.customer.firstName} ${c.customer.lastName} ${c.customer.plate}`.toLowerCase().includes(needle))
       .sort((a, b) => b.createdAt - a.createdAt);
-  }, [s.cases, status, type, owner, q]);
+  }, [s.cases, status, type, owner, q, channel]);
 
   const counts = useMemo(() => {
     const m: Partial<Record<Status, number>> = {};
@@ -117,6 +127,7 @@ export function BackOffice({
                           className={`notif kind-${n.kind}${n.read ? '' : ' unread'}`}
                           onClick={() => {
                             if (n.kind === 'lead') setTab('leads');
+                            else if (n.kind === 'remit') setTab('remit');
                             else {
                               setTab('cases');
                               setFocusId(n.caseId);
@@ -143,9 +154,12 @@ export function BackOffice({
         <button role="tab" aria-selected={tab === 'leads'} className={tab === 'leads' ? 'on' : ''} onClick={() => setTab('leads')}>
           {t('tabLeads')} {openLeads > 0 && <span className="nav-badge num">{openLeads}</span>}
         </button>
+        <button role="tab" aria-selected={tab === 'remit'} className={tab === 'remit' ? 'on' : ''} onClick={() => setTab('remit')}>
+          {t('tabRemit')} {remitDue > 0 && <span className="nav-badge num">{remitDue}</span>}
+        </button>
       </div>
 
-      {tab === 'leads' ? <LeadsList /> : (<>
+      {tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
       <div className="filters">
         <label htmlFor="bo-q" className="sr-only">{t('searchCase')}</label>
         <input id="bo-q" className="search" placeholder={t('searchCase')} value={q} onChange={(e) => { setQ(e.target.value); setLimit(30); }} />
@@ -160,6 +174,14 @@ export function BackOffice({
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
           {COVERAGE_TYPES.map((x) => (
             <option key={x} value={x}>{COVERAGE_LABEL[lang][x]}</option>
+          ))}
+        </select>
+        <select id="bo-channel" aria-label={t('filterChannel')} value={channel} onChange={(e) => { setChannel(e.target.value); setLimit(30); }}>
+          <option value="all">{t('filterChannel')}: {t('filterAll')}</option>
+          <option value="direct">{t('chDirect')}</option>
+          <option value="agent">{t('chAgent')}</option>
+          {s.agents.map((a) => (
+            <option key={a.id} value={a.id}>· {a[lang]}</option>
           ))}
         </select>
         <select id="bo-owner" aria-label={t('filterStaff')} value={owner} onChange={(e) => setOwner(e.target.value)}>
@@ -192,6 +214,7 @@ export function BackOffice({
                       <div className="cr-bot">
                         <TypeTag type={c.coverage} />
                         <span className={`src src-${c.source}`}>{t(SOURCE_KEY[c.source])}</span>
+                        {c.agentId && <span className="src src-agent" title={agentById(c.agentId)?.[lang]}>{t('chAgentShort', { code: agentById(c.agentId)?.code ?? '' })}</span>}
                         <span className="muted num">{fmtDateTime(c.createdAt, lang)}</span>
                         <span className="cr-owner muted">{staffById(c.assignee)?.[lang] ?? t('unassigned')}</span>
                         {OPEN.includes(c.status) && <CaseSla c={c} now={now} />}
@@ -272,7 +295,11 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
   const ref = n.caseId;
   switch (n.kind) {
     case 'new':
-      return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) });
+      return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) }) + (n.params?.agent ? ` · ${agentById(String(n.params.agent))?.[lang] ?? ''}` : '');
+    case 'renewed':
+      return t('nRenewed', { ref, agent: agentById(String(n.params?.agent ?? ''))?.[lang] ?? '' });
+    case 'remit':
+      return t('nRemit', { ref, agent: agentById(String(n.params?.agent ?? ''))?.[lang] ?? '' });
     case 'claim':
       return t('nClaim', { ref, claimNo: String(n.params?.claimNo ?? '') });
     case 'lead':
@@ -387,6 +414,8 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         </div>
       )}
 
+      {c.agentId && <AgentBox c={c} staffId={staffId} now={now} />}
+
       <div className="cd-grid">
         <section>
           <h4>{t('vehicleInfo')}</h4>
@@ -437,9 +466,9 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
       )}
 
       <section>
-        <h4>{t('documents')} <span className="muted">({REQUIRED_DOCS[c.coverage].length - docsMissing(c).length}/{REQUIRED_DOCS[c.coverage].length})</span></h4>
+        <h4>{t('documents')} <span className="muted">({requiredDocs(c).length - docsMissing(c).length}/{requiredDocs(c).length})</span></h4>
         <div className="doc-grid small">
-          {REQUIRED_DOCS[c.coverage].map((k) => (
+          {requiredDocs(c).map((k) => (
             <BackDoc key={k} c={c} k={k} />
           ))}
         </div>
@@ -452,7 +481,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <li key={i}>
               <span className="muted num">{fmtDateTime(h.at, lang)}</span>
               <span>{h.text}</span>
-              <span className="muted">{h.by === 'customer' ? t('byCustomer') : h.by === 'system' ? t('bySystem') : staffById(h.by)?.[lang] ?? ''}</span>
+              <span className="muted">{h.by === 'customer' ? t('byCustomer') : h.by === 'system' ? t('bySystem') : byName(h.by, lang)}</span>
             </li>
           ))}
         </ol>
@@ -482,7 +511,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         if (!at) continue;
         if (c.source !== 'quote' && (st === 'quoted' || st === 'confirmed')) continue;
         if (c.source === 'self' && st === 'accepted') continue;
-        const by = st === 'submitted' || st === 'confirmed' || st === 'docsComplete' || st === 'paid' ? 'customer' : c.assignee ?? 'system';
+        const by = st === 'submitted' || st === 'confirmed' || st === 'docsComplete' || st === 'paid' ? (c.agentId && st !== 'paid' ? c.agentId : 'customer') : c.assignee ?? 'system';
         const key: Record<typeof st, TKey> = {
           submitted: c.source === 'package' ? 'lSubmitPackage' : c.source === 'self' ? 'lSelfStart' : 'lSubmitQuote',
           paid: 'lPaid',
@@ -513,6 +542,10 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         cancel: 'lCancel',
         note: 'lNote',
         claim: 'lClaim',
+        collected: 'lCollected',
+        remitted: 'lRemitted',
+        remitNotice: 'lRemitNotice',
+        nudge: 'lNudge',
       };
       let text = t(map[l.action] ?? 'lNote', {
         price: fmtBaht(Number(l.text ?? 0), lang),
@@ -525,6 +558,91 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
     }
     return out.sort((a, b) => b.at - a.at);
   }
+}
+
+/** Business Partner sale: who sold it, discount, commission and the money. */
+function AgentBox({ c, staffId, now }: { c: Case; staffId: string; now: number }) {
+  const { t, lang } = useT();
+  const ag = agentById(c.agentId);
+  const pay = payInfo(c, now);
+  const com = caseCommission(c);
+  if (!ag) return null;
+  return (
+    <section className="agent-box">
+      <div>
+        <div className="eyebrow">{t('chAgent')} · {ag.code}</div>
+        <b>{ag[lang]}</b>
+        <div className="hint">{t(ag.kind === 'company' ? 'agCompany' : 'agPerson')} · {t('agMkt')}: {mktById(ag.mktId)?.[lang]} · ☎ {ag.phone}</div>
+      </div>
+      <dl className="agent-box-kv">
+        {c.proposalId && <div><dt>{t('agRef')}</dt><dd className="num">{c.proposalId}</dd></div>}
+        <div><dt>{t('agDiscount')}</dt><dd className="num">{c.discount ? fmtBaht(c.discount, lang) : '—'}</dd></div>
+        <div><dt>{t('agCommission')}</dt><dd className="num">{totalPremium(c) !== undefined ? fmtBaht(Math.round(com.net), lang) : '—'}</dd></div>
+        {c.collect && <div><dt>{t('agCollect')}</dt><dd>{t(c.collect === 'agent' ? 'chCollectAgent' : 'chCollectLink')}</dd></div>}
+        {pay && <div><dt>{t(c.collect === 'agent' ? 'remitShort' : 'payShort')}</dt><dd><span className={`pill tone-${PAY_TONE[pay.state]}`}>{t(payKey(c, pay.state))}</span> <span className="hint">{t('agDue', { d: fmtDate(pay.due, lang) })}</span></dd></div>}
+      </dl>
+      {c.collect === 'agent' && c.stamps.issued && !c.remittedAt && (
+        <button type="button" className="btn small primary" onClick={() => recordRemit(c.id, staffId)}>{t('actRemit')}</button>
+      )}
+    </section>
+  );
+}
+
+/** Premium the agents collected themselves and still owe ABC (15 days from issue). */
+function RemitList({ staffId, now, onOpen }: { staffId: string; now: number; onOpen: (id: string) => void }) {
+  const { t, lang } = useT();
+  const s = useStore();
+  const [show, setShow] = useState<'open' | 'all'>('open');
+  const rows = s.cases
+    .filter((c) => c.collect === 'agent' && c.stamps.issued && c.status !== 'CANCELLED')
+    .map((c) => ({ c, p: payInfo(c, now)! }))
+    .filter((r) => r.p && (show === 'all' || !settled(r.p.state)))
+    .sort((a, b) => a.p.due - b.p.due);
+  const sumBy = (st: string) => rows.filter((r) => r.p.state === st).reduce((a, r) => a + (totalPremium(r.c) ?? 0), 0);
+  return (
+    <section className="leads remit">
+      <div className="list-head">
+        <div>
+          <h3>{t('tabRemit')}</h3>
+          <p className="hint">{t('remitLead', { overdue: fmtBaht(Math.round(sumBy('overdue')), lang), pending: fmtBaht(Math.round(sumBy('pending')), lang) })}</p>
+        </div>
+        <select id="bo-remit-show" aria-label={t('filterStatus')} value={show} onChange={(e) => setShow(e.target.value as typeof show)}>
+          <option value="open">{t('remitOpen')}</option>
+          <option value="all">{t('filterAll')}</option>
+        </select>
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted pad">{t('mktNoLate')}</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr>
+                <th>{t('colCase')}</th>
+                <th>{t('chAgent')}</th>
+                <th className="r">{t('premium')}</th>
+                <th>{t('remitDue')}</th>
+                <th>{t('filterStatus')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ c, p }) => (
+                <tr key={c.id}>
+                  <td><button type="button" className="link num" onClick={() => onOpen(c.id)}>{c.id}</button><div className="hint">{c.customer.firstName} {c.customer.lastName}</div></td>
+                  <td>{agentById(c.agentId)?.[lang]}{c.log.some((l) => l.action === 'remitNotice') && !c.remittedAt && <div className="hint">✓ {t('remitNoticed')}</div>}</td>
+                  <td className="r num">{fmtBaht(totalPremium(c) ?? 0, lang)}</td>
+                  <td className="num">{fmtDate(p.due, lang)}</td>
+                  <td><span className={`pill tone-${PAY_TONE[p.state]}`}>{t(payKey(c, p.state))}</span>{p.doneAt && <div className="hint num">{fmtDate(p.doneAt, lang)}</div>}</td>
+                  <td>{!c.remittedAt && <button type="button" className="btn small" onClick={() => recordRemit(c.id, staffId)}>{t('actRemit')}</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function BackDoc({ c, k }: { c: Case; k: DocKey }) {

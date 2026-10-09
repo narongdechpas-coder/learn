@@ -136,7 +136,58 @@ export async function fakePhoto(angle: DocKey): Promise<File> {
   return new File([blob], `${angle}-${Date.now()}.jpg`, { type: 'image/jpeg' });
 }
 
-export function PhoneCapture({ c, onClose }: { c: Case; onClose: () => void }) {
+/** A sample scan of the registration book or ID card (clearly marked as a sample) as a JPEG file. */
+export async function fakeDoc(kind: 'regbook' | 'idcard', c: Case): Promise<File> {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 800;
+  const g = canvas.getContext('2d')!;
+  g.fillStyle = '#e9e4da';
+  g.fillRect(0, 0, 1200, 800);
+  const card = kind === 'idcard';
+  g.fillStyle = card ? '#dcebf5' : '#f6f1e3';
+  g.strokeStyle = card ? '#7aa4c4' : '#b9a77a';
+  g.lineWidth = 4;
+  const [x, y, w, h] = card ? [150, 160, 900, 520] : [100, 60, 1000, 680];
+  g.beginPath();
+  g.roundRect(x, y, w, h, card ? 28 : 8);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#2b3a44';
+  g.font = 'bold 40px sans-serif';
+  g.fillText(card ? 'บัตรประจำตัวประชาชน' : 'สำเนาคู่มือจดทะเบียนรถ', x + 40, y + 70);
+  g.font = '30px sans-serif';
+  const v = c.vehicle;
+  const lines = card
+    ? [`เลขประจำตัว ${c.customer.idCard || '1 1037 00123 45 7'}`, `ชื่อ ${c.customer.firstName} ${c.customer.lastName}`, `ที่อยู่ ${c.customer.address.slice(0, 34)}`]
+    : [`ทะเบียน ${c.customer.plate || '1กข 1234'} ${c.customer.province}`, `ยี่ห้อ/รุ่น ${vehicleText(v)}`, `เลขตัวถัง ${c.customer.chassis || 'MR053REH105123456'}`, `ผู้ถือกรรมสิทธิ์ ${c.customer.firstName} ${c.customer.lastName}`];
+  lines.forEach((l, i) => g.fillText(l, x + 40, y + 150 + i * 60));
+  if (card) {
+    g.fillStyle = '#b8c9d6';
+    g.fillRect(x + w - 260, y + 120, 200, 250);
+  }
+  // Never mistakable for a real document.
+  g.save();
+  g.translate(600, 420);
+  g.rotate(-0.35);
+  g.fillStyle = 'rgba(200, 40, 40, 0.28)';
+  g.font = 'bold 120px sans-serif';
+  g.textAlign = 'center';
+  g.fillText('ตัวอย่าง SAMPLE', 0, 0);
+  g.restore();
+  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.8));
+  return new File([blob], `${kind}-sample.jpg`, { type: 'image/jpeg' });
+}
+
+/** Fills every missing document with sample images, for demos. */
+export async function attachSampleDocs(c: Case, missing: DocKey[], by?: string) {
+  for (const k of missing) {
+    const file = ANGLES.includes(k) ? await fakePhoto(k) : await fakeDoc(k as 'regbook' | 'idcard', c);
+    await uploadDoc(c.id, k, file, by);
+  }
+}
+
+export function PhoneCapture({ c, onClose, by }: { c: Case; onClose: () => void; by?: string }) {
   const { t, lang } = useT();
   const todo = ANGLES.filter((k) => !c.docs[k]);
   const [phone, setPhone] = useState(false);
@@ -151,7 +202,7 @@ export function PhoneCapture({ c, onClose }: { c: Case; onClose: () => void }) {
     if (!current) return;
     setBusy(true);
     const file = await fakePhoto(current);
-    await uploadDoc(c.id, current, file);
+    await uploadDoc(c.id, current, file, by);
     setBusy(false);
   };
   return (

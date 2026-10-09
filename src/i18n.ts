@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { CoverageType, DocKey, EmailTemplate, Lang, Stage, Status, UsageCode } from './types';
 import type { SlaKey, SlaState } from './lib/sla';
+import { agentEn, agentTh } from './i18nAgent';
 
-const th = {
+const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
   cbNone: 'ไม่ต้องโทร ส่งทางอีเมลอย่างเดียว',
   cbAsap: 'เร็วที่สุด',
@@ -207,7 +208,7 @@ const th = {
   resetConfirm: 'ล้างคำขอทั้งหมดแล้วสร้างข้อมูลตัวอย่างใหม่?',
   resetYes: 'รีเซ็ต',
   cancel: 'ยกเลิก',
-  demoNote: 'เดโม: ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น อีเมลไม่ได้ส่งจริง',
+  demoNote: 'เดโม: ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น อีเมลไม่ได้ส่งจริง | Designed By Jack Na Ja',
 
   // customer steps
   stepCar: 'ข้อมูลรถ',
@@ -471,9 +472,11 @@ const th = {
   openCase: 'เปิดงาน',
 } as const;
 
+const th = { ...thBase, ...agentTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
+  ...agentEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',
@@ -678,7 +681,7 @@ const en: Dict = {
   resetConfirm: 'Delete all requests and generate new sample data?',
   resetYes: 'Reset',
   cancel: 'Cancel',
-  demoNote: 'Demo: data stays in this browser only and no email is really sent',
+  demoNote: 'Demo: data stays in this browser only and no email is really sent | Designed By Jack Na Ja',
 
   stepCar: 'Car',
   stepPackage: 'Package',
@@ -1022,7 +1025,7 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     custSelfIssued: { subject: 'กรมธรรม์ {policyNo} พร้อมแล้ว', body: 'เรียนคุณ{name}\n\nขอบคุณที่ซื้อประกันออนไลน์กับ ABC ประกันภัย ชำระเงิน {premium} เรียบร้อย\nกรมธรรม์เลขที่ {policyNo} (คำขอ {ref})\n{delivery}' },
     custReceived: { subject: 'ABC ได้รับคำขอ {ref} แล้ว', body: 'เรียนคุณ{name}\n\nABC ประกันภัยได้รับคำขอเลขที่ {ref} ของคุณแล้ว เจ้าหน้าที่จะติดต่อกลับโดยเร็ว\nติดตามสถานะได้ที่เมนู "ติดตามคำขอ"' },
     custQuoted: { subject: 'ใบเสนอราคา {ref}: {premium}', body: 'เรียนคุณ{name}\n\nเบี้ยประกันที่เสนอสำหรับคำขอ {ref} คือ {premium} (รวม พ.ร.บ. ถ้าเลือกไว้)\nกรุณายืนยันที่เมนู "ติดตามคำขอ" เพื่อแนบเอกสารต่อ' },
-    custDocsNeeded: { subject: 'แนบเอกสารสำหรับ {ref}', body: 'เรียนคุณ{name}\n\nขอบคุณที่ยืนยันใบเสนอราคา กรุณาแนบเอกสารตามรายการในเมนู "ติดตามคำขอ"' },
+    custDocsNeeded: { subject: 'แนบเอกสารสำหรับ {ref}', body: 'เรียนคุณ{name}\n\nกรุณาแนบเอกสารต่อไปนี้ในเมนู "ติดตามคำขอ" (ไฟล์ .jpg ไม่เกิน 3MB ต่อรูป)\n{docs}\n\n{next}' },
     custReupload: { subject: 'ขอเอกสารเพิ่มเติม {ref}', body: 'เรียนคุณ{name}\n\nเจ้าหน้าที่ขอให้แนบเอกสารใหม่: {docs}\nหมายเหตุ: {note}' },
     custIssued: { subject: 'ออกกรมธรรม์ {policyNo} เรียบร้อย', body: 'เรียนคุณ{name}\n\nกรมธรรม์เลขที่ {policyNo} สำหรับคำขอ {ref} ออกเรียบร้อยแล้ว เบี้ยรวม {premium}\nขอบคุณที่ไว้วางใจ ABC ประกันภัย' },
     custCancelled: { subject: 'ยกเลิกคำขอ {ref}', body: 'เรียนคุณ{name}\n\nคำขอ {ref} ถูกยกเลิก เหตุผล: {reason}' },
@@ -1030,6 +1033,9 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[ลูกค้ายืนยัน] {ref}', body: 'คุณ{name} ยืนยันใบเสนอราคา {ref} แล้ว กำลังรอเอกสาร' },
     staffDocsComplete: { subject: '[เอกสารครบ] {ref}', body: 'คุณ{name} แนบเอกสารครบสำหรับ {ref} กรุณาตรวจและออกกรมธรรม์ภายใน 1 วันทำการ' },
     staffSla: { subject: '[เกิน SLA] {ref} ({sla})', body: 'งาน {ref} ของคุณ{name} เกิน SLA ขั้น{sla}แล้ว กรุณาดำเนินการด่วน' },
+    custOffer: { subject: 'ใบเสนอราคาประกันรถ {car} ({ref})', body: 'เรียนคุณ{name}\n\n{agent} ตัวแทนของ ABC ประกันภัย ส่งใบเสนอราคาประกันรถ {car} ให้คุณ {n} แบบ\nเปิดลิงก์เพื่อดูรายละเอียด เลือกแบบที่ต้องการ และยืนยันได้ทันที ใบเสนอราคานี้ใช้ได้ถึง {expiry}' },
+    agentNudge: { subject: '[ต่ออายุ] {policyNo} ของ{customer} ครบกำหนด {expiry}', body: 'เรียน{name}\n\nกรมธรรม์ {policyNo} ของลูกค้า{customer} จะครบกำหนด {expiry} ยังไม่ได้เสนอราคาต่ออายุ\nกรุณาติดต่อลูกค้าและออกใบเสนอราคาต่ออายุจากหน้า "ผลงานของฉัน"\n\n{mkt} (Marketing ABC)' },
+    agentRemit: { subject: '[นำส่งเบี้ย] {ref} เกินกำหนด', body: 'เรียน{name}\n\nเบี้ยประกัน {premium} ของลูกค้า{customer} (งาน {ref}) ยังไม่ได้นำส่ง ABC และเกินกำหนดแล้ว\nกรุณานำส่งและแจ้งในหน้า "งานของฉัน"\n\n{mkt} (Marketing ABC)' },
   },
   en: {
     custRenewal: { subject: 'Time to renew {policyNo}', body: 'Hello {name},\n\nPolicy {policyNo} for {car} expires on {expiry}.\nRenew now for {price} (5% no-claim discount included) from “Track a request”.' },
@@ -1038,7 +1044,7 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     custSelfIssued: { subject: 'Your policy {policyNo} is ready', body: 'Dear {name},\n\nThank you for buying online with ABC Insurance. We received {premium}.\nPolicy number {policyNo} (request {ref})\n{delivery}' },
     custReceived: { subject: 'ABC received your request {ref}', body: 'Dear {name},\n\nABC Insurance has received your request {ref}. An agent will contact you shortly.\nYou can follow it under “Track a request”.' },
     custQuoted: { subject: 'Your quote {ref}: {premium}', body: 'Dear {name},\n\nThe premium we offer for request {ref} is {premium} (including CMI if selected).\nPlease accept it under “Track a request” to attach your documents.' },
-    custDocsNeeded: { subject: 'Documents needed for {ref}', body: 'Dear {name},\n\nThank you for accepting the quote. Please attach the listed documents under “Track a request”.' },
+    custDocsNeeded: { subject: 'Documents needed for {ref}', body: 'Dear {name},\n\nPlease attach these under “Track a request” (.jpg, up to 3MB each):\n{docs}\n\n{next}' },
     custReupload: { subject: 'Please resend documents for {ref}', body: 'Dear {name},\n\nOur agent needs new copies of: {docs}\nNote: {note}' },
     custIssued: { subject: 'Policy {policyNo} issued', body: 'Dear {name},\n\nPolicy {policyNo} for request {ref} has been issued. Total premium {premium}.\nThank you for choosing ABC Insurance.' },
     custCancelled: { subject: 'Request {ref} cancelled', body: 'Dear {name},\n\nRequest {ref} has been cancelled. Reason: {reason}' },
@@ -1046,6 +1052,9 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[Quote accepted] {ref}', body: '{name} accepted quote {ref}. Waiting for documents.' },
     staffDocsComplete: { subject: '[Documents complete] {ref}', body: '{name} attached all documents for {ref}. Please check and issue within 1 business day.' },
     staffSla: { subject: '[SLA breached] {ref} ({sla})', body: 'Case {ref} for {name} is past its {sla} SLA. Please act now.' },
+    custOffer: { subject: 'Your motor insurance quotation for {car} ({ref})', body: 'Dear {name},\n\n{agent}, an ABC Insurance agent, sent you {n} options for {car}.\nOpen the link to see the details, pick one and confirm. This quotation is valid until {expiry}.' },
+    agentNudge: { subject: '[Renewal] {policyNo} for {customer} due {expiry}', body: 'Dear {name},\n\nPolicy {policyNo} for {customer} expires on {expiry} and has no renewal quotation yet.\nPlease contact the customer and send a renewal quotation from “My performance”.\n\n{mkt} (ABC Marketing)' },
+    agentRemit: { subject: '[Remittance] {ref} overdue', body: 'Dear {name},\n\nThe premium {premium} you collected from {customer} (case {ref}) has not reached ABC and is overdue.\nPlease transfer it and confirm under “My cases”.\n\n{mkt} (ABC Marketing)' },
   },
 };
 

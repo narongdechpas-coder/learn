@@ -30,7 +30,7 @@ export interface SlaResult {
  */
 export function slaFor(c: Case, key: SlaKey, now: number): SlaResult | null {
   // Self-service purchases never wait on an agent.
-  if (c.source === 'self') return null;
+  if (c.source === 'self' || c.renewalOf) return null;
   const s = c.stamps;
   let start: number | undefined;
   let end: number | undefined;

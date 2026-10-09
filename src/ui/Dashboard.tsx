@@ -8,6 +8,8 @@ import { SLA_KEYS, SLA_TARGETS, activeSla, percentile, slaFor, type SlaKey } fro
 import { DAY_MS, bkkParts, bkkTime, dayKey, monthKey, startOfBkkDay } from '../lib/time';
 import { BarChart, HBars, type BarDatum } from './charts';
 import { Segmented, SlaChip, useNow } from './common';
+import { AgentSections } from './DashAgents';
+import { MARKETING } from '../data/agents';
 
 type Range = '7' | '30' | '90' | 'month';
 type Gran = 'day' | 'month';
@@ -27,6 +29,11 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const [metric, setMetric] = useState<Metric>('gwp');
   const [seg, setSeg] = useState<'all' | Source>('all');
   const [table, setTable] = useState(false);
+  const [channel, setChannel] = useState<'all' | 'direct' | 'agent'>('all');
+  const [mkt, setMkt] = useState('all');
+  const mktAgents = s.agents.filter((a) => mkt === 'all' || a.mktId === mkt);
+  const inChannel = (agentId?: string) =>
+    mkt !== 'all' ? !!agentId && mktAgents.some((a) => a.id === agentId) : channel === 'all' || (channel === 'agent' ? !!agentId : !agentId);
 
   const [from, to] = useMemo(() => {
     const today = startOfBkkDay(now);
@@ -41,9 +48,9 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const base = useMemo(
     () =>
       s.cases.filter(
-        (c) => (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle.brandId === brand) && (staff === 'all' || c.assignee === staff),
+        (c) => (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle.brandId === brand) && (staff === 'all' || c.assignee === staff) && inChannel(c.agentId),
       ),
-    [s.cases, type, brand, staff],
+    [s.cases, type, brand, staff, channel, mkt, s.agents],
   );
   const inRange = (x: number | undefined, a = from, b = to) => x !== undefined && x >= a && x <= b;
 
@@ -106,7 +113,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const leadOpen = leadsIn.filter((l) => !l.caseId && !l.contacted).length;
   const caseSteps = FUNNEL.map((st) => ({ key: st as string, label: STAGE_LABEL[lang][st], n: funnelCases.filter((c) => c.stamps[st] !== undefined).length }));
   // Visitor steps exist only as totals, so they show when no case filter is applied.
-  const unfiltered = seg === 'all' && type === 'all' && brand === 'all' && staff === 'all';
+  const unfiltered = seg === 'all' && type === 'all' && brand === 'all' && staff === 'all' && channel === 'all' && mkt === 'all';
   const traffic = Object.entries(s.traffic)
     .filter(([d]) => d >= dayKey(from) && d <= dayKey(to))
     .reduce((a, [, v]) => ({ visit: a.visit + v.visit, car: a.car + v.car, pkg: a.pkg + v.pkg, choose: a.choose + v.choose }), { visit: 0, car: 0, pkg: 0, choose: 0 });
@@ -152,6 +159,17 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           <option value="all">{t('brand')}: {t('filterAll')}</option>
           {BRANDS.map((b) => (
             <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+        <select id="d-channel" aria-label={t('filterChannel')} value={mkt !== 'all' ? 'agent' : channel} onChange={(e) => { setChannel(e.target.value as typeof channel); if (e.target.value !== 'agent') setMkt('all'); }}>
+          <option value="all">{t('filterChannel')}: {t('filterAll')}</option>
+          <option value="direct">{t('chDirect')}</option>
+          <option value="agent">{t('chAgent')}</option>
+        </select>
+        <select id="d-mkt" aria-label="Marketing" value={mkt} onChange={(e) => setMkt(e.target.value)}>
+          <option value="all">Marketing: {t('filterAll')}</option>
+          {MARKETING.map((m) => (
+            <option key={m.id} value={m.id}>{m[lang]}</option>
           ))}
         </select>
         <select id="d-staff" aria-label={t('colStaff')} value={staff} onChange={(e) => setStaff(e.target.value)}>
@@ -219,6 +237,16 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           </div>
         </div>
       </section>
+
+      <AgentSections
+        cases={base}
+        agents={mktAgents}
+        renewals={s.renewals.filter((r) => inChannel(r.agentId))}
+        from={from}
+        to={to}
+        now={now}
+        showAgents={channel !== 'direct' || mkt !== 'all'}
+      />
 
       <div className="dash-2col">
         <section className="card">
@@ -359,7 +387,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
 
-function Kpi({ label, value, delta, deltaUnit = '%', note }: { label: string; value: string; delta: number | null; deltaUnit?: '%' | 'pt'; note?: string }) {
+export function Kpi({ label, value, delta, deltaUnit = '%', note }: { label: string; value: string; delta: number | null; deltaUnit?: '%' | 'pt'; note?: string }) {
   const { t, lang } = useT();
   const dir = delta === null ? '' : delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'flat';
   return (

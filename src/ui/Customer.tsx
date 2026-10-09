@@ -20,10 +20,13 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
-import { canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
+import { PartnerLogin } from './PartnerLogin';
+import { attachSampleDocs } from './extras';
+import { SubmitDocsBar, SubmitDocsHost } from './SubmitDocs';
 import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
@@ -33,7 +36,7 @@ const tomorrow = () => {
   return d.toISOString().slice(0, 10);
 };
 
-const SAMPLE_CUSTOMER = (): CustomerT => ({
+export const SAMPLE_CUSTOMER = (): CustomerT => ({
   firstName: 'สมชาย',
   lastName: 'ใจดี',
   idCard: '1103700123457',
@@ -55,23 +58,42 @@ const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
 type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
 
-export function CustomerApp({ onOpenCase, trackId, setTrackId }: { onOpenCase?: (id: string) => void; trackId: string | null; setTrackId: (id: string | null) => void }) {
+export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partnerId, openLogin = false }: {
+  onOpenCase?: (id: string) => void;
+  trackId: string | null;
+  setTrackId: (id: string | null) => void;
+  onPartner?: (agentId: string) => void;
+  /** Partner already signed in on this tab: the button goes straight to their screen. */
+  partnerId?: string | null;
+  /** Opened a partner link without signing in: show the sign-in straight away. */
+  openLogin?: boolean;
+}) {
   const { t } = useT();
   const [tab, setTab] = useState<'buy' | 'track'>('buy');
+  const [login, setLogin] = useState(openLogin);
   useEffect(() => {
     if (trackId) setTab('track');
   }, [trackId]);
   return (
     <div className="customer">
-      <div className="subtabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
-        <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
+      <div className="cust-top">
+        <div className="subtabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
+          <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
+        </div>
+        {onPartner && (
+          <button type="button" className="btn partner-btn" onClick={() => (partnerId ? onPartner(partnerId) : setLogin(true))}>
+            <span aria-hidden="true">🤝</span> {t('plButton')}
+          </button>
+        )}
       </div>
+      {login && onPartner && <PartnerLogin onClose={() => setLogin(false)} onDone={(id) => { setLogin(false); onPartner(id); }} />}
       {tab === 'buy' ? (
         <Buy onTrack={(id) => { setTrackId(id); setTab('track'); }} />
       ) : (
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
+      <SubmitDocsHost />
       <ChatBubble />
     </div>
   );
@@ -828,8 +850,6 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
   }, [onClose]);
   const cell = (ok: boolean) => <span className={ok ? 'yes' : 'no'}>{ok ? '✓' : '✕'}</span>;
   const rows: [string, (p: Package) => React.ReactNode][] = [
-    [t('yearlyPremium'), (p) => <b className="num">{fmtBaht(p.premium, lang)}</b>],
-    [t('installment0'), (p) => { const pl = installmentPlan(p.premium); return pl ? <span className="num">{fmtBaht(pl.monthly, lang)}{t('perMonth')} × {pl.months}</span> : '—'; }],
     [t('repairType'), (p) => (p.repair ? t(p.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')],
     [t('deductible'), (p) => (p.type === 'CMI' ? '—' : p.deductible ? fmtBaht(p.deductible, lang) : t('none'))],
     ...SCENARIOS.map((sc) => [t(SCENARIO_KEY[sc]), (p: Package) => cell(SCENARIO_COVER[p.type][sc])] as [string, (p: Package) => React.ReactNode]),
@@ -839,7 +859,7 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
   ];
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={t('compareTitle')} onClick={(e) => e.stopPropagation()}>
+      <div className="modal compare-modal" role="dialog" aria-modal="true" aria-label={t('compareTitle')} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>{t('compareTitle')}</h3>
           <button type="button" className="btn ghost small" onClick={onClose}>{t('close')} ✕</button>
@@ -851,10 +871,21 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
                 <th />
                 {pkgs.map((p) => (
                   <th key={p.id}>
-                    <TypeTag type={p.type} />
-                    {(p.id === badges.popular || p.id === badges.value) && (
-                      <div className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</div>
-                    )}
+                    {/* Price, instalments and the choose button sit in the header so the table fits without scrolling. */}
+                    <div className="cmp-head">
+                      <div className="cmp-tags">
+                        <TypeTag type={p.type} />
+                        {(p.id === badges.popular || p.id === badges.value) && (
+                          <span className="mini-badge">{t(p.id === badges.popular ? 'badgePopular' : 'badgeValue')}</span>
+                        )}
+                      </div>
+                      <b className="cmp-price num">{fmtBaht(p.premium, lang)}<small>{t('perYear')}</small></b>
+                      <span className="cmp-inst num">{(() => { const pl = installmentPlan(p.premium); return pl ? `${t('installment0')} ${fmtBaht(pl.monthly, lang)}${t('perMonth')} × ${pl.months}` : '\u00a0'; })()}</span>
+                      <button type="button" className="btn primary small" aria-label={t('choose')} onClick={() => onChoose(p)}>
+                        <span className="cmp-long">{t('choose')}</span>
+                        <span className="cmp-short" aria-hidden="true">{t('cmpPick')}</span>
+                      </button>
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -868,12 +899,6 @@ function CompareModal({ pkgs, badges, onClose, onChoose }: { pkgs: Package[]; ba
                   ))}
                 </tr>
               ))}
-              <tr>
-                <th />
-                {pkgs.map((p) => (
-                  <td key={p.id}><button type="button" className="btn primary small" onClick={() => onChoose(p)}>{t('choose')}</button></td>
-                ))}
-              </tr>
             </tbody>
           </table>
         </div>
@@ -1381,14 +1406,15 @@ export function useFileUrl(key: string, version: number | undefined) {
   return url;
 }
 
-function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
+export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?: string }) {
   const { t, lang } = useT();
   const [errs, setErrs] = useState<string[]>([]);
-  const required = REQUIRED_DOCS[c.coverage];
+  const required = requiredDocs(c);
   const allowed = canUpload(c);
   const missing = docsMissing(c);
   const [phone, setPhone] = useState(false);
-  if (c.status === 'CANCELLED' || c.status === 'ISSUED') return null;
+  const [busy, setBusy] = useState(false);
+  if (c.status === 'CANCELLED' || c.status === 'ISSUED' || !required.length) return null;
   const needsPhotos = ANGLES.some((k) => required.includes(k) && !c.docs[k]);
 
   const onFile = async (key: DocKey, file: File | undefined) => {
@@ -1397,7 +1423,7 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
     if (!isJpg) return setErrs([t('errType', { file: file.name })]);
     if (file.size > MAX_UPLOAD_BYTES) return setErrs([t('errSize', { file: file.name, size: fmtSize(file.size) })]);
     setErrs([]);
-    await uploadDoc(c.id, key, file);
+    await uploadDoc(c.id, key, file, by);
   };
 
   return (
@@ -1405,9 +1431,14 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
       <div className="uploads-head">
         {!bare && <h3>{t('uploadTitle')}</h3>}
         <span className="hint">{t('uploadRule')}</span>
+        {allowed && missing.length > 0 && (
+          <button type="button" className="btn small sample-btn" disabled={busy} onClick={async () => { setBusy(true); setErrs([]); try { await attachSampleDocs(c, missing, by); } finally { setBusy(false); } }}>
+            {busy ? t('sampleBusy') : `🧪 ${t('sampleDocs')}`}
+          </button>
+        )}
       </div>
       {!allowed && missing.length > 0 && c.source === 'quote' && ['NEW', 'ACCEPTED', 'QUOTED'].includes(c.status) && <p className="muted">{t('uploadWaitQuote')}</p>}
-      {missing.length === 0 && <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>}
+      {missing.length === 0 && (needsDocConfirm(c) && !c.stamps.docsComplete ? null : <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>)}
       {errs.map((e) => (
         <p key={e} className="error" role="alert">{e}</p>
       ))}
@@ -1418,12 +1449,13 @@ function Uploads({ c, bare = false }: { c: Case; bare?: boolean }) {
           <button type="button" className="btn primary small" onClick={() => setPhone(true)}>📱 {t('phoneBtn')}</button>
         </div>
       )}
-      {phone && <PhoneCapture c={c} onClose={() => setPhone(false)} />}
+      {phone && <PhoneCapture c={c} by={by} onClose={() => setPhone(false)} />}
       <div className="doc-grid">
         {required.map((k) => (
           <DocTile key={k} caseId={c.id} k={k} meta={c.docs[k]} label={DOC_LABEL[lang][k]} disabled={!allowed} onFile={(f) => onFile(k, f)} />
         ))}
       </div>
+      {missing.length === 0 && needsDocConfirm(c) && !c.stamps.docsComplete && <SubmitDocsBar c={c} by={by} />}
     </div>
   );
 }
