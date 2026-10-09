@@ -5,7 +5,7 @@ import { fmtBaht, fmtCompactBaht, fmtDate, fmtNum, useT, type TKey } from '../i1
 import { useStore } from '../store';
 import { firstLiveMonth, rolling12 } from '../lib/history';
 import { bkkParts, bkkTime, monthKey } from '../lib/time';
-import { LineChart } from './charts';
+import { ClusteredBarChart } from './charts';
 import { Segmented, useNow } from './common';
 
 /** Marketing officers keep a fixed colour everywhere on this page (validated categorical slots 1-3). */
@@ -47,6 +47,7 @@ export function VPApp() {
   const now = useNow(60000);
   const [period, setPeriod] = useState<Period>('r12');
   const [metric, setMetric] = useState<'gwp' | 'ach'>('ach');
+  const [groupBy, setGroupBy] = useState<'agent' | 'mkt'>('agent');
   const [mktFilter, setMktFilter] = useState('all');
   const [table, setTable] = useState(false);
 
@@ -95,19 +96,29 @@ export function VPApp() {
   }).sort((x, y) => ach(y.r) - ach(x.r));
   const total = mktRows.reduce((acc, x) => add(acc, x.r), zero());
 
-  // Rolling 12 months per marketing officer.
-  const trend = MARKETING.map((m) => {
-    const mine = s.agents.filter((a) => a.mktId === m.id);
-    return {
-      key: m.id,
-      label: m[lang].split(' ')[0],
-      color: MKT_COLOR[m.id],
-      values: months.map((mo) => {
-        const r = mine.reduce((acc, a) => add(acc, cell(a.id, mo.key)), zero());
-        return metric === 'gwp' ? r.gwp : r.target ? (r.gwp / r.target) * 100 : null;
-      }),
-    };
-  });
+  // Rolling 12 months, one bar per partner (or per marketing officer). Partners keep their officer's
+  // colour; the second partner of each officer is hatched so the two never rely on colour alone.
+  const val = (r: Row) => (metric === 'gwp' ? r.gwp : r.target ? (r.gwp / r.target) * 100 : null);
+  const partners = MARKETING.flatMap((m) => s.agents.filter((a) => a.mktId === m.id).map((a, i) => ({ a, m, hatched: i % 2 === 1 })));
+  const trend =
+    groupBy === 'agent'
+      ? partners.map(({ a, m, hatched }) => ({
+          key: a.id,
+          label: a[lang],
+          color: MKT_COLOR[m.id],
+          hatched,
+          values: months.map((mo) => val(cell(a.id, mo.key))),
+        }))
+      : MARKETING.map((m) => {
+          const mine = s.agents.filter((a) => a.mktId === m.id);
+          return {
+            key: m.id,
+            label: m[lang],
+            color: MKT_COLOR[m.id],
+            hatched: false,
+            values: months.map((mo) => val(mine.reduce((acc, a) => add(acc, cell(a.id, mo.key)), zero()))),
+          };
+        });
   const monthLabel = (at: number) => fmtDate(at, lang, { month: 'short' });
   const monthFull = (at: number) => fmtDate(at, lang, { month: 'long', year: 'numeric' });
   const fmtV = (v: number) => (metric === 'gwp' ? fmtBaht(Math.round(v), lang) : `${fmtNum(v, lang, 0)}%`);
@@ -195,10 +206,14 @@ export function VPApp() {
       <section className="card">
         <div className="card-head">
           <div>
-            <h3>{t('vpTrend')}</h3>
+            <h3>{groupBy === 'agent' ? t('vpTrendAgent') : t('vpTrend')}</h3>
             <p className="hint">{t('vpTrendLead')}</p>
           </div>
           <div className="card-tools">
+            <Segmented id="vp-group" label={t('vpGroup')} value={groupBy} onChange={setGroupBy} options={[
+              { value: 'agent', label: 'Partner' },
+              { value: 'mkt', label: 'Marketing' },
+            ]} />
             <Segmented id="vp-metric" label={t('metric')} value={metric} onChange={setMetric} options={[
               { value: 'ach', label: t('vpAchShort') },
               { value: 'gwp', label: 'GWP' },
@@ -206,9 +221,12 @@ export function VPApp() {
             <button type="button" className="btn small ghost" onClick={() => setTable((v) => !v)}>{table ? t('asChart') : t('asTable')}</button>
           </div>
         </div>
-        <div className="legend" aria-hidden="true">
+        <div className="legend cluster-legend" aria-hidden="true">
           {trend.map((x) => (
-            <span key={x.key}><i style={{ background: x.color }} />{MARKETING.find((m) => m.id === x.key)![lang]}</span>
+            <span key={x.key}>
+              <i className={x.hatched ? 'hatched' : ''} style={x.hatched ? { color: x.color } : { background: x.color }} />
+              {x.label}
+            </span>
           ))}
         </div>
         {table ? (
@@ -218,7 +236,7 @@ export function VPApp() {
                 <tr>
                   <th>{t('period')}</th>
                   {trend.map((x) => (
-                    <th key={x.key} className="r">{x.label}</th>
+                    <th key={x.key} className="r">{x.label.split(' ')[0]}</th>
                   ))}
                 </tr>
               </thead>
@@ -235,7 +253,7 @@ export function VPApp() {
             </table>
           </div>
         ) : (
-          <LineChart
+          <ClusteredBarChart
             series={trend}
             labels={months.map((m) => monthLabel(m.at))}
             full={months.map((m) => monthFull(m.at))}
