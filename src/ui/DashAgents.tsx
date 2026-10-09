@@ -20,7 +20,7 @@ const REN_STATES: [RenewalItem['status'], TKey][] = [
 ];
 
 /**
- * Dashboard sections for the sub-agent channel: ranking with close rate and discount,
+ * Dashboard sections for the Business Partner channel: ranking with close rate and discount,
  * the quotation funnel, payment status, and renewal performance.
  */
 export function AgentSections({ cases, agents, renewals, from, to, now, showAgents }: { cases: Case[]; agents: Agent[]; renewals: RenewalItem[]; from: number; to: number; now: number; showAgents: boolean }) {

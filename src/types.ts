@@ -129,7 +129,7 @@ export interface Case {
   claims?: Claim[];
   reminders?: { renewal: boolean; tax: boolean };
   payment?: { method: 'qr' | 'card'; at: number; last4?: string; months?: number };
-  /** Sold through a sub-agent (ตัวแทนช่วง); absent for direct sales. */
+  /** Sold through a Business Partner (Business Partner); absent for direct sales. */
   agentId?: string;
   proposalId?: string;
   /** Discount the agent gave, THB, taken out of the agent's commission. */
@@ -145,7 +145,7 @@ export interface Case {
 
 export type AgentKind = 'person' | 'company';
 
-/** ABC marketing officer who looks after a group of sub-agents. */
+/** ABC marketing officer who looks after a group of Business Partners. */
 export interface Marketing {
   id: string;
   th: string;
@@ -153,7 +153,7 @@ export interface Marketing {
   phone: string;
 }
 
-/** Sub-agent (ตัวแทนช่วง): a person or a company selling ABC motor insurance. */
+/** Business Partner (Business Partner): a person or a company selling ABC motor insurance. */
 export interface Agent {
   id: string;
   code: string;

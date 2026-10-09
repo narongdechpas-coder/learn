@@ -7,7 +7,7 @@ export const MARKETING: Marketing[] = [
   { id: 'm3', th: 'ปวีณา รุ่งโรจน์', en: 'Paweena Rungroj', phone: '081-555-0103' },
 ];
 
-/** Sample sub-agents: four people and two companies, two per marketing officer. */
+/** Sample Business Partners: four people and two companies, two per marketing officer. */
 export const AGENTS: Agent[] = [
   { id: 'a1', code: 'AG-1001', kind: 'person', th: 'สมศักดิ์ ประกันดี', en: 'Somsak Prakandee', license: '6104012345', province: 'กรุงเทพมหานคร', phone: '089-111-2201', line: '@somsak.ins', mktId: 'm1', target: 90_000, active: true },
   { id: 'a2', code: 'AG-2001', kind: 'company', th: 'บริษัท รุ่งเรือง โบรกเกอร์ จำกัด', en: 'Rungruang Broker Co., Ltd.', contactTh: 'คุณอารีรัตน์ วงศ์ดี', contactEn: 'Areerat Wongdee', license: 'ว00123/2565', province: 'ชลบุรี', phone: '038-222-300', line: '@rungruang', mktId: 'm1', target: 160_000, active: true },

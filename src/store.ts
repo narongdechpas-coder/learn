@@ -464,7 +464,7 @@ export function checkSlaBreaches() {
   if (s) commit(s);
 }
 
-// ---- Sub-agent channel ----
+// ---- Business Partner channel ----
 
 const nextProposalId = (base: State) => {
   const p = bkkParts(Date.now());

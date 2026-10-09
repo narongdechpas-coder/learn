@@ -557,7 +557,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
   }
 }
 
-/** Sub-agent sale: who sold it, discount, commission and the money. */
+/** Business Partner sale: who sold it, discount, commission and the money. */
 function AgentBox({ c, staffId, now }: { c: Case; staffId: string; now: number }) {
   const { t, lang } = useT();
   const ag = agentById(c.agentId);

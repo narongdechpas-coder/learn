@@ -408,15 +408,28 @@ await customer.getByRole('button', { name: 'ค้นหา', exact: true }).cli
 await customer.getByText('ไม่พบคำขอที่ตรงกับ').waitFor();
 log('tracking finds requests by plate (spaces/dashes ignored) or request number');
 
-// ---- Sub-agent channel ----
+// ---- Business Partner channel ----
 const thai = (p) => p.getByRole('radio', { name: 'TH' }).click();
 await thai(office);
 const agent = await ctx.newPage();
 watch(agent);
-await agent.goto(url + '?a=1#agent');
+await agent.goto(url + '?a=1#customer');
 await thai(agent);
-await agent.locator('#ag-as').selectOption('a3');
+// Partners sign in from the customer site: partner code, then OTP to the registered phone.
+await agent.getByRole('button', { name: 'สำหรับตัวแทน' }).click();
+await agent.locator('#pl-code').fill('AG-9999');
+await agent.getByRole('button', { name: 'ส่ง OTP' }).click();
+await agent.getByText('ไม่พบรหัสตัวแทนนี้').waitFor();
+await agent.locator('#pl-code').fill('ag-1002');
+await agent.getByRole('button', { name: 'ส่ง OTP' }).click();
+await agent.getByText(/089-xxx-2202/).waitFor();
+await agent.locator('#pl-otp').fill('111111');
+await agent.getByRole('button', { name: 'ยืนยันและเข้าสู่ระบบ' }).click();
+await agent.getByText('รหัส OTP ไม่ถูกต้อง').waitFor();
+await agent.getByRole('button', { name: 'ใส่รหัสตัวอย่าง' }).click();
+await agent.getByRole('button', { name: 'ยืนยันและเข้าสู่ระบบ' }).click();
 await agent.getByRole('heading', { name: 'วันเพ็ญ ศรีสวัสดิ์' }).waitFor();
+log('partner signed in from the customer page with code AG-1002 and OTP to the registered phone');
 await agent.locator('#ag-brand').selectOption('honda');
 await agent.locator('#ag-model').selectOption('honda-city');
 await agent.locator('#ag-year').selectOption('2023');
@@ -560,24 +573,38 @@ await mkt.locator('tr', { hasText: 'อดิศร ทองมา' }).getByRol
 await agent.bringToFront();
 await agent.locator('#ag-as').selectOption('a4');
 await agent.getByText(/บัญชีตัวแทนนี้ถูกระงับชั่วคราว/).waitFor({ timeout: 5000 });
+const probe = await ctx.newPage();
+await probe.goto(url + '?p=1#customer');
+await thai(probe);
+await probe.getByRole('button', { name: 'สำหรับตัวแทน' }).click();
+await probe.locator('#pl-code').fill('AG-1003');
+await probe.getByRole('button', { name: 'ส่ง OTP' }).click();
+await probe.getByText(/บัญชีนี้ถูกระงับชั่วคราว/).waitFor();
+await probe.close();
 await agent.locator('#ag-as').selectOption('a3');
 await agent.getByRole('tab', { name: /ผลงานของฉัน/ }).click();
 await agent.getByText(/เป้า ฿40,000/).waitFor({ timeout: 5000 });
 await mkt.bringToFront();
 await mkt.locator('tr', { hasText: 'อดิศร ทองมา' }).getByRole('button', { name: 'เปิดใช้' }).click();
+await mkt.getByRole('tab', { name: 'การต่ออายุ' }).click();
+await mkt.getByRole('heading', { name: 'อัตราการต่ออายุราย Business Partner' }).waitFor();
+assert.equal(await mkt.locator('.rr-agents tbody tr').count(), 2, 'renewal rate per partner in the group');
+assert.ok((await mkt.locator('.rr-table thead th', { hasText: 'ตัวแทน' }).count()) > 0, 'renewal list shows the partner');
+await mkt.locator('.rr-table tbody tr').getByRole('button', { name: 'ทวงถาม' }).first().click();
+await mkt.locator('.rr-table').getByText('✓ ทวงแล้ว').first().waitFor();
 await mkt.getByRole('tab', { name: /ติดตามงาน/ }).click();
 await mkt.getByRole('button', { name: 'ทวงถาม' }).first().click();
 await mkt.getByText('✓ ทวงแล้ว').first().waitFor();
-log('marketing sees own agents, changed a target and suspended/reactivated an agent, sent a reminder');
+log('marketing sees own partners, renewal rate overall and per partner, changed a target, suspended/reactivated a partner, sent reminders');
 
 await office.bringToFront();
 await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
-await office.getByRole('heading', { name: 'อันดับตัวแทนช่วง' }).waitFor();
+await office.getByRole('heading', { name: 'อันดับ Business Partner' }).waitFor();
 await office.getByRole('heading', { name: 'Funnel ตัวแทน' }).waitFor();
 await office.getByRole('heading', { name: 'Performance งานต่ออายุ' }).waitFor();
 assert.equal(await office.locator('.ren-table tbody tr').count(), 4, 'renewals in four expiry buckets');
 await office.locator('#d-channel').selectOption('direct');
-assert.equal(await office.getByRole('heading', { name: 'อันดับตัวแทนช่วง' }).count(), 0, 'direct channel hides agent ranking');
+assert.equal(await office.getByRole('heading', { name: 'อันดับ Business Partner' }).count(), 0, 'direct channel hides agent ranking');
 await office.locator('#d-mkt').selectOption('m2');
 assert.equal(await office.locator('.agent-table tbody tr').count(), 2, 'marketing filter narrows the ranking');
 await office.locator('#d-mkt').selectOption('all');

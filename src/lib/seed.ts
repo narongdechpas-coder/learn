@@ -325,7 +325,7 @@ export function seedTraffic(cases: Case[], now: number): Record<string, TrafficD
 }
 
 /**
- * Moves part of the seeded sales to the sub-agents and builds their quotation history:
+ * Moves part of the seeded sales to the Business Partners and builds their quotation history:
  * every agent package sale came from an accepted quotation, and most quotations never close.
  */
 export function seedAgentWork(cases: Case[], now: number): Proposal[] {

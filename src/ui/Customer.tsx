@@ -24,6 +24,7 @@ import { canUpload, captureLead, trackStep, customerConfirm, customerDecline, do
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
+import { PartnerLogin } from './PartnerLogin';
 import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
@@ -55,18 +56,27 @@ const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
 type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
 
-export function CustomerApp({ onOpenCase, trackId, setTrackId }: { onOpenCase?: (id: string) => void; trackId: string | null; setTrackId: (id: string | null) => void }) {
+export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner }: { onOpenCase?: (id: string) => void; trackId: string | null; setTrackId: (id: string | null) => void; onPartner?: (agentId: string) => void }) {
   const { t } = useT();
   const [tab, setTab] = useState<'buy' | 'track'>('buy');
+  const [login, setLogin] = useState(false);
   useEffect(() => {
     if (trackId) setTab('track');
   }, [trackId]);
   return (
     <div className="customer">
-      <div className="subtabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
-        <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
+      <div className="cust-top">
+        <div className="subtabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
+          <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
+        </div>
+        {onPartner && (
+          <button type="button" className="btn partner-btn" onClick={() => setLogin(true)}>
+            <span aria-hidden="true">🤝</span> {t('plButton')}
+          </button>
+        )}
       </div>
+      {login && onPartner && <PartnerLogin onClose={() => setLogin(false)} onDone={(id) => { setLogin(false); onPartner(id); }} />}
       {tab === 'buy' ? (
         <Buy onTrack={(id) => { setTrackId(id); setTab('track'); }} />
       ) : (

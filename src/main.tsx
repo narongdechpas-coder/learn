@@ -185,7 +185,7 @@ function App() {
         {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
         {view === 'agent' && <AgentApp agentId={agentId} setAgentId={setAgentId} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
         {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
-        {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} />}
+        {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} onPartner={(id) => { setAgentId(id); setView('agent'); }} />}
         {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}
         {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
         {view === 'mail' && <Mail onOpenCase={openCase} />}
