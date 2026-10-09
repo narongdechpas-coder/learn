@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import type { CoverageType, DocKey, EmailTemplate, Lang, Stage, Status, UsageCode } from './types';
 import type { SlaKey, SlaState } from './lib/sla';
 import { agentEn, agentTh } from './i18nAgent';
+import { productEn, productTh } from './i18nProduct';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -472,11 +473,12 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh };
+const th = { ...thBase, ...agentTh, ...productTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
   ...agentEn,
+  ...productEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',

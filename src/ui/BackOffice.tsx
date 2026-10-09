@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
-import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
+import { COVERAGE_TYPES, estimateQuote } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDate, fmtDateTime, usageText, useT, type TKey } from '../i18n';
 import {
   acceptCase,
@@ -21,6 +21,7 @@ import {
 import { SLA_KEYS, slaFor } from '../lib/sla';
 import { BizClock, CaseSla, Field, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
 import { useFileUrl } from './Customer';
+import { ProductsAdmin } from './Products';
 import { AGENTS, caseCommission, mktById, payInfo, settled } from '../data/agents';
 import { PAY_TONE, payKey } from './Agent';
 import { recordRemit } from '../store';
@@ -53,7 +54,7 @@ export function BackOffice({
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(30);
   const [bellOpen, setBellOpen] = useState(false);
-  const [tab, setTab] = useState<'cases' | 'leads' | 'remit'>('cases');
+  const [tab, setTab] = useState<'cases' | 'leads' | 'remit' | 'products'>('cases');
   const [channel, setChannel] = useState('all');
   const openLeads = s.leads.filter((l) => !l.caseId && !l.contacted).length;
   const remitDue = s.cases.filter((c) => c.collect === 'agent' && c.stamps.issued && !c.remittedAt && payInfo(c, now)?.state === 'overdue').length;
@@ -157,9 +158,10 @@ export function BackOffice({
         <button role="tab" aria-selected={tab === 'remit'} className={tab === 'remit' ? 'on' : ''} onClick={() => setTab('remit')}>
           {t('tabRemit')} {remitDue > 0 && <span className="nav-badge num">{remitDue}</span>}
         </button>
+        <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>{t('tabProducts')}</button>
       </div>
 
-      {tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
+      {tab === 'products' ? <ProductsAdmin staffId={staffId} /> : tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
       <div className="filters">
         <label htmlFor="bo-q" className="sr-only">{t('searchCase')}</label>
         <input id="bo-q" className="search" placeholder={t('searchCase')} value={q} onChange={(e) => { setQ(e.target.value); setLimit(30); }} />
@@ -397,7 +399,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         <div className="inline-confirm">
           <div className="eyebrow">{t('reuploadPick')}</div>
           <div className="chips-row">
-            {REQUIRED_DOCS[c.coverage].map((k) => (
+            {requiredDocs(c).map((k) => (
               <label key={k} className="check">
                 <input id={`ru-${c.id}-${k}`} type="checkbox" checked={pick.includes(k)} onChange={(e) => setPick((p) => (e.target.checked ? [...p, k] : p.filter((x) => x !== k)))} />
                 {DOC_LABEL[lang][k]}

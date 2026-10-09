@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFileSync, mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
+import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib';
 
 const html = readFileSync('dist/index.html');
 const server = createServer((_, res) => {
@@ -713,6 +714,173 @@ await office.getByRole('radio', { name: 'เดือนนี้' }).click();
 await office.getByText(/ยอดถึงวันนี้/).first().waitFor();
 assert.ok((await office.locator('.vp-agents .pill').first().innerText()).match(/%/), 'loss ratio shown per partner');
 log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, renewal and loss ratio, and assigns partners to officers');
+
+// ---- Products: edit, versions, commission, end date, Excel round trip ----
+const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')));
+const prod = (st, id) => st.products.find((p) => p.id === id);
+await office.locator('.nav-backoffice').click();
+await office.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+assert.equal(await office.locator('.pd-table tbody tr').count(), 11, 'catalogue starts with 11 products');
+const offered = (await state(office)).proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000');
+assert.ok(offered, 'the earlier quotation offered Class 2+ 200,000');
+const pdRow = (id) => office.locator('.pd-table tbody tr').filter({ has: office.locator('.pd-name + .hint', { hasText: new RegExp(`^${id}$`) }) });
+const editRow = async (id) => {
+  await pdRow(id).getByRole('button', { name: 'แก้ไข' }).click();
+  await office.getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).waitFor();
+};
+const saveEdit = async (note) => {
+  if (note) await office.locator('#pd-note').fill(note);
+  await office.getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+  await office.locator('.pd-save .ok-note').waitFor();
+};
+const backToList = () => office.getByRole('button', { name: /กลับไปรายการ/ }).click();
+await editRow('T2P-200000');
+await office.locator('#pd-r0-110').fill('9200');
+await saveEdit('ปรับเบี้ยทดสอบ');
+await office.getByText('บันทึกแล้ว (v2)').waitFor();
+assert.equal(await office.locator('.pd-history li').count(), 2, 'history lists both versions');
+let st = await state(office);
+assert.equal(prod(st, 'T2P-200000').rates[0].prices['110'], 9200);
+assert.equal(st.proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000').pkg.premium, offered.pkg.premium, 'quotation already sent keeps its price');
+const shop = await ctx.newPage();
+watch(shop);
+await shop.goto(url + '?s=1#customer');
+await thai(shop);
+await shop.getByRole('radio', { name: /^110/ }).click();
+await shop.getByRole('radio', { name: 'Toyota' }).click();
+await shop.locator('#car-model').selectOption('toyota-yaris-ativ');
+await shop.locator('#car-year').selectOption('2020');
+await shop.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await shop.locator('.pkg-card', { hasText: 'ชั้น 2+ ทุน 200,000' }).getByText('฿9,200').waitFor();
+log('product edit saved as v2: new price on the customer site, the quotation already sent keeps its price');
+office.once('dialog', (d) => d.accept());
+await office.locator('.pd-history li', { hasText: 'v1' }).getByRole('button', { name: /ย้อนกลับ/ }).click();
+await office.getByText('ย้อนกลับจาก v1').waitFor();
+st = await state(office);
+assert.equal(prod(st, 'T2P-200000').ver, 3);
+assert.equal(prod(st, 'T2P-200000').rates[0].prices['110'], 8900, 'rollback restores the v1 price as v3');
+await backToList();
+log('rolled back to v1, saved as v3; history kept');
+
+// Commission: product special rate for everyone, a partner's own rate wins over it.
+await editRow('T3');
+await office.locator('#pd-pc-a3').fill('17');
+await saveEdit();
+await backToList();
+await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+await agent.locator('.ct-card', { hasText: 'ชั้น 1 EV Plus' }).getByText('ค่าคอม 20%').waitFor();
+await agent.locator('.ct-card', { hasText: 'ชั้น 1 ซ่อมอู่' }).getByText('ค่าคอม 18%').waitFor();
+await agent.locator('.ct-card', { hasText: 'ชั้น 3' }).filter({ hasNotText: '3+' }).getByText('ค่าคอม 17%').waitFor();
+log('partner catalogue shows standard 18%, product special 20% and the partner\'s own 17% on Class 3');
+
+// Closing a channel and the end date.
+await office.locator('label.switch', { has: office.locator('#pd-partner-T3P-100000') }).click();
+await editRow('T1-EV-PLUS');
+const yesterday = new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10);
+await office.locator('#pd-until').fill(yesterday);
+await saveEdit();
+await backToList();
+await pdRow('T1-EV-PLUS').getByText('หมดเวลาขาย').waitFor();
+await agent.getByRole('tab', { name: 'ขาย' }).click();
+await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+await agent.locator('.ct-card').first().waitFor();
+assert.equal(await agent.locator('.ct-card', { hasText: 'ชั้น 1 EV Plus' }).count(), 0, 'ended product hidden from partners');
+assert.equal(await agent.locator('.ct-card', { hasText: 'ทุน 100,000' }).count(), 0, 'product closed to partners');
+assert.equal(await shop.getByRole('tab', { name: 'ผลิตภัณฑ์' }).count(), 0, 'no products tab on the customer site');
+await shop.reload();
+await shop.getByRole('radio', { name: /^110/ }).click();
+await shop.getByRole('radio', { name: 'BYD' }).click();
+await shop.locator('#car-model').selectOption('byd-atto3');
+await shop.locator('#car-year').selectOption('2024');
+await shop.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await shop.locator('.pkg-card').first().waitFor();
+assert.equal(await shop.locator('.pkg-card', { hasText: 'EV Plus' }).count(), 0, 'ended product not offered to customers');
+await agent.locator('.ct-card', { hasText: 'ชั้น 2+ ทุน 300,000' }).getByRole('button', { name: 'รายละเอียด' }).click();
+await agent.getByRole('dialog').getByText('รถอายุไม่เกิน 15 ปี').waitFor();
+await agent.getByRole('dialog').getByRole('button', { name: 'เช็คเบี้ยรถคุณ' }).click();
+await agent.locator('#ag-brand').waitFor();
+log('closed to partners and past its end date: hidden from the partner catalogue and from customer packages');
+
+// New product from the standard cover button.
+await office.locator('#pd-new-type').selectOption('T2P');
+await office.getByRole('button', { name: '+ สร้างแพ็กเกจ' }).click();
+await office.locator('#pd-ownDamage-mode').selectOption('none');
+await office.locator('#pd-doc-regbook').uncheck();
+await office.getByRole('button', { name: /ใส่ความคุ้มครองมาตรฐานชั้น 2\+/ }).click();
+assert.equal(await office.locator('#pd-ownDamage-mode').inputValue(), 'fixed', 'standard cover restored');
+assert.equal(await office.locator('#pd-ownDamage-val').inputValue(), '200000');
+assert.equal(await office.locator('#pd-doc-regbook').isChecked(), true, 'standard documents restored');
+await office.locator('#pd-ownDamage-val').fill('250000');
+await office.locator('#pd-nameTh').fill('ชั้น 2+ ทดสอบ');
+await saveEdit();
+await backToList();
+assert.equal(await office.locator('.pd-table tbody tr').count(), 12);
+st = await state(office);
+const created = st.products.find((p) => p.nameTh === 'ชั้น 2+ ทดสอบ');
+assert.ok(created && created.ownDamage.value === 250000 && !created.channels.self && !created.channels.partner, 'new product saved, closed for sale');
+log('new product: standard 2+ cover filled in by the button, then adjusted; saved closed for sale');
+
+// Excel: export, edit (as Excel would, deflated), import with a review of changes and errors.
+const unzip = (buf) => {
+  const out = new Map();
+  const end = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  let p = buf.readUInt32LE(end + 16);
+  for (let n = buf.readUInt16LE(end + 10); n > 0; n--) {
+    const method = buf.readUInt16LE(p + 10), size = buf.readUInt32LE(p + 20), nameLen = buf.readUInt16LE(p + 28);
+    const name = buf.subarray(p + 46, p + 46 + nameLen).toString();
+    const local = buf.readUInt32LE(p + 42);
+    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    const raw = buf.subarray(start, start + size);
+    out.set(name, method === 8 ? inflateRawSync(raw) : Buffer.from(raw));
+    p += 46 + nameLen + buf.readUInt16LE(p + 30) + buf.readUInt16LE(p + 32);
+  }
+  return out;
+};
+const zipDeflated = (files) => {
+  const parts = [], central = [];
+  let off = 0;
+  for (const [name, data] of files) {
+    const nb = Buffer.from(name), comp = deflateRawSync(data), crc = crc32(data);
+    const h = Buffer.alloc(30);
+    h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(8, 8); h.writeUInt32LE(crc, 14); h.writeUInt32LE(comp.length, 18); h.writeUInt32LE(data.length, 22); h.writeUInt16LE(nb.length, 26);
+    parts.push(h, nb, comp);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(8, 10); c.writeUInt32LE(crc, 16); c.writeUInt32LE(comp.length, 20); c.writeUInt32LE(data.length, 24); c.writeUInt16LE(nb.length, 28); c.writeUInt32LE(off, 42);
+    central.push(c, nb);
+    off += 30 + nb.length + comp.length;
+  }
+  const cd = Buffer.concat(central), e = Buffer.alloc(22);
+  e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(files.size, 8); e.writeUInt16LE(files.size, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
+  return Buffer.concat([...parts, cd, e]);
+};
+const [download] = await Promise.all([office.waitForEvent('download'), office.getByRole('button', { name: /Export Excel/ }).click()]);
+assert.match(download.suggestedFilename(), /^abc-products-.*\.xlsx$/);
+const files = unzip(readFileSync(await download.path()));
+const sheetsXml = [...files.keys()].filter((k) => k.startsWith('xl/worksheets/'));
+assert.equal(sheetsXml.length, 13, 'guide sheet + 12 product sheets');
+const sheetOf = (id) => sheetsXml.find((k) => files.get(k).toString().includes(`<t xml:space="preserve">${id}</t></is></c></row>`));
+const t3 = sheetOf('T3'), t2 = sheetOf('T2');
+files.set(t3, Buffer.from(files.get(t3).toString().replace('<v>2290</v>', '<v>2390</v>')));
+files.set(t2, Buffer.from(files.get(t2).toString().replace('<t xml:space="preserve">Y</t>', '<t xml:space="preserve">X</t>')));
+await office.locator('#pd-import').setInputFiles({ name: 'edited.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: zipDeflated(files) });
+const review = office.getByRole('dialog', { name: 'ตรวจก่อนนำเข้า' });
+await review.waitFor();
+assert.equal(await review.locator('.pd-imp-changed').count(), 1, 'one product changed');
+assert.equal(await review.locator('.pd-imp-error').count(), 1, 'one sheet with an error');
+await review.locator('.pd-imp-error').getByText(/ใส่ Y หรือ N/).waitFor();
+await review.locator('.pd-imp-changed').getByText(/฿2,290 → ฿2,390/).waitFor();
+await review.getByRole('button', { name: 'ยืนยันนำเข้า 1 แพ็กเกจ' }).click();
+await office.getByText('นำเข้าแล้ว 1 แพ็กเกจ').waitFor();
+st = await state(office);
+assert.equal(prod(st, 'T3').rates[0].prices['110'], 2390, 'imported price saved');
+assert.equal(prod(st, 'T3').partnerCommission.a3, 17, 'import keeps settings the sheet does not carry');
+assert.equal(prod(st, 'T2').channels.self, true, 'sheet with an error skipped');
+assert.equal(st.productLog[0].note, 'import');
+log('Excel export (13 sheets) edited and re-imported: review shows the price change and the bad sheet; only the good one saved');
+
+await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+assert.ok((await office.locator('.dash-products tbody tr').count()) > 3, 'dashboard sales by product');
+log('dashboard shows sales by product with partner share, commission and win rate');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });

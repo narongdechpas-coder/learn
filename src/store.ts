@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
 import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
+import { defaultProducts, setCatalog } from './data/products';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
@@ -26,13 +27,19 @@ export interface State {
   proposals: Proposal[];
   renewals: RenewalItem[];
   monthly: AgentMonth[];
+  /** The product catalogue (current version of each) and every saved version. */
+  products: Product[];
+  productLog: ProductVersion[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 7;
+const VERSION = 8;
 
 function fresh(): State {
   const now = Date.now();
+  // Seeding prices cars from the catalogue, so it has to be in place first.
+  const products = defaultProducts(now);
+  setCatalog(products);
   const { cases, seq } = seedCases(now);
   const proposals = seedAgentWork(cases, now);
   return {
@@ -49,6 +56,8 @@ function fresh(): State {
     proposals,
     renewals: seedRenewals(now),
     monthly: seedMonthly(cases, now),
+    products,
+    productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
   };
 }
 
@@ -57,7 +66,9 @@ function load(): State | null {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as State;
-    return s.version === VERSION ? s : null;
+    if (s.version !== VERSION) return null;
+    setCatalog(s.products);
+    return s;
   } catch {
     return null;
   }
@@ -104,6 +115,7 @@ try {
 
 function commit(next: State) {
   state = next;
+  setCatalog(next.products);
   save(state);
   emit();
   try {
@@ -160,11 +172,11 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
-  return Math.round((base + (c.addCmi ? (cmiPremium(c.vehicle.usage) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
+  return Math.round((base + (c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? cmiPremium(c.vehicle.usage) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
 };
 
 /** Documents a case needs; a renewal with ABC needs none (they are on file). */
-export const requiredDocs = (c: Pick<Case, 'coverage' | 'renewalOf'>) => (c.renewalOf ? [] : REQUIRED_DOCS[c.coverage]);
+export const requiredDocs = (c: Pick<Case, 'coverage' | 'renewalOf' | 'pkg'>) => (c.renewalOf ? [] : (c.pkg?.docs ?? REQUIRED_DOCS[c.coverage]));
 export const docsMissing = (c: Case) => requiredDocs(c).filter((k) => !c.docs[k]);
 export const canUpload = (c: Case) =>
   c.source === 'self'
@@ -222,7 +234,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
   }
   s.emails = mail(s, 'custReceived', c);
   // Package sales can attach documents straight away, so say which ones (quotes get this after accepting).
-  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 1 });
+  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 });
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
@@ -272,7 +284,7 @@ export function customerConfirm(id: string, by = 'customer', collect?: Case['col
     if (collect) c.collect = collect;
     c.log.push({ at: now, by, action: 'confirm' });
     s.emails = mail(s, 'staffConfirmed', c);
-    return { emails: mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 1 }), notifications: notify(s, 'confirmed', id) };
+    return { emails: mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 }), notifications: notify(s, 'confirmed', id) };
   });
 }
 
@@ -701,4 +713,51 @@ export function updateAgent(id: string, patch: Partial<Pick<Agent, 'target' | 'a
 export async function resetDemo() {
   await clearFiles();
   commit(fresh());
+}
+
+/** Fields that differ between two versions of a product (names match the editor sections). */
+export function productChanges(a: Product | undefined, b: Product): string[] {
+  if (!a) return ['created'];
+  const skip = new Set(['ver', 'updatedAt', 'updatedBy']);
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].filter((k) => !skip.has(k) && JSON.stringify((a as never)[k]) !== JSON.stringify((b as never)[k])).sort();
+}
+
+function withVersions(base: State, items: { p: Product; note: string }[], by: string, now: number): State | null {
+  let products = base.products;
+  const log: ProductVersion[] = [];
+  for (const { p, note } of items) {
+    const prev = products.find((x) => x.id === p.id);
+    const changes = productChanges(prev, p);
+    if (!changes.length) continue;
+    const next: Product = { ...p, ver: (prev?.ver ?? 0) + 1, updatedAt: now, updatedBy: by };
+    products = prev ? products.map((x) => (x.id === p.id ? next : x)) : [...products, next];
+    log.push({ id: p.id, ver: next.ver, at: now, by, note, changes, snapshot: next });
+  }
+  return log.length ? { ...base, products, productLog: [...log, ...base.productLog] } : null;
+}
+
+/** Save a product as a new version. Offers already made keep the version they were priced on. */
+export function saveProduct(p: Product, by: string, note = ''): boolean {
+  const base = load() ?? state;
+  const next = withVersions(base, [{ p, note }], by, Date.now());
+  if (next) commit(next);
+  return !!next;
+}
+
+/** Save several products in one go (Excel import). Returns how many actually changed. */
+export function saveProducts(items: { p: Product; note: string }[], by: string): number {
+  const base = load() ?? state;
+  const next = withVersions(base, items, by, Date.now());
+  if (!next) return 0;
+  commit(next);
+  return next.productLog.length - base.productLog.length;
+}
+
+/** Bring back an earlier version; it is saved as the newest version so history stays intact. */
+export function rollbackProduct(id: string, ver: number, by: string) {
+  const base = load() ?? state;
+  const old = base.productLog.find((v) => v.id === id && v.ver === ver);
+  if (!old) return;
+  saveProduct({ ...old.snapshot }, by, `rollback:${ver}`);
 }

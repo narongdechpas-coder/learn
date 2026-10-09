@@ -31,14 +31,18 @@ const DAY = 86_400_000;
 export const netOf = (gross: number) => Math.round((gross / 1.07428) * 100) / 100;
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Commission rate of a package: the snapshot taken when it was offered, else the class standard. */
+export const rateOf = (pkg: { type: CoverageType; comRate?: number }) => pkg.comRate ?? COMMISSION_RATE[pkg.type];
+
 /** Price of one quoted option: voluntary premium after discount, plus CMI (never discounted). */
 export function optionPrice(o: ProposalOption, discountPct: number, usage: UsageCode) {
   const vol = o.pkg.premium;
-  const cmi = o.addCmi && o.pkg.type !== 'CMI' ? (cmiPremium(usage) ?? 0) : 0;
-  const pct = Math.min(discountPct / 100, COMMISSION_RATE[o.pkg.type]);
+  const cmi = o.addCmi && o.pkg.type !== 'CMI' ? (o.pkg.cmi ?? cmiPremium(usage) ?? 0) : 0;
+  const rate = rateOf(o.pkg);
+  const pct = Math.min(discountPct / 100, rate);
   const discount = o.pkg.type === 'CMI' ? 0 : Math.round(netOf(vol) * pct);
   const full = r2(vol + cmi);
-  const commission = r2(netOf(vol) * COMMISSION_RATE[o.pkg.type] + netOf(cmi) * COMMISSION_RATE.CMI);
+  const commission = r2(netOf(vol) * rate + netOf(cmi) * COMMISSION_RATE.CMI);
   return { full, discount, price: r2(full - discount), commission, net: r2(commission - discount), pct: pct * 100 };
 }
 
@@ -46,8 +50,8 @@ export function optionPrice(o: ProposalOption, discountPct: number, usage: Usage
 export function caseCommission(c: Case) {
   if (!c.agentId) return { gross: 0, discount: 0, net: 0 };
   const base = c.pkg ? c.pkg.premium : (c.quotedPremium ?? 0);
-  const cmi = c.addCmi && c.coverage !== 'CMI' ? (cmiPremium(c.vehicle.usage) ?? 0) : 0;
-  const gross = r2(netOf(base) * COMMISSION_RATE[c.coverage] + netOf(cmi) * COMMISSION_RATE.CMI);
+  const cmi = c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? cmiPremium(c.vehicle.usage) ?? 0) : 0;
+  const gross = r2(netOf(base) * (c.pkg ? rateOf(c.pkg) : COMMISSION_RATE[c.coverage]) + netOf(cmi) * COMMISSION_RATE.CMI);
   const discount = c.discount ?? 0;
   return { gross, discount, net: r2(gross - discount) };
 }

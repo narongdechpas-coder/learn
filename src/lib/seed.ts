@@ -1,6 +1,7 @@
 import type { Case, CoverageType, Customer, Lead, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, UsageCode } from '../types';
 import { CURRENT_YEAR, MODELS, PROVINCES, STAFF, suggestedSumInsured } from '../data/vehicles';
-import { estimateQuote, packagesFor, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
+import { packagesFor } from '../data/products';
+import { estimateQuote, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
 import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay, dayKey } from './time';
 import { SLA_KEYS, slaFor } from './sla';
 import { AGENTS, PAY_DAYS, PROPOSAL_DAYS, optionPrice } from '../data/agents';
