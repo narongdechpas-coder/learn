@@ -1,0 +1,32 @@
+{
+  "name": "abc-motor-insurance-demo",
+  "version": "1.0.0",
+  "description": "ABC motor insurance purchase simulator: customer flow, back office and performance dashboard",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p .",
+    "test": "node scripts/e2e.mjs",
+    "test:offline": "node scripts/offline-check.mjs",
+    "package:offline": "npm run build && cd dist/offline && python3 -c \"import zipfile; z=zipfile.ZipFile('../abc-motor-insurance-demo-offline.zip','w',zipfile.ZIP_DEFLATED,compresslevel=9); [z.write(f,'abc-motor-insurance-demo-offline/'+f) for f in ['abc-motor-insurance-demo.html','README.txt']]; z.close()\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/narongdechpas-coder/learn.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/narongdechpas-coder/learn/issues"
+  },
+  "homepage": "https://github.com/narongdechpas-coder/learn#readme",
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.24.2",
+    "playwright": "^1.63.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "5.6"
+  },
+  "private": true
+}
