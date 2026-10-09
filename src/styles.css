@@ -1534,3 +1534,13 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
   .abc-full .abc-side { position: sticky; top: 0; height: auto; padding: 6px 8px; z-index: 5; }
   .abc-full .abc-main { padding: 14px 16px; }
 }
+/* Product list: every cell starts on the same line, so the main values read across a row. */
+table.data.pd-table th { text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
+.pd-table td { vertical-align: top; padding-top: 12px; padding-bottom: 12px; line-height: 1.45; }
+.pd-table th.c, .pd-table td.c { text-align: center; }
+.pd-table .switch { justify-content: center; }
+.pd-table th.gap, .pd-table td.gap { padding-left: 22px; }
+.pd-table .hint { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.pd-table .pd-name { min-height: 22px; }
+.pd-table .pd-row-actions { justify-content: flex-end; margin-top: -4px; }
+.pd-table .chip.tone-bad { margin-top: 4px; }

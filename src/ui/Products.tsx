@@ -3,7 +3,7 @@ import type { CoverageType, DocKey, Product, ProductExtra, RateRow, UsageCode } 
 import { COVERAGE_TYPES } from '../data/packages';
 import { EXTRAS, SI_TOP, blankProduct, isExpired, priceRange, standardCommission, standardCover } from '../data/products';
 import { CATALOGUE_CODES, MODELS, STAFF, brandById, modelById } from '../data/vehicles';
-import { COVERAGE_LABEL, DOC_LABEL, USAGE_LABEL, fmtBaht, fmtDateTime, useT, type TKey } from '../i18n';
+import { COVERAGE_LABEL, DOC_LABEL, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, useT, type TKey } from '../i18n';
 import { rollbackProduct, saveProduct, saveProducts, useStore } from '../store';
 import { productStats } from '../lib/productStats';
 import { planImport, productsToSheets, type ImportItem } from '../lib/productSheets';
@@ -143,15 +143,15 @@ export function ProductsAdmin({ staffId }: { staffId: string }) {
           <thead>
             <tr>
               <th>{t('pdProduct')}</th>
-              <th>{t('pdChSelf')}</th>
-              <th>{t('pdChPartner')}</th>
+              <th className="c">{t('pdChSelf')}</th>
+              <th className="c">{t('pdChPartner')}</th>
               <th className="r">{t('pdPrice')}</th>
-              <th>{t('pdSaleUntil')}</th>
+              <th className="gap">{t('pdSaleUntil')}</th>
               <th>{t('pdSecCommission')}</th>
               <th className="r">{t('pdSold')}</th>
               <th className="r">{t('pdConv')}</th>
-              <th>{t('pdVersion')}</th>
-              <th />
+              <th className="gap">{t('pdVersion')}</th>
+              <th><span className="sr-only">{t('pdEdit')}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -171,7 +171,7 @@ export function ProductsAdmin({ staffId }: { staffId: string }) {
                     <div className="hint num">{p.id}</div>
                   </td>
                   {(['self', 'partner'] as const).map((ch) => (
-                    <td key={ch}>
+                    <td key={ch} className="c">
                       <label className="switch">
                         <input type="checkbox" id={`pd-${ch}-${p.id}`} checked={p.channels[ch]} onChange={() => toggle(p, ch)} />
                         <span className="switch-track" aria-hidden="true" />
@@ -180,7 +180,16 @@ export function ProductsAdmin({ staffId }: { staffId: string }) {
                     </td>
                   ))}
                   <td className="r num">{range ? (range[0] === range[1] ? fmtBaht(range[0], lang) : `${fmtBaht(range[0], lang)} – ${fmtBaht(range[1], lang)}`) : '—'}</td>
-                  <td>{p.saleUntil ? <span className={expired ? 'chip tone-bad' : 'num'}>{expired ? t('pdExpired') : ''} {p.saleUntil}</span> : <span className="muted">{t('pdNoEnd')}</span>}</td>
+                  <td className="gap">
+                    {p.saleUntil ? (
+                      <>
+                        <span className="num">{fmtDate(new Date(`${p.saleUntil}T12:00:00+07:00`).getTime(), lang, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        {expired && <div><span className="chip tone-bad">{t('pdExpired')}</span></div>}
+                      </>
+                    ) : (
+                      <span className="muted">{t('pdNoEnd')}</span>
+                    )}
+                  </td>
                   <td>
                     {p.commission === undefined ? <span className="muted">{t('pdComStd', { pct: standardCommission(p.type) })}</span> : <b>{t('pdComSpecial', { pct: p.commission })}</b>}
                     {nPartner > 0 && <div className="hint">{t('pdComPartners', { n: nPartner })}</div>}
@@ -190,13 +199,13 @@ export function ProductsAdmin({ staffId }: { staffId: string }) {
                     <div className="hint">{fmtBaht(Math.round(st?.gwp ?? 0), lang)}</div>
                   </td>
                   <td className="r num">{st && st.offered ? `${Math.round((st.won / st.offered) * 100)}%` : '—'}</td>
-                  <td className="num">v{p.ver}<div className="hint">{fmtDateTime(p.updatedAt, lang)}</div></td>
+                  <td className="gap num">v{p.ver}<div className="hint">{fmtDateTime(p.updatedAt, lang)}</div></td>
                   <td>
                     <div className="pd-row-actions">
                     <button type="button" className="btn small" onClick={() => setEditing({ p, isNew: false })}>{t('pdEdit')}</button>
                     <button
                       type="button"
-                      className="btn ghost small"
+                      className="btn small"
                       onClick={() => setEditing({ p: { ...structuredClone(p), id: newId(), ver: 0, nameTh: `${p.nameTh} (${t('pdCopySuffix')})`, nameEn: p.nameEn ? `${p.nameEn} (copy)` : '', badge: undefined, channels: { self: false, partner: false } }, isNew: true })}
                     >
                       {t('pdCopy')}
