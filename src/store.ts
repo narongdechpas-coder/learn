@@ -232,7 +232,7 @@ export function acceptCase(id: string, staffId: string) {
     c.assignee = c.assignee ?? staffId;
     c.log.push({ at: now, by: staffId, action: 'accept' });
     if (c.source === 'quote') c.status = 'ACCEPTED';
-    else if (docsMissing(c).length === 0) {
+    else if (docsMissing(c).length === 0 && (!needsDocConfirm(c) || c.stamps.docsComplete)) {
       c.status = 'DOCS_REVIEW';
       c.stamps.docsComplete = c.stamps.docsComplete ?? now;
     } else c.status = 'AWAITING_DOCS';
@@ -288,13 +288,56 @@ export async function uploadDoc(id: string, key: DocKey, file: File, by = 'custo
     const now = Date.now();
     c.docs[key] = { name: file.name, size: file.size, at: now };
     c.log.push({ at: now, by, action: 'upload', text: key });
-    if (docsMissing(c).length === 0 && !c.stamps.docsComplete) {
+    // Direct package buyers confirm the upload themselves (submitDocs); everyone else is submitted on the last file.
+    if (docsMissing(c).length === 0 && !c.stamps.docsComplete && !needsDocConfirm(c)) {
       c.stamps.docsComplete = now;
       if (c.source === 'self') return;
       if (c.status === 'AWAITING_DOCS') c.status = 'DOCS_REVIEW';
       s.emails = mail(s, 'staffDocsComplete', c);
       return { notifications: notify(s, 'docs', id) };
     }
+  });
+}
+
+/** Customer-page package sales wait for the customer to press "confirm" after attaching everything. */
+export const needsDocConfirm = (c: Case) => c.source === 'package' && !c.agentId;
+
+/** Class 1: the documents go to the back office for checking (issue SLA starts now). */
+export function submitDocs(id: string) {
+  update(id, (c, s) => {
+    if (docsMissing(c).length || c.stamps.docsComplete) return;
+    const now = Date.now();
+    c.stamps.docsComplete = now;
+    c.log.push({ at: now, by: 'customer', action: 'submitDocs' });
+    if (c.status === 'AWAITING_DOCS') c.status = 'DOCS_REVIEW';
+    s.emails = mail(s, 'staffDocsComplete', c);
+    return { notifications: notify(s, 'docs', id) };
+  });
+}
+
+/** Class 2+, 3+, 2, 3 and CMI: confirm, pay (simulated) and the policy is issued straight away. */
+export function submitPayIssue(id: string, delivery: Delivery, payment: { method: 'qr' | 'card'; last4?: string; months?: number }) {
+  update(id, (c, s) => {
+    if (docsMissing(c).length || c.status === 'ISSUED' || c.status === 'CANCELLED') return;
+    const now = Date.now();
+    c.stamps.accepted = c.stamps.accepted ?? now;
+    c.stamps.docsComplete = c.stamps.docsComplete ?? now;
+    c.stamps.paid = now;
+    c.stamps.issued = now;
+    c.status = 'ISSUED';
+    c.payment = { ...payment, at: now };
+    c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
+    c.premium = totalPremium(c);
+    c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+    c.log.push({ at: now, by: 'customer', action: 'paid', text: payment.method });
+    s.emails = mail(s, 'custSelfIssued', c, {
+      policyNo: c.policyNo,
+      premium: c.premium ?? 0,
+      deliveryMethod: c.delivery.method,
+      trackingNo: c.delivery.trackingNo ?? '',
+      sendTo: c.delivery.email ?? '',
+    });
+    return { notifications: notify(s, 'self', id, { type: c.coverage }) };
   });
 }
 

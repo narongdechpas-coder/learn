@@ -224,9 +224,18 @@ for (const i of [0, 1]) {
   assert.ok(Math.abs(box.height - (box.width * 3) / 4) < 2, `frame ${i} keeps 4:3`);
   assert.ok(box.x >= t.x && box.x + box.width <= t.x + t.width + 0.5, `frame ${i} inside tile`);
 }
-await customer.getByText('เอกสารครบแล้ว').waitFor();
+await customer.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor();
 if (shots) await customer.screenshot({ path: `${shots}/2-track.png`, fullPage: true });
 log('all 6 documents uploaded; tall and wide photos stay inside 4:3 frames');
+// Nothing reaches the back office until the customer confirms.
+assert.equal(await office.locator('.toast', { hasText: /แนบเอกสารครบ/ }).count(), 0, 'no docs alert before confirming');
+await customer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+const sd = customer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' });
+await sd.getByText('รับแจ้งงานแล้ว').waitFor();
+await sd.getByText(refA).waitFor();
+await sd.getByRole('button', { name: 'ตกลง' }).click();
+await customer.getByText('เอกสารครบแล้ว เจ้าหน้าที่กำลังตรวจสอบ').waitFor();
+log('Class 1: confirm and send shows "request received"; the back office gets it only then');
 
 // back office: accept → docs review → issue
 await office.bringToFront();
@@ -409,6 +418,29 @@ await customer.locator('#track-ref').fill('9zz 0000');
 await customer.getByRole('button', { name: 'ค้นหา', exact: true }).click();
 await customer.getByText('ไม่พบคำขอที่ตรงกับ').waitFor();
 log('tracking finds requests by plate (spaces/dashes ignored) or request number');
+
+// ---- Class 3 package: confirm, pay in the dialog, policy issued straight away ----
+await customer.bringToFront();
+await customer.getByRole('tab', { name: 'ซื้อประกัน' }).click();
+await customer.getByRole('radio', { name: /^110/ }).click();
+await customer.getByRole('radio', { name: 'Honda' }).click();
+await customer.locator('#car-model').selectOption('honda-city');
+await customer.locator('#car-year').selectOption('2022');
+await customer.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await customer.locator('.pkg-card.type-T3').first().getByRole('button', { name: 'เลือกแพ็กเกจนี้', exact: true }).click();
+await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
+const refT3 = (await customer.locator('.ref-big').innerText()).trim();
+await customer.getByRole('button', { name: 'ติดตามคำขอ / แนบเอกสาร', exact: true }).click();
+await customer.getByRole('button', { name: /ใช้ข้อมูลจำลอง/ }).click();
+await customer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+const sd3 = customer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' });
+await sd3.getByRole('radio', { name: /กรมธรรม์กระดาษ/ }).click();
+await sd3.getByRole('button', { name: /และออกกรมธรรม์/ }).click();
+await sd3.getByRole('heading', { name: 'ออกกรมธรรม์แล้ว', exact: true }).waitFor({ timeout: 5000 });
+await sd3.getByText(/EMS เลขพัสดุ EB/).waitFor();
+await sd3.getByRole('button', { name: 'ตกลง' }).click();
+await office.locator('.toast', { hasText: refT3 }).first().waitFor({ timeout: 5000 });
+log(`Class 3 ${refT3}: sample documents, confirm, paid in the dialog and the policy is issued at once`);
 
 // ---- Business Partner channel ----
 const thai = (p) => p.getByRole('radio', { name: 'TH' }).click();

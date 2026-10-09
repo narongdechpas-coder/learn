@@ -20,12 +20,13 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
-import { canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import { needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
 import { attachSampleDocs } from './extras';
+import { SubmitDocsBar, SubmitDocsHost } from './SubmitDocs';
 import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
@@ -92,6 +93,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
       ) : (
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
+      <SubmitDocsHost />
       <ChatBubble />
     </div>
   );
@@ -1436,7 +1438,7 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
         )}
       </div>
       {!allowed && missing.length > 0 && c.source === 'quote' && ['NEW', 'ACCEPTED', 'QUOTED'].includes(c.status) && <p className="muted">{t('uploadWaitQuote')}</p>}
-      {missing.length === 0 && <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>}
+      {missing.length === 0 && (needsDocConfirm(c) && !c.stamps.docsComplete ? null : <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>)}
       {errs.map((e) => (
         <p key={e} className="error" role="alert">{e}</p>
       ))}
@@ -1453,6 +1455,7 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
           <DocTile key={k} caseId={c.id} k={k} meta={c.docs[k]} label={DOC_LABEL[lang][k]} disabled={!allowed} onFile={(f) => onFile(k, f)} />
         ))}
       </div>
+      {missing.length === 0 && needsDocConfirm(c) && !c.stamps.docsComplete && <SubmitDocsBar c={c} />}
     </div>
   );
 }
