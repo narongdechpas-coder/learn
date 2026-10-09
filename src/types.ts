@@ -132,6 +132,8 @@ export interface Case {
   /** Sold through a Business Partner (Business Partner); absent for direct sales. */
   agentId?: string;
   proposalId?: string;
+  /** Renewal of a policy ABC already holds: no documents, payment issues the new policy. */
+  renewalOf?: string;
   /** Discount the agent gave, THB, taken out of the agent's commission. */
   discount?: number;
   /** Who takes the money: the customer pays ABC through the link, or the agent collects and remits. */
@@ -306,7 +308,7 @@ export interface Notification {
   id: string;
   at: number;
   caseId: string;
-  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead' | 'claim' | 'remit';
+  kind: 'new' | 'confirmed' | 'docs' | 'sla' | 'declined' | 'self' | 'lead' | 'claim' | 'remit' | 'renewed';
   params?: Record<string, string | number>;
   read: boolean;
 }

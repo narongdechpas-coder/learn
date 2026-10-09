@@ -10,6 +10,7 @@ import {
   assignCase,
   cancelCase,
   docsMissing,
+  requiredDocs,
   issuePolicy,
   markNotificationsRead,
   requestReupload,
@@ -295,6 +296,8 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
   switch (n.kind) {
     case 'new':
       return t('nNew', { ref, source: t(SOURCE_KEY[(n.params?.source as 'quote') ?? 'package']) }) + (n.params?.agent ? ` · ${agentById(String(n.params.agent))?.[lang] ?? ''}` : '');
+    case 'renewed':
+      return t('nRenewed', { ref, agent: agentById(String(n.params?.agent ?? ''))?.[lang] ?? '' });
     case 'remit':
       return t('nRemit', { ref, agent: agentById(String(n.params?.agent ?? ''))?.[lang] ?? '' });
     case 'claim':
@@ -463,9 +466,9 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
       )}
 
       <section>
-        <h4>{t('documents')} <span className="muted">({REQUIRED_DOCS[c.coverage].length - docsMissing(c).length}/{REQUIRED_DOCS[c.coverage].length})</span></h4>
+        <h4>{t('documents')} <span className="muted">({requiredDocs(c).length - docsMissing(c).length}/{requiredDocs(c).length})</span></h4>
         <div className="doc-grid small">
-          {REQUIRED_DOCS[c.coverage].map((k) => (
+          {requiredDocs(c).map((k) => (
             <BackDoc key={k} c={c} k={k} />
           ))}
         </div>

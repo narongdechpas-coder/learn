@@ -8,6 +8,7 @@ import { StatusPill, TypeTag } from './common';
 import { coverText } from './Agent';
 import { Uploads } from './Customer';
 import { FakeQr } from './icons';
+import { SubmitDocsHost } from './SubmitDocs';
 
 /** Ask the app to open a quotation (the customer link, or the agent's own preview). */
 export const openOffer = (id: string, asAgent: boolean, print = false) => window.dispatchEvent(new CustomEvent('abc-open-offer', { detail: { id, asAgent, print } }));
@@ -219,10 +220,11 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             {c.collect === 'link' && !c.paidAt && c.status !== 'CANCELLED' && <PayBox caseId={c.id} amount={totalPremium(c) ?? 0} />}
             {c.collect === 'link' && c.paidAt && <p className="ok-note">✓ {t('offerPaid', { d: fmtDateTime(c.paidAt, lang) })}</p>}
             {c.collect === 'agent' && <p className="hint">{t('offerPayAgent', { agent: ag[lang] })}</p>}
-            <Uploads c={c} by={asAgent ? ag.id : 'customer'} />
+            {c.renewalOf ? <p className="hint">↻ {t('renewNoDocs')}</p> : <Uploads c={c} by={asAgent ? ag.id : 'customer'} />}
           </div>
         )}
       </article>
+      <SubmitDocsHost />
     </div>
   );
 }

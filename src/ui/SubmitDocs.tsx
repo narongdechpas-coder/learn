@@ -12,7 +12,7 @@ import { BIZ_DAY_MIN, addBizMinutes } from '../lib/time';
  * After the customer has attached every document: Class 1 goes to the back office for checking;
  * every other cover is paid here and the policy is issued straight away.
  */
-export function SubmitDocsModal({ caseId, onClose }: { caseId: string; onClose: () => void }) {
+export function SubmitDocsModal({ caseId, by, onClose }: { caseId: string; by?: string; onClose: () => void }) {
   const { t, lang } = useT();
   const s = useStore();
   const c = s.cases.find((x) => x.id === caseId);
@@ -27,10 +27,12 @@ export function SubmitDocsModal({ caseId, onClose }: { caseId: string; onClose: 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
-  // Class 1 is submitted as soon as the dialog opens: the dialog is the receipt.
+  // Class 1, and anything a partner handles, goes to the back office as soon as the dialog
+  // opens: the dialog is the receipt. (Partners take payment their own way.)
+  const review = !!c && (c.coverage === 'T1' || !!c.agentId);
   useEffect(() => {
-    if (c && c.coverage === 'T1' && !c.stamps.docsComplete) {
-      submitDocs(c.id);
+    if (c && review && !c.stamps.docsComplete) {
+      submitDocs(c.id, by);
       setSent(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,7 +41,7 @@ export function SubmitDocsModal({ caseId, onClose }: { caseId: string; onClose: 
 
   const total = totalPremium(c) ?? 0;
   const plan = installmentPlan(total);
-  const t1 = c.coverage === 'T1';
+  const t1 = review;
 
   const payNow = () => {
     setBusy(true);
@@ -72,10 +74,10 @@ export function SubmitDocsModal({ caseId, onClose }: { caseId: string; onClose: 
             <div className="done-mark pop-in" aria-hidden="true">✓</div>
             <h4>{t('sdReceived')}</h4>
             <div className="ref-big num">{c.id}</div>
-            <p>{t('sdReceivedLead', { eta: fmtDateTime(addBizMinutes(c.stamps.docsComplete ?? Date.now(), BIZ_DAY_MIN), lang) })}</p>
+            <p>{t(c.coverage === 'T1' ? 'sdReceivedLead' : 'sdReceivedLeadDocs', { eta: fmtDateTime(addBizMinutes(c.stamps.docsComplete ?? Date.now(), BIZ_DAY_MIN), lang) })}</p>
             <ol className="sd-next">
               <li className="done">{t('sdStepSent')}</li>
-              <li>{t('sdStepCheck')}</li>
+              <li>{t(c.coverage === 'T1' ? 'sdStepCheck' : 'sdStepCheckDocs')}</li>
               <li>{t('sdStepIssue')}</li>
             </ol>
             <button type="button" className="btn primary" onClick={onClose}>{t('sdOk')}</button>
@@ -141,12 +143,12 @@ export function SubmitDocsModal({ caseId, onClose }: { caseId: string; onClose: 
 }
 
 /** Bar under the documents: everything is attached, now confirm to send. */
-export function SubmitDocsBar({ c }: { c: Case }) {
+export function SubmitDocsBar({ c, by }: { c: Case; by?: string }) {
   const { t } = useT();
   return (
     <div className="sd-bar">
       <span>✓ {t('sdReady')}</span>
-      <button type="button" className="btn primary" onClick={() => window.dispatchEvent(new CustomEvent('abc-submit-docs', { detail: c.id }))}>{t('sdConfirm')}</button>
+      <button type="button" className="btn primary" onClick={() => window.dispatchEvent(new CustomEvent('abc-submit-docs', { detail: { id: c.id, by } }))}>{t('sdConfirm')}</button>
     </div>
   );
 }
@@ -156,11 +158,11 @@ export function SubmitDocsBar({ c }: { c: Case }) {
  * once the case moves on (submitted, or issued).
  */
 export function SubmitDocsHost() {
-  const [id, setId] = useState<string | null>(null);
+  const [req, setReq] = useState<{ id: string; by?: string } | null>(null);
   useEffect(() => {
-    const on = (e: Event) => setId((e as CustomEvent<string>).detail);
+    const on = (e: Event) => setReq((e as CustomEvent<{ id: string; by?: string }>).detail);
     window.addEventListener('abc-submit-docs', on);
     return () => window.removeEventListener('abc-submit-docs', on);
   }, []);
-  return id ? <SubmitDocsModal caseId={id} onClose={() => setId(null)} /> : null;
+  return req ? <SubmitDocsModal caseId={req.id} by={req.by} onClose={() => setReq(null)} /> : null;
 }

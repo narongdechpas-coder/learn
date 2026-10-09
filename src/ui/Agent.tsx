@@ -11,6 +11,7 @@ import { SAMPLE_CUSTOMER, Uploads } from './Customer';
 import { BrandIcon } from './icons';
 import { ShareBox } from './Offer';
 import { RenewalReport } from './AgentRenewals';
+import { SubmitDocsHost } from './SubmitDocs';
 
 type Tab = 'sell' | 'offers' | 'cases' | 'renew' | 'perf';
 
@@ -126,6 +127,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
       )}
       {tab === 'offers' && <Offers offers={myOffers} onOpenOffer={onOpenOffer} />}
       {tab === 'cases' && <MyCases agent={agent} cases={myCases} focus={focusCase} setFocus={setFocusCase} />}
+      <SubmitDocsHost />
       {tab === 'renew' && <RenewalReport renewals={myRenewals} proposals={myOffers} onRenew={startRenewal} onOpenOffer={(id) => onOpenOffer(id, true)} />}
       {tab === 'perf' && (
         <Perf
@@ -200,7 +202,9 @@ function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: 
     if (!cust.firstName.trim() || !/^0\d{8,9}$/.test(cust.phone.replace(/\D/g, ''))) return setErr(t('agNeedCust'));
     if (mode === 'buy' && !consent) return setErr(t('agNeedConsent'));
     const options = chosen.map((p) => ({ pkg: p, addCmi: cmi && p.type !== 'CMI' }));
-    const id = createProposal({ agentId: agent.id, vehicle, customer: cust, options, discountPct: disc, renewalOf: prefill?.renewalOf });
+    // It is only a renewal while the car is still the one on the expiring policy.
+    const sameCar = !!pv && pv.modelId === vehicle.modelId && pv.year === vehicle.year && pv.usage === vehicle.usage;
+    const id = createProposal({ agentId: agent.id, vehicle, customer: cust, options, discountPct: disc, renewalOf: sameCar ? prefill?.renewalOf : undefined });
     if (mode === 'quote') return setMade(id);
     // Buying on the spot: the agent confirms for the customer, who has agreed in person.
     const caseId = acceptProposal(id, 0, 'agent', collect);
@@ -624,7 +628,7 @@ function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
         </div>
       )}
 
-      <Uploads c={c} by={agent.id} />
+      {c.renewalOf ? <p className="callout tone-info">↻ {t('renewNoDocs')}</p> : <Uploads c={c} by={agent.id} />}
     </article>
   );
 }

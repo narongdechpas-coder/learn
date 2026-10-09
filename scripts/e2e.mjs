@@ -318,14 +318,18 @@ assert.equal(await inputsB.count(), 2, 'Class 2+ asks for 2 documents, no car ph
 await inputsB.nth(0).setInputFiles(jpg('reg.jpg'));
 await customer.locator('.uploads .doc-tile.has').first().waitFor();
 await inputsB.nth(1).setInputFiles(jpg('id.jpg'));
-await customer.getByText('เอกสารครบแล้ว').waitFor();
+await customer.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor();
 log('customer accepted quote and uploaded 2 documents');
 
+// Class 2+ quote: confirm, pay in the dialog, issued without waiting for staff.
+await customer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+const sdB = customer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' });
+await sdB.getByRole('button', { name: /และออกกรมธรรม์/ }).click();
+await sdB.getByRole('heading', { name: 'ออกกรมธรรม์แล้ว', exact: true }).waitFor({ timeout: 5000 });
+await sdB.getByRole('button', { name: 'ตกลง' }).click();
 await office.bringToFront();
-await office.locator('.case-detail .pill', { hasText: 'ตรวจเอกสาร' }).waitFor({ timeout: 5000 });
-await office.getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
-await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor();
-log('quote case issued');
+await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor({ timeout: 5000 });
+log('quote case confirmed, paid and issued');
 
 // ---- Dashboard + language ----
 await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
@@ -523,6 +527,17 @@ await agent.getByText(/กรอกข้อมูลจากกรมธรร
 assert.equal(await agent.locator('#ag-c-firstName').inputValue(), renewName.split(' ')[0], 'renewal prefills the customer');
 await agent.getByRole('tab', { name: /ขาย/ }).click();
 log('renewal report: 1/2/3-month summary, list by priority, premium received and expected; renewal prefills a quotation');
+// Renewing with ABC: no documents, payment issues the new policy.
+await agent.getByRole('radio', { name: 'ซื้อเลย' }).click();
+await agent.locator('.ag-pkg-table tbody tr').first().click();
+await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง ABC ภายใน 15 วัน').first().click();
+await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
+await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
+await agent.getByText(/ต่ออายุกับ ABC ไม่ต้องแนบเอกสาร/).waitFor();
+assert.equal(await agent.locator('.ag-case-detail .uploads').count(), 0, 'renewal asks for no documents');
+await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
+await agent.locator('.ag-case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor({ timeout: 5000 });
+log('renewal with ABC: no documents, the partner collected the money and the new policy was issued');
 
 const buyer = await ctx.newPage();
 watch(buyer);
@@ -551,7 +566,10 @@ const inputsD = buyer.locator('.uploads input[type=file]');
 await inputsD.nth(0).setInputFiles(jpg('reg.jpg'));
 await buyer.locator('.uploads .doc-tile.has').first().waitFor();
 await inputsD.nth(1).setInputFiles(jpg('id.jpg'));
-await buyer.getByText('เอกสารครบแล้ว').waitFor();
+await buyer.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor();
+await buyer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+await buyer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByText('รับแจ้งงานแล้ว').waitFor();
+await buyer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByRole('button', { name: 'ตกลง' }).click();
 log(`customer chose option 2 with OTP, paid through the link and attached documents: ${refD}`);
 
 await office.bringToFront();
@@ -585,7 +603,10 @@ await agent.getByText(/ลูกค้ารับทราบความคุ
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
 const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/ABC-[\d-]+/)[0];
 await agent.locator('.ag-case-detail .uploads').getByRole('button', { name: /ใช้ข้อมูลจำลอง/ }).click();
-await agent.getByText('เอกสารครบแล้ว').waitFor({ timeout: 15000 });
+await agent.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor({ timeout: 15000 });
+await agent.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+await agent.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByText('รับแจ้งงานแล้ว').waitFor();
+await agent.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByRole('button', { name: 'ตกลง' }).click();
 assert.equal(await agent.locator('.ag-case-detail .doc-tile.has').count(), 2, 'sample files attached for every missing document');
 await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
 log(`agent sold 3+ on the spot with consent, attached sample documents in one click and collected the money: ${refE}`);

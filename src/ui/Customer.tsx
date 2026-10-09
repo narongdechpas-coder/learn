@@ -20,7 +20,7 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
-import { needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
+import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
@@ -1409,12 +1409,12 @@ export function useFileUrl(key: string, version: number | undefined) {
 export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?: string }) {
   const { t, lang } = useT();
   const [errs, setErrs] = useState<string[]>([]);
-  const required = REQUIRED_DOCS[c.coverage];
+  const required = requiredDocs(c);
   const allowed = canUpload(c);
   const missing = docsMissing(c);
   const [phone, setPhone] = useState(false);
   const [busy, setBusy] = useState(false);
-  if (c.status === 'CANCELLED' || c.status === 'ISSUED') return null;
+  if (c.status === 'CANCELLED' || c.status === 'ISSUED' || !required.length) return null;
   const needsPhotos = ANGLES.some((k) => required.includes(k) && !c.docs[k]);
 
   const onFile = async (key: DocKey, file: File | undefined) => {
@@ -1455,7 +1455,7 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
           <DocTile key={k} caseId={c.id} k={k} meta={c.docs[k]} label={DOC_LABEL[lang][k]} disabled={!allowed} onFile={(f) => onFile(k, f)} />
         ))}
       </div>
-      {missing.length === 0 && needsDocConfirm(c) && !c.stamps.docsComplete && <SubmitDocsBar c={c} />}
+      {missing.length === 0 && needsDocConfirm(c) && !c.stamps.docsComplete && <SubmitDocsBar c={c} by={by} />}
     </div>
   );
 }

@@ -163,7 +163,8 @@ export const totalPremium = (c: Case) => {
   return Math.round((base + (c.addCmi ? (cmiPremium(c.vehicle.usage) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
 };
 
-export const requiredDocs = (c: Case) => REQUIRED_DOCS[c.coverage];
+/** Documents a case needs; a renewal with ABC needs none (they are on file). */
+export const requiredDocs = (c: Pick<Case, 'coverage' | 'renewalOf'>) => (c.renewalOf ? [] : REQUIRED_DOCS[c.coverage]);
 export const docsMissing = (c: Case) => requiredDocs(c).filter((k) => !c.docs[k]);
 export const canUpload = (c: Case) =>
   c.source === 'self'
@@ -185,6 +186,7 @@ export interface SubmitInput {
   discount?: number;
   collect?: Case['collect'];
   proposalId?: string;
+  renewalOf?: string;
 }
 
 export function submitCase(input: SubmitInput, mine = true): string {
@@ -194,15 +196,16 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const p = bkkParts(now);
   const id = `ABC-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
   const self = input.source === 'self';
+  const renewal = !!input.renewalOf;
   const c: Case = {
     id,
     ...input,
     createdAt: now,
-    status: self ? 'AWAITING_PAYMENT' : 'NEW',
+    status: self || renewal ? 'AWAITING_PAYMENT' : 'NEW',
     stamps:
       input.source === 'quote'
         ? { submitted: now }
-        : { submitted: now, quoted: now, confirmed: now, ...(self ? { accepted: now } : {}) },
+        : { submitted: now, quoted: now, confirmed: now, ...(self || renewal ? { accepted: now } : {}), ...(renewal ? { docsComplete: now } : {}) },
     docs: {},
     log: [{ at: now, by: input.agentId ?? 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
@@ -212,14 +215,14 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const email = input.customer.email.trim().toLowerCase();
   const lead = base.leads.find((l) => !l.caseId && now - l.at < 30 * 86400000 && (l.contact.replace(/\D/g, '') === phone || l.contact.toLowerCase() === email));
   if (lead) s.leads = base.leads.map((l) => (l === lead ? { ...l, caseId: id } : l));
-  if (self) {
+  if (self || renewal) {
     // Nobody needs to act yet; the back office hears about it once it is paid.
     commit(s);
     return id;
   }
   s.emails = mail(s, 'custReceived', c);
   // Package sales can attach documents straight away, so say which ones (quotes get this after accepting).
-  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: needsDocConfirm(c) ? 1 : 0 });
+  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 1 });
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
@@ -269,7 +272,7 @@ export function customerConfirm(id: string, by = 'customer', collect?: Case['col
     if (collect) c.collect = collect;
     c.log.push({ at: now, by, action: 'confirm' });
     s.emails = mail(s, 'staffConfirmed', c);
-    return { emails: mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 0 }), notifications: notify(s, 'confirmed', id) };
+    return { emails: mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 1 }), notifications: notify(s, 'confirmed', id) };
   });
 }
 
@@ -301,16 +304,16 @@ export async function uploadDoc(id: string, key: DocKey, file: File, by = 'custo
   });
 }
 
-/** Customer-page package sales wait for the customer to press "confirm" after attaching everything. */
-export const needsDocConfirm = (c: Case) => c.source === 'package' && !c.agentId;
+/** After attaching everything the customer (or partner) presses "confirm" before the case moves on. */
+export const needsDocConfirm = (c: Case) => c.source !== 'self' && !c.renewalOf;
 
 /** Class 1: the documents go to the back office for checking (issue SLA starts now). */
-export function submitDocs(id: string) {
+export function submitDocs(id: string, by = 'customer') {
   update(id, (c, s) => {
     if (docsMissing(c).length || c.stamps.docsComplete) return;
     const now = Date.now();
     c.stamps.docsComplete = now;
-    c.log.push({ at: now, by: 'customer', action: 'submitDocs' });
+    c.log.push({ at: now, by, action: 'submitDocs' });
     if (c.status === 'AWAITING_DOCS') c.status = 'DOCS_REVIEW';
     s.emails = mail(s, 'staffDocsComplete', c);
     return { notifications: notify(s, 'docs', id) };
@@ -594,6 +597,7 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
       discount: price.discount || undefined,
       collect,
       proposalId: id,
+      renewalOf: pr.renewalOf,
     },
     by === 'customer',
   );
@@ -609,22 +613,37 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
 
 /** Customer pays ABC through the quotation link (simulated). */
 export function payByLink(id: string, method: 'qr' | 'card', last4?: string, months?: number) {
-  update(id, (c) => {
+  update(id, (c, s) => {
     if (c.paidAt) return;
     const now = Date.now();
     c.paidAt = now;
     c.payment = { method, at: now, last4, months };
     c.log.push({ at: now, by: 'customer', action: 'paid', text: method });
+    if (c.renewalOf) return issueRenewal(c, s, now);
   });
+}
+
+/** A renewal is issued the moment it is paid (or the partner has the money): nothing to check. */
+function issueRenewal(c: Case, s: State, now: number): Partial<State> {
+  c.stamps.paid = now;
+  c.stamps.issued = now;
+  c.status = 'ISSUED';
+  c.premium = totalPremium(c);
+  c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+  c.delivery = { method: 'pdf', email: c.customer.email };
+  c.log.push({ at: now, by: 'system', action: 'issue' });
+  s.emails = mail(s, 'custIssued', c, { policyNo: c.policyNo, premium: c.premium ?? 0 });
+  return { emails: s.emails, notifications: notify(s, 'renewed', c.id, { agent: c.agentId ?? '' }) };
 }
 
 /** Agent took the customer's money; it still has to be remitted to ABC. */
 export function agentCollected(id: string) {
-  update(id, (c) => {
+  update(id, (c, s) => {
     if (c.paidAt) return;
     const now = Date.now();
     c.paidAt = now;
     c.log.push({ at: now, by: c.agentId ?? 'agent', action: 'collected' });
+    if (c.renewalOf) return issueRenewal(c, s, now);
   });
 }
 

@@ -1367,3 +1367,4 @@ input[type='radio']:not(.sr-only) { width: auto; padding: 0; accent-color: var(-
 .sd-options .option-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 .sd-qr { display: flex; gap: 12px; align-items: center; }
 @media (max-width: 480px) { .sd-options { grid-template-columns: 1fr; } }
+.compare-bar { border-radius: var(--r); }
