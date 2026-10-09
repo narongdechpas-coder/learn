@@ -9,7 +9,7 @@ import { productStats } from '../lib/productStats';
 import { planImport, productsToSheets, type ImportItem } from '../lib/productSheets';
 import { readXlsx, writeXlsx } from '../lib/xlsx';
 import { putFile } from '../files';
-import { TypeTag } from './common';
+import { NumberInput, TypeTag } from './common';
 
 const DOC_KEYS: DocKey[] = ['front', 'back', 'left', 'right', 'regbook', 'idcard'];
 export const EXTRA_KEY: Record<ProductExtra, TKey> = {
@@ -283,20 +283,8 @@ function rateIssues(rates: RateRow[]): number[] {
   return bad;
 }
 
-function NumInput({ id, value, onChange, min = 0, step, placeholder, label }: { id: string; value: number | undefined; onChange: (v: number | undefined) => void; min?: number; step?: number; placeholder?: string; label?: string }) {
-  return (
-    <input
-      id={id}
-      type="number"
-      inputMode="decimal"
-      min={min}
-      step={step}
-      aria-label={label}
-      placeholder={placeholder}
-      value={value ?? ''}
-      onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-    />
-  );
+function NumInput({ id, value, onChange, placeholder, label }: { id: string; value: number | undefined; onChange: (v: number | undefined) => void; step?: number; placeholder?: string; label?: string }) {
+  return <NumberInput id={id} aria-label={label} placeholder={placeholder} value={value} onChange={onChange} />;
 }
 
 function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product; isNew: boolean; staffId: string; onClose: () => void }) {

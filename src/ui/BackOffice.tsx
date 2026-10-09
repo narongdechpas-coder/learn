@@ -19,7 +19,7 @@ import {
   useStore,
 } from '../store';
 import { SLA_KEYS, slaFor } from '../lib/sla';
-import { BizClock, CaseSla, Field, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
+import { BizClock, CaseSla, Field, NumberInput, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
 import { useFileUrl } from './Customer';
 import { AGENTS, caseCommission, mktById, payInfo, settled } from '../data/agents';
 import { PAY_TONE, payKey } from './Agent';
@@ -364,7 +364,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
           {(c.status === 'ACCEPTED' || c.status === 'QUOTED') && c.source === 'quote' && (
             <div className="quote-box">
               <Field htmlFor={`qp-${c.id}`} label={t('quotePremium')} hint={t('suggested', { price: fmtBaht(suggested, lang) })}>
-                <input id={`qp-${c.id}`} type="number" min={0} step={10} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                <NumberInput id={`qp-${c.id}`} value={price || undefined} onChange={(v) => setPrice(v ?? 0)} />
               </Field>
               <button className="btn primary" type="button" disabled={!(price > 0)} onClick={() => sendQuote(c.id, price, staffId)}>
                 {t(c.status === 'QUOTED' ? 'actRequote' : 'actQuote')}

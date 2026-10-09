@@ -5,7 +5,7 @@ import { vehicleText } from '../data/vehicles';
 import { COVERAGE_LABEL, fmtBaht, fmtDate, fmtNum, useT } from '../i18n';
 import { nudgeAgent, totalPremium, updateAgent, useStore } from '../store';
 import { DAY_MS, bkkParts, bkkTime } from '../lib/time';
-import { Segmented, useNow } from './common';
+import { NumberInput, Segmented, useNow } from './common';
 import { proposalState } from './Agent';
 import { RenewalReport } from './AgentRenewals';
 
@@ -283,15 +283,13 @@ function MktManage({ agents }: { agents: Agent[] }) {
                 </td>
                 <td className="hint">{a.kind === 'company' ? `${lang === 'th' ? a.contactTh : a.contactEn} · ` : ''}{a.phone} · {a.province}</td>
                 <td>
-                  <input
+                  <NumberInput
                     className="num target-input"
-                    type="number"
-                    min={0}
-                    step={5000}
+                    decimals={false}
                     aria-label={`${t('mktTargetMonth')} ${a.code}`}
-                    defaultValue={a.target}
-                    onBlur={(e) => {
-                      const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+                    value={a.target}
+                    onBlur={(n) => {
+                      const v = Math.max(0, Math.round(n || 0));
                       if (v !== a.target) updateAgent(a.id, { target: v });
                     }}
                   />
