@@ -1520,6 +1520,14 @@ input[type='radio']:not(.sr-only) { width: auto; padding: 0; accent-color: var(-
 .sd-qr { display: flex; gap: 12px; align-items: center; }
 @media (max-width: 480px) { .sd-options { grid-template-columns: 1fr; } }
 .compare-bar { border-radius: var(--r); }
+/* Compare bar: a muted sage, a step deeper than the page, instead of near-black. */
+.compare-bar { background: #d2e2da; color: var(--ink); border: 1px solid #b9cfc4; box-shadow: 0 10px 30px rgba(23, 37, 31, 0.18); }
+.compare-bar .muted { color: var(--ink-2); }
+.compare-bar .btn.ghost { color: var(--ink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .compare-bar { background: #2a3d35; border-color: #3a5147; color: var(--ink); } }
+:root[data-theme='dark'] .compare-bar { background: #2a3d35; border-color: #3a5147; color: var(--ink); }
+/* Keep the chat button clear of the compare bar on small screens. */
+@media (max-width: 640px) { body:has(.compare-bar) .chat { bottom: calc(120px + env(safe-area-inset-bottom, 0px)); } }
 </style>
 </head>
 <body>
