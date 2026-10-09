@@ -786,14 +786,20 @@ await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
 await agent.locator('.ct-card').first().waitFor();
 assert.equal(await agent.locator('.ct-card', { hasText: 'ชั้น 1 EV Plus' }).count(), 0, 'ended product hidden from partners');
 assert.equal(await agent.locator('.ct-card', { hasText: 'ทุน 100,000' }).count(), 0, 'product closed to partners');
-await shop.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
-await shop.locator('.ct-card', { hasText: 'ชั้น 3+ ทุน 100,000' }).waitFor();
-assert.equal(await shop.locator('.ct-card', { hasText: 'ชั้น 1 EV Plus' }).count(), 0, 'ended product hidden from customers');
-await shop.locator('.ct-card', { hasText: 'ชั้น 2+ ทุน 300,000' }).getByRole('button', { name: 'รายละเอียด' }).click();
-await shop.getByRole('dialog').getByText('รถอายุไม่เกิน 15 ปี').waitFor();
-await shop.getByRole('dialog').getByRole('button', { name: 'เช็คเบี้ยรถคุณ' }).click();
-await shop.locator('.type-opt.on', { hasText: '2+' }).waitFor();
-log('closed to partners and past its end date: hidden from partner and customer catalogues; "check your price" opens the class');
+assert.equal(await shop.getByRole('tab', { name: 'ผลิตภัณฑ์' }).count(), 0, 'no products tab on the customer site');
+await shop.reload();
+await shop.getByRole('radio', { name: /^110/ }).click();
+await shop.getByRole('radio', { name: 'BYD' }).click();
+await shop.locator('#car-model').selectOption('byd-atto3');
+await shop.locator('#car-year').selectOption('2024');
+await shop.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
+await shop.locator('.pkg-card').first().waitFor();
+assert.equal(await shop.locator('.pkg-card', { hasText: 'EV Plus' }).count(), 0, 'ended product not offered to customers');
+await agent.locator('.ct-card', { hasText: 'ชั้น 2+ ทุน 300,000' }).getByRole('button', { name: 'รายละเอียด' }).click();
+await agent.getByRole('dialog').getByText('รถอายุไม่เกิน 15 ปี').waitFor();
+await agent.getByRole('dialog').getByRole('button', { name: 'เช็คเบี้ยรถคุณ' }).click();
+await agent.locator('#ag-brand').waitFor();
+log('closed to partners and past its end date: hidden from the partner catalogue and from customer packages');
 
 // New product from the standard cover button.
 await office.locator('#pd-new-type').selectOption('T2P');

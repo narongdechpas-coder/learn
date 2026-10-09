@@ -20,7 +20,6 @@ import {
 } from '../data/vehicles';
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, type Scenario } from '../data/packages';
 import { packagesFor } from '../data/products';
-import { ProductCatalog } from './Catalog';
 import { EXTRA_KEY, productName } from './Products';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
@@ -72,8 +71,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
   openLogin?: boolean;
 }) {
   const { t } = useT();
-  const [tab, setTab] = useState<'buy' | 'products' | 'track'>('buy');
-  const [prefType, setPrefType] = useState<{ type: CoverageType; n: number } | undefined>();
+  const [tab, setTab] = useState<'buy' | 'track'>('buy');
   const [login, setLogin] = useState(openLogin);
   useEffect(() => {
     if (trackId) setTab('track');
@@ -83,7 +81,6 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
       <div className="cust-top">
         <div className="subtabs" role="tablist">
           <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
-          <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>{t('ctTab')}</button>
           <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
         </div>
         {onPartner && (
@@ -93,15 +90,9 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
         )}
       </div>
       {login && onPartner && <PartnerLogin onClose={() => setLogin(false)} onDone={(id) => { setLogin(false); onPartner(id); }} />}
-      {/* Buy stays mounted while browsing products, so the car already picked is kept. */}
-      {tab !== 'track' && (
-        <div hidden={tab !== 'buy'}>
-          <Buy prefType={prefType} onTrack={(id) => { setTrackId(id); setTab('track'); }} />
-        </div>
-      )}
-      {tab === 'products' ? (
-        <ProductCatalog channel="self" onCheck={(type) => { setPrefType({ type, n: Date.now() }); setTab('buy'); window.scrollTo({ top: 0 }); }} />
-      ) : tab === 'buy' ? null : (
+      {tab === 'buy' ? (
+        <Buy onTrack={(id) => { setTrackId(id); setTab('track'); }} />
+      ) : (
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
       <SubmitDocsHost />
@@ -131,7 +122,7 @@ function Steps({ step, self }: { step: Step; self: boolean }) {
   );
 }
 
-function Buy({ onTrack, prefType }: { onTrack: (id: string) => void; prefType?: { type: CoverageType; n: number } }) {
+function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const { t, lang } = useT();
   const s = useStore();
   const [step, setStep] = useState<Step>('car');
@@ -141,11 +132,7 @@ function Buy({ onTrack, prefType }: { onTrack: (id: string) => void; prefType?: 
   const [year, setYear] = useState(0);
   const [pkg, setPkg] = useState<Package | null>(null);
   const [addCmi, setAddCmi] = useState(true);
-  const [filter, setFilter] = useState<CoverageType | 'all'>(prefType?.type ?? 'all');
-  // Picking a class in the product catalogue filters the packages to it.
-  useEffect(() => {
-    if (prefType) setFilter(prefType.type);
-  }, [prefType]);
+  const [filter, setFilter] = useState<CoverageType | 'all'>('all');
   const [quoteType, setQuoteType] = useState<CoverageType>('T1');
   const [quoteSI, setQuoteSI] = useState(0);
   const [customer, setCustomer] = useState<CustomerT>(SAMPLE_CUSTOMER);
@@ -188,7 +175,6 @@ function Buy({ onTrack, prefType }: { onTrack: (id: string) => void; prefType?: 
   const siPct = suggested ? ((si - suggested) / suggested) * 100 : 0;
   const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si, { channel: 'self' }) : []), [ready, model, usage, year, si, s.products]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
-  // A class picked from the product catalogue may not be offered for this car: show everything then.
   const activeFilter = filter !== 'all' && !types.includes(filter) ? 'all' : filter;
   const shown = pkgs.filter((p) => activeFilter === 'all' || p.type === activeFilter);
   const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
@@ -230,7 +216,7 @@ function Buy({ onTrack, prefType }: { onTrack: (id: string) => void; prefType?: 
     setPkg(null);
     setCustom(false);
     setCompare([]);
-    setFilter(prefType?.type ?? 'all');
+    setFilter('all');
     setStep('pkg');
   };
   const goQuote = () => {
