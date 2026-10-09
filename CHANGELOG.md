@@ -4,7 +4,7 @@
 
 | เวอร์ชัน | Commit | PR | สถานะ |
 |---|---|---|---|
-| v3.0-products | (หลัง merge) | — | โมดูลผลิตภัณฑ์ |
+| v3.0-products | `91e12d0` | #7 | ล่าสุด · branch สำรอง `release/v3.0-products` |
 | v2.0-business-partner | `852ee16` | #5 | branch สำรอง `release/v2.0-business-partner` |
 | v1.0-customer | `a4ebf67` | #4 | — |
 
