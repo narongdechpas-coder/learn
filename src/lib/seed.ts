@@ -88,7 +88,7 @@ export function seedCases(now: number): SeedResult {
 
       seq++;
       const sp = bkkParts(submitted);
-      const id = `ABC-${String(sp.y).slice(2)}${String(sp.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+      const id = `JKY-${String(sp.y).slice(2)}${String(sp.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
       const fn = pick(FIRST);
       const ln = pick(LAST);
       const customer: Customer = {

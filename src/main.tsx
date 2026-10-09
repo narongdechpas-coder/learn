@@ -116,6 +116,16 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  // The side panel sits right under the top bar, whose height changes with wrapping and language.
+  useEffect(() => {
+    const bar = document.querySelector('.topbar');
+    if (!bar || typeof ResizeObserver === 'undefined') return;
+    const set = () => document.documentElement.style.setProperty('--topbar-h', `${Math.round(bar.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
   // The demo tools menu closes on any click outside it, or Escape.
   useEffect(() => {
     if (!toolsOpen) return;
@@ -248,7 +258,7 @@ function App() {
         </div>
       )}
 
-      <main className={`main view-${view}`}>
+      <main className={`main view-${view}${isAbc(view) ? ' abc-full' : ''}`}>
         {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
         {view === 'agent' && partnerId && <AgentApp agentId={partnerId} onLogout={() => { setPartnerId(null); setView('customer'); }} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
         {view === 'agent' && !partnerId && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={null} openLogin onPartner={(id) => setPartnerId(id)} />}

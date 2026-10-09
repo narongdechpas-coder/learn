@@ -17,8 +17,8 @@ const out = await build({
 const js = out.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const css = readFileSync('src/styles.css', 'utf8');
 
-const head = `<title>ABC Motor Insurance Demo</title>
-<meta name="description" content="ระบบจำลองการซื้อประกันรถยนต์ ABC: หน้าลูกค้า หลังบ้าน และ Performance Dashboard">
+const head = `<title>Jacky Motor Insurance Demo</title>
+<meta name="description" content="ระบบจำลองการซื้อประกันรถยนต์ Jacky: หน้าลูกค้า หลังบ้าน และ Performance Dashboard">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -54,7 +54,7 @@ writeFileSync('dist/offline/abc-motor-insurance-demo.html', `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ABC Motor Insurance Demo</title>
+<title>Jacky Motor Insurance Demo</title>
 <style>${fontCss}</style>
 <style>${css}</style>
 </head>

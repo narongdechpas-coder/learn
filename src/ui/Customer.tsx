@@ -1001,7 +1001,7 @@ function ChatBubble() {
           <b>{t('chatTitle')}</b>
           <p className="muted">{t('chatLead')}</p>
           <ul>
-            <li><span className="chat-ico line" aria-hidden="true">L</span> LINE <b>@abc-demo</b></li>
+            <li><span className="chat-ico line" aria-hidden="true">L</span> LINE <b>@jacky-demo</b></li>
             <li><span className="chat-ico" aria-hidden="true">☎</span> <b className="num">02-000-0000</b></li>
           </ul>
           <p className="hint">{t('chatNote')}</p>

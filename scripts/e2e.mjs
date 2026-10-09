@@ -33,7 +33,7 @@ const watch = (p) => {
 
 let step = 0;
 const log = (s) => console.log(`  ${++step}. ${s}`);
-// ABC screens live under the "ABC system" top menu, in its side menu.
+// Jacky screens live under the "Jacky system" top menu, in its side menu.
 const abc = async (p, view) => {
   if (!(await p.locator('.abc-side').count())) await p.locator('.mainnav .nav-abc').click();
   if (await p.locator('.side-show').count()) await p.locator('.side-show').click();
@@ -53,7 +53,7 @@ await office.goto(url + '#backoffice');
 await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
 log('customer and back-office tabs open');
 await customer.getByRole('button', { name: 'คุยกับเจ้าหน้าที่' }).click();
-await customer.getByText('@abc-demo').waitFor();
+await customer.getByText('@jacky-demo').waitFor();
 await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
 
 // ---- Path A: choose a package (Class 1) ----
@@ -173,7 +173,7 @@ await customer.getByText('เบอร์มือถือต้องมี 10
 await customer.locator('#f-phone').fill('0812345678');
 await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน', exact: true }).click();
 const refA = (await customer.locator('.ref-big').innerText()).trim();
-assert.match(refA, /^ABC-\d{4}-\d{4}$/);
+assert.match(refA, /^JKY-\d{4}-\d{4}$/);
 log(`package case submitted: ${refA}`);
 
 // back office tab gets a realtime toast + bell
@@ -287,7 +287,7 @@ await customer.locator('.claim-modal').getByRole('button', { name: 'ปิด', 
 await office.locator('.toast', { hasText: 'แจ้งเคลม' }).waitFor({ timeout: 5000 });
 await customer.getByRole('button', { name: /ดูตัวอย่างอีเมลเตือน/ }).click();
 await customer.getByText('ส่งตัวอย่างไปที่กล่องอีเมลจำลองแล้ว').waitFor();
-assert.match(await customer.locator('.refer-row code').innerText(), /^ABC-/);
+assert.match(await customer.locator('.refer-row code').innerText(), /^JKY-/);
 if (shots) await customer.screenshot({ path: `${shots}/2d-issued.png`, fullPage: true });
 log('digital card, claim report (back office alerted), renewal reminder and referral code');
 
@@ -538,17 +538,17 @@ await agent.getByText(/กรอกข้อมูลจากกรมธรร
 assert.equal(await agent.locator('#ag-c-firstName').inputValue(), renewName.split(' ')[0], 'renewal prefills the customer');
 await agent.getByRole('tab', { name: /ขาย/ }).click();
 log('renewal report: 1/2/3-month summary, list by priority, premium received and expected; renewal prefills a quotation');
-// Renewing with ABC: no documents, payment issues the new policy.
+// Renewing with Jacky: no documents, payment issues the new policy.
 await agent.getByRole('radio', { name: 'ซื้อเลย' }).click();
 await agent.locator('.ag-pkg-table tbody tr').first().click();
-await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง ABC ภายใน 15 วัน').first().click();
+await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').first().click();
 await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
-await agent.getByText(/ต่ออายุกับ ABC ไม่ต้องแนบเอกสาร/).waitFor();
+await agent.getByText(/ต่ออายุกับ Jacky ไม่ต้องแนบเอกสาร/).waitFor();
 assert.equal(await agent.locator('.ag-case-detail .uploads').count(), 0, 'renewal asks for no documents');
 await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
 await agent.locator('.ag-case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor({ timeout: 5000 });
-log('renewal with ABC: no documents, the partner collected the money and the new policy was issued');
+log('renewal with Jacky: no documents, the partner collected the money and the new policy was issued');
 
 const buyer = await ctx.newPage();
 watch(buyer);
@@ -570,7 +570,7 @@ await buyer.getByRole('button', { name: /ยืนยันซื้อ/ }).clic
 await buyer.getByText('กรอกรหัส OTP 6 หลัก').waitFor();
 await buyer.getByRole('button', { name: 'ใส่รหัสตัวอย่าง' }).click();
 await buyer.getByRole('button', { name: /ยืนยันซื้อ/ }).click();
-const refD = (await buyer.locator('.ok-note').first().innerText()).match(/ABC-[\d-]+/)[0];
+const refD = (await buyer.locator('.ok-note').first().innerText()).match(/JKY-[\d-]+/)[0];
 await buyer.getByRole('button', { name: 'ชำระเงิน (จำลอง)' }).click();
 await buyer.getByText(/ชำระเงินแล้ว/).waitFor();
 const inputsD = buyer.locator('.uploads input[type=file]');
@@ -607,12 +607,12 @@ await agent.locator('#ag-year').selectOption('2024');
 const rows2 = agent.locator('.ag-pkg-table tbody tr');
 const types2 = await rows2.locator('.type-tag').allInnerTexts();
 await rows2.nth(types2.findIndex((x) => x.includes('3+'))).click();
-await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง ABC ภายใน 15 วัน').first().click();
+await agent.getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').first().click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
 await agent.getByText('ติ๊กยืนยันว่าลูกค้ายินยอมก่อน').waitFor();
 await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
-const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/ABC-[\d-]+/)[0];
+const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/JKY-[\d-]+/)[0];
 await agent.locator('.ag-case-detail .uploads').getByRole('button', { name: /ใช้ข้อมูลจำลอง/ }).click();
 await agent.getByText(/แนบเอกสารครบแล้ว ตรวจรูปอีกครั้ง/).waitFor({ timeout: 15000 });
 await agent.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
@@ -639,7 +639,7 @@ await office.locator('tr', { hasText: refE }).getByRole('button', { name: 'บ�
 await office.locator('#bo-remit-show').selectOption('all');
 await office.locator('tr', { hasText: refE }).getByText('ตามเกณฑ์').waitFor();
 await agent.bringToFront();
-await agent.getByText(/ABC ได้รับเงินนำส่งแล้ว/).waitFor({ timeout: 5000 });
+await agent.getByText(/Jacky ได้รับเงินนำส่งแล้ว/).waitFor({ timeout: 5000 });
 log('agent reported the remittance; back office was alerted and recorded it');
 
 // Marketing: performance, targets, suspension, reminders.
@@ -694,7 +694,7 @@ assert.equal(await office.locator('.agent-table tbody tr').count(), 2, 'marketin
 await office.locator('#d-mkt').selectOption('all');
 await office.locator('#d-channel').selectOption('all');
 await tools(office, /อีเมลจำลอง/);
-assert.equal(await office.locator('.abc-side').count(), 0, 'demo tools sit outside the ABC menu');
+assert.equal(await office.locator('.abc-side').count(), 0, 'demo tools sit outside the Jacky menu');
 await office.getByRole('radio', { name: 'ถึงตัวแทน' }).click();
 await office.locator('.mail-row').first().waitFor();
 await office.getByRole('radio', { name: 'ทั้งหมด' }).click();

@@ -77,7 +77,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
           renewals={s.renewals.filter((r) => r.agentId && ids.has(r.agentId))}
           proposals={s.proposals}
           agents={agents}
-          onNudge={(r) => nudgeAgent('renewal', r.id, me?.[lang] ?? 'ABC')}
+          onNudge={(r) => nudgeAgent('renewal', r.id, me?.[lang] ?? 'Jacky')}
         />
       )}
       {tab === 'manage' && <MktManage agents={agents} />}
@@ -105,7 +105,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
                       ) : r.nudgedAt ? (
                         <span className="pill tone-neutral">✓ {t('mktNudged')}</span>
                       ) : (
-                        <button type="button" className="btn small" onClick={() => nudgeAgent('renewal', r.id, me?.[lang] ?? 'ABC')}>{t('mktNudge')}</button>
+                        <button type="button" className="btn small" onClick={() => nudgeAgent('renewal', r.id, me?.[lang] ?? 'Jacky')}>{t('mktNudge')}</button>
                       )}
                     </li>
                   );
@@ -135,7 +135,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
                       {nudged ? (
                         <span className="pill tone-neutral">✓ {t('mktNudged')}</span>
                       ) : (
-                        <button type="button" className="btn small" onClick={() => nudgeAgent('remit', c.id, me?.[lang] ?? 'ABC')}>{t('mktNudge')}</button>
+                        <button type="button" className="btn small" onClick={() => nudgeAgent('remit', c.id, me?.[lang] ?? 'Jacky')}>{t('mktNudge')}</button>
                       )}
                     </li>
                   );

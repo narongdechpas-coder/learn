@@ -1505,13 +1505,13 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
   .abc-side[hidden] { display: flex; }
   .abc-shell.side-hidden { gap: 12px; }
 }
-/* Side panel in navy (#305073). Contrast on it: titles #fff 8.3:1, items #e6edf5 7.1:1,
-   hover #fff on #415e7e 6.7:1, current item #fff on #516c89 5.5:1 (all WCAG AA). */
+/* Side panel in navy (#305073), full height and flush with the left edge. Contrast on it:
+   titles #fff 8.3:1, items #e6edf5 7.1:1, hover #fff on #415e7e 6.7:1, current #fff on #516c89 5.5:1 (WCAG AA). */
 .abc-side { --side-bg: #305073; --side-ink: #e6edf5; --side-hover: #415e7e; --side-on: #516c89; background: var(--side-bg); border-radius: var(--r); padding: 14px 10px; box-shadow: 0 6px 18px rgba(20, 35, 55, 0.18); }
 .abc-side .abc-group-label { color: #fff; }
 .abc-side .abc-item { color: var(--side-ink); }
 .abc-side .abc-item:hover { background: var(--side-hover); color: #fff; }
-.abc-side .abc-item.on { background: var(--side-on); color: #fff; font-weight: 600; box-shadow: inset 3px 0 0 #fff; }
+.abc-side .abc-item.on { background: var(--side-on); color: #fff; font-weight: 600; }
 .abc-side .side-hide { background: transparent; color: var(--side-ink); border-color: rgba(255, 255, 255, 0.35); }
 .abc-side .side-hide:hover { background: var(--side-hover); color: #fff; }
 .abc-side .abc-item:focus-visible, .abc-side .side-hide:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
@@ -1520,4 +1520,17 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
 @media (max-width: 900px) {
   .abc-side { padding: 6px; }
   .abc-group + .abc-group { border-left-color: rgba(255, 255, 255, 0.25); }
+}
+
+/* Jacky system: the side panel runs the full height of the window from the left edge. */
+.main.abc-full { max-width: none; padding: 0; margin: 0; }
+.abc-full .abc-shell { grid-template-columns: 230px minmax(0, 1fr); gap: 0; min-height: calc(100vh - var(--topbar-h, 64px)); }
+.abc-full .abc-side { top: var(--topbar-h, 64px); height: calc(100vh - var(--topbar-h, 64px)); overflow-y: auto; align-content: start; border-radius: 0; box-shadow: none; padding: 18px 12px; }
+.abc-full .abc-main { padding: 20px 28px; width: 100%; max-width: 1240px; justify-self: center; }
+.abc-full .abc-shell.side-hidden { grid-template-columns: minmax(0, 1fr); }
+.abc-full .side-show { margin: 16px 0 -4px 28px; }
+@media (max-width: 900px) {
+  .abc-full .abc-shell { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .abc-full .abc-side { position: sticky; top: 0; height: auto; padding: 6px 8px; z-index: 5; }
+  .abc-full .abc-main { padding: 14px 16px; }
 }

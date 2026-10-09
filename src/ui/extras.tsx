@@ -277,7 +277,7 @@ export function IssuedExtras({ c }: { c: Case }) {
   const endText = fmtDate(end, lang, { day: 'numeric', month: 'short', year: 'numeric' });
   const nextPrice = Math.round(((c.premium ?? 0) * (c.claims?.length ? 1 : 0.95)) / 10) * 10;
   const rem = c.reminders ?? { renewal: true, tax: true };
-  const code = `ABC-F${c.id.slice(-4)}`;
+  const code = `JKY-F${c.id.slice(-4)}`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
