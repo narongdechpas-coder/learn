@@ -208,7 +208,7 @@ const thBase = {
   resetConfirm: 'ล้างคำขอทั้งหมดแล้วสร้างข้อมูลตัวอย่างใหม่?',
   resetYes: 'รีเซ็ต',
   cancel: 'ยกเลิก',
-  demoNote: 'เดโม: ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น อีเมลไม่ได้ส่งจริง',
+  demoNote: 'เดโม: ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น อีเมลไม่ได้ส่งจริง | Designed By Jack Na Ja',
 
   // customer steps
   stepCar: 'ข้อมูลรถ',
@@ -681,7 +681,7 @@ const en: Dict = {
   resetConfirm: 'Delete all requests and generate new sample data?',
   resetYes: 'Reset',
   cancel: 'Cancel',
-  demoNote: 'Demo: data stays in this browser only and no email is really sent',
+  demoNote: 'Demo: data stays in this browser only and no email is really sent | Designed By Jack Na Ja',
 
   stepCar: 'Car',
   stepPackage: 'Package',
