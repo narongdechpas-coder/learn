@@ -36,6 +36,7 @@ const log = (s) => console.log(`  ${++step}. ${s}`);
 // ABC screens live under the "ABC system" top menu, in its side menu.
 const abc = async (p, view) => {
   if (!(await p.locator('.abc-side').count())) await p.locator('.mainnav .nav-abc').click();
+  if (await p.locator('.side-show').count()) await p.locator('.side-show').click();
   await p.locator(`.abc-side .nav-${view}`).click();
 };
 const tools = async (p, item) => {
@@ -702,6 +703,12 @@ log('dashboard shows agent ranking, funnel, payments and renewals; emails to age
 
 // VP: marketing targets, ranking, rolling 12 months, partner performance.
 await abc(office, 'vp');
+await office.getByRole('button', { name: /ซ่อนเมนู/ }).click();
+assert.equal(await office.locator('.abc-side').isVisible(), false, 'side menu hidden');
+await office.reload();
+assert.equal(await office.locator('.abc-side').isVisible(), false, 'hidden side menu remembered');
+await office.getByRole('button', { name: /แสดงเมนู/ }).click();
+await office.locator('.abc-side .nav-vp.on').waitFor();
 await office.getByRole('heading', { name: 'ภาพรวมช่องทาง Business Partner' }).waitFor();
 assert.equal(await office.locator('.vp-mkt').count(), 3, 'three marketing officers under the VP');
 assert.equal(await office.locator('.vp-agents tbody tr').count(), 6, 'all six partners');

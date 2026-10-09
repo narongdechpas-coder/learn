@@ -1494,3 +1494,14 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
   .abc-item { white-space: nowrap; padding-left: 12px; }
 }
 @media (max-width: 520px) { .tools-label { display: none; } }
+.abc-shell.side-hidden { grid-template-columns: minmax(0, 1fr); }
+.abc-side[hidden] { display: none; }
+.side-toggle { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 0.82rem; cursor: pointer; justify-self: start; display: inline-flex; gap: 6px; align-items: center; }
+.side-toggle:hover { color: var(--ink); background: var(--surface-2); }
+.side-hide { margin-left: 12px; }
+.side-show { margin-bottom: -8px; }
+@media (max-width: 900px) {
+  .side-toggle { display: none; }
+  .abc-side[hidden] { display: flex; }
+  .abc-shell.side-hidden { gap: 12px; }
+}

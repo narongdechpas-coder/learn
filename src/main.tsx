@@ -82,6 +82,8 @@ function App() {
   const [trackId, setTrackId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [sideOpen, setSideOpen] = useState(() => read('abc-side') !== '0');
+  const toggleSide = () => setSideOpen((v) => (write('abc-side', v ? '0' : '1'), !v));
   const [lastAbc, setLastAbc] = useState<View>(() => (isAbc(view) ? view : 'backoffice'));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const s = useStore();
@@ -253,8 +255,16 @@ function App() {
 
         {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
         {isAbc(view) && (
-          <div className="abc-shell">
-            <aside className="abc-side" aria-label={t('navAbc')}>
+          <div className={`abc-shell${sideOpen ? '' : ' side-hidden'}`}>
+            {!sideOpen && (
+              <button type="button" className="side-toggle side-show" aria-expanded={false} aria-controls="abc-side" onClick={toggleSide}>
+                <span aria-hidden="true">☰</span> {t('navShowMenu')}
+              </button>
+            )}
+            <aside id="abc-side" className="abc-side" aria-label={t('navAbc')} hidden={!sideOpen}>
+              <button type="button" className="side-toggle side-hide" aria-expanded={true} aria-controls="abc-side" onClick={toggleSide}>
+                <span aria-hidden="true">«</span> {t('navHideMenu')}
+              </button>
               {ABC_GROUPS.map(([g, items]) => (
                 <div key={g} className="abc-group">
                   <div className="abc-group-label">{t(g)}</div>
