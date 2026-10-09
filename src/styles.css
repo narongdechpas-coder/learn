@@ -1250,3 +1250,13 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .pl-samples .chip { cursor: pointer; font-family: var(--f-mono); }
 .pl-foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .link:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.rr-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rr-bar select { min-width: 140px; }
+.rr-money { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rr-money-tile.rr-count { border-left-color: var(--accent); background: var(--accent-soft); gap: 6px; }
+.rr-money-v .muted { font: 400 0.9rem var(--f-body); }
+@media (max-width: 1000px) { .rr-money { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .rr-money { grid-template-columns: 1fr; } }
+.pl-demo { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--warn-bg); color: var(--warn); font-size: 0.86rem; }
+.pl-demo b { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.pl-demo .chip { background: var(--surface); }

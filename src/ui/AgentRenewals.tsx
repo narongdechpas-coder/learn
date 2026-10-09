@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Agent, Proposal, RenewalItem } from '../types';
 import { optionPrice } from '../data/agents';
 import { vehicleText } from '../data/vehicles';
-import { fmtBaht, fmtDate, fmtNum, useT, type TKey } from '../i18n';
+import { fmtBaht, fmtDate, fmtNum, useT } from '../i18n';
 import { DAY_MS } from '../lib/time';
 import { Segmented, TypeTag, useNow } from './common';
 
@@ -19,12 +19,9 @@ export function expectedPremium(r: RenewalItem, proposals: Proposal[]) {
   return { value: Math.round(r.premium * RENEWAL_FACTOR), quoted: false };
 }
 
-type Bucket = 0 | 1 | 2 | 3;
-const BUCKETS: { b: Bucket; key: TKey; from: number; to: number }[] = [
-  { b: 1, key: 'rr1', from: 0, to: 30 },
-  { b: 2, key: 'rr2', from: 30, to: 60 },
-  { b: 3, key: 'rr3', from: 60, to: 90 },
-];
+/** "Expiring within N months": 1, 2 or 3, counted cumulatively from today. */
+type Months = 1 | 2 | 3;
+const MONTHS: Months[] = [1, 2, 3];
 
 /**
  * Renewal report. The agent sees their own book with renewal actions; Marketing passes `agents`
@@ -40,39 +37,33 @@ export function RenewalReport({ renewals, proposals, onRenew, onOpenOffer, agent
 }) {
   const { t, lang } = useT();
   const now = useNow(60000);
-  const [bucket, setBucket] = useState<Bucket>(0);
+  const [months, setMonths] = useState<Months>(1);
   const [view, setView] = useState<'todo' | 'done'>('todo');
   const [limit, setLimit] = useState(20);
   const days = (r: RenewalItem) => Math.ceil((r.expiry - now) / DAY_MS);
-  const inWindow = renewals.filter((r) => days(r) > 0 && days(r) <= 90);
+  const inWindow = renewals.filter((r) => days(r) > 0 && days(r) <= months * 30);
   // Already past expiry and still not renewed: the most urgent, shown first in the to-do list.
   const overdue = renewals.filter((r) => days(r) <= 0 && (r.status === 'open' || r.status === 'quoted'));
 
-  const stats = BUCKETS.map((x) => {
-    const list = inWindow.filter((r) => days(r) > x.from && days(r) <= x.to);
-    const done = list.filter((r) => r.status === 'renewed');
-    const todo = list.filter((r) => r.status !== 'renewed');
-    return {
-      ...x,
-      total: list.length,
-      done: done.length,
-      todo: todo.length,
-      got: done.reduce((a, r) => a + (r.renewedPremium ?? r.premium), 0),
-      expect: todo.filter((r) => r.status !== 'lost').reduce((a, r) => a + expectedPremium(r, proposals).value, 0),
-    };
-  });
-  const sum = (k: 'total' | 'done' | 'todo' | 'got' | 'expect') => stats.reduce((a, s) => a + s[k], 0);
-  const pick = (r: RenewalItem) => bucket === 0 || BUCKETS.some((x) => x.b === bucket && days(r) > x.from && days(r) <= x.to);
+  const doneAll = inWindow.filter((r) => r.status === 'renewed');
+  const todoAll = inWindow.filter((r) => r.status !== 'renewed');
+  const sums = {
+    total: inWindow.length,
+    done: doneAll.length,
+    todo: todoAll.length,
+    got: doneAll.reduce((a, r) => a + (r.renewedPremium ?? r.premium), 0),
+    expect: todoAll.filter((r) => r.status !== 'lost').reduce((a, r) => a + expectedPremium(r, proposals).value, 0),
+  };
+  const sum = (k: keyof typeof sums) => sums[k];
 
-  const todoList = [...(bucket === 0 ? overdue : []), ...inWindow.filter((r) => r.status === 'open' || r.status === 'quoted')]
-    .filter((r) => days(r) <= 0 || pick(r))
-    .sort((a, b) => a.expiry - b.expiry);
-  const doneList = inWindow.filter((r) => r.status === 'renewed' && pick(r)).sort((a, b) => a.expiry - b.expiry);
+  const todoList = [...overdue, ...inWindow.filter((r) => r.status === 'open' || r.status === 'quoted')].sort((a, b) => a.expiry - b.expiry);
+  const doneList = doneAll.sort((a, b) => a.expiry - b.expiry);
   const rate = sum('total') ? sum('done') / sum('total') : 0;
+  const period = t('rrWithin', { n: months });
   const mkt = !!agents;
   const agentOf = (r: RenewalItem) => agents?.find((a) => a.id === r.agentId);
   const byAgent = (agents ?? []).map((a) => {
-    const list = inWindow.filter((r) => r.agentId === a.id && pick(r));
+    const list = inWindow.filter((r) => r.agentId === a.id);
     const done = list.filter((r) => r.status === 'renewed');
     const todo = list.filter((r) => r.status !== 'renewed');
     return {
@@ -91,31 +82,29 @@ export function RenewalReport({ renewals, proposals, onRenew, onOpenOffer, agent
 
   return (
     <div className="rr">
-      <div className="rr-summary">
-        <button type="button" className={`rr-tile rr-all${bucket === 0 ? ' on' : ''}`} aria-pressed={bucket === 0} onClick={() => { setBucket(0); setLimit(20); }}>
-          <div className="eyebrow">{t('rrAll')}</div>
-          <div className="rr-big num">{fmtNum(sum('total'), lang)} <span className="muted">{t('rrPolicies')}</span></div>
+      <div className="rr-bar">
+        <label className="inline-field" htmlFor="rr-months">
+          <span>{t('rrExpiring')}</span>
+          <select id="rr-months" value={months} onChange={(e) => { setMonths(Number(e.target.value) as Months); setLimit(20); }}>
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>{t('rrWithin', { n: m })}</option>
+            ))}
+          </select>
+        </label>
+        {overdue.length > 0 && <span className="pill tone-bad">{t('rrOverdueNote', { n: overdue.length })}</span>}
+      </div>
+
+      <div className="rr-money">
+        <div className="rr-money-tile rr-count">
+          <div className="eyebrow">{t('rrDueIn', { n: months })}</div>
+          <div className="rr-money-v num">{fmtNum(sum('total'), lang)} <span className="muted">{t('rrPolicies')}</span></div>
           <div className="rr-split">
             <span className="rr-done num">✓ {t('renRenewed')} {sum('done')}</span>
             <span className="rr-todo num">○ {t('rrNotYet')} {sum('todo')}</span>
           </div>
           <div className="rr-meter" aria-hidden="true"><span style={{ width: `${rate * 100}%` }} /></div>
           <div className="hint num">{t('rrRate', { pct: fmtNum(rate * 100, lang, 0) })}</div>
-        </button>
-        {stats.map((x) => (
-          <button key={x.b} type="button" className={`rr-tile${bucket === x.b ? ' on' : ''}`} aria-pressed={bucket === x.b} onClick={() => { setBucket(bucket === x.b ? 0 : x.b); setLimit(20); }}>
-            <div className="eyebrow">{t(x.key)}</div>
-            <div className="rr-big num">{fmtNum(x.total, lang)} <span className="muted">{t('rrPolicies')}</span></div>
-            <div className="rr-split">
-              <span className="rr-done num">✓ {t('renRenewed')} {x.done}</span>
-              <span className="rr-todo num">○ {t('rrNotYet')} {x.todo}</span>
-            </div>
-            <div className="rr-meter" aria-hidden="true"><span style={{ width: `${x.total ? (x.done / x.total) * 100 : 0}%` }} /></div>
-          </button>
-        ))}
-      </div>
-
-      <div className="rr-money">
+        </div>
         <div className="rr-money-tile tone-good">
           <div className="eyebrow">{t('rrGot')}</div>
           <div className="rr-money-v num">{fmtBaht(Math.round(sum('got')), lang)}</div>
@@ -137,7 +126,7 @@ export function RenewalReport({ renewals, proposals, onRenew, onOpenOffer, agent
         <section className="card">
           <div className="card-head">
             <div>
-              <h3>{t('rrByAgent')}{bucket ? ` · ${t(BUCKETS[bucket - 1].key)}` : ''}</h3>
+              <h3>{t('rrByAgent')} · {period}</h3>
               <p className="hint">{t('rrByAgentLead')}</p>
             </div>
           </div>
@@ -183,7 +172,7 @@ export function RenewalReport({ renewals, proposals, onRenew, onOpenOffer, agent
       <section className="card">
         <div className="card-head">
           <div>
-            <h3>{view === 'todo' ? t('rrTodoTitle') : t('rrDoneTitle')}{bucket ? ` · ${t(BUCKETS[bucket - 1].key)}` : ''}</h3>
+            <h3>{view === 'todo' ? t('rrTodoTitle') : t('rrDoneTitle')} · {period}</h3>
             <p className="hint">{view === 'todo' ? t('rrTodoLead') : t('rrDoneLead')}</p>
           </div>
           <Segmented id="rr-view" label={t('filterStatus')} value={view} onChange={(v) => { setView(v); setLimit(20); }} options={[

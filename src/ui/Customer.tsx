@@ -56,10 +56,19 @@ const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
 type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
 
-export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner }: { onOpenCase?: (id: string) => void; trackId: string | null; setTrackId: (id: string | null) => void; onPartner?: (agentId: string) => void }) {
+export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partnerId, openLogin = false }: {
+  onOpenCase?: (id: string) => void;
+  trackId: string | null;
+  setTrackId: (id: string | null) => void;
+  onPartner?: (agentId: string) => void;
+  /** Partner already signed in on this tab: the button goes straight to their screen. */
+  partnerId?: string | null;
+  /** Opened a partner link without signing in: show the sign-in straight away. */
+  openLogin?: boolean;
+}) {
   const { t } = useT();
   const [tab, setTab] = useState<'buy' | 'track'>('buy');
-  const [login, setLogin] = useState(false);
+  const [login, setLogin] = useState(openLogin);
   useEffect(() => {
     if (trackId) setTab('track');
   }, [trackId]);
@@ -71,7 +80,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner }: { on
           <button role="tab" aria-selected={tab === 'track'} className={tab === 'track' ? 'on' : ''} onClick={() => setTab('track')}>{t('trackTab')}</button>
         </div>
         {onPartner && (
-          <button type="button" className="btn partner-btn" onClick={() => setLogin(true)}>
+          <button type="button" className="btn partner-btn" onClick={() => (partnerId ? onPartner(partnerId) : setLogin(true))}>
             <span aria-hidden="true">🤝</span> {t('plButton')}
           </button>
         )}

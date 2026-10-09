@@ -46,7 +46,24 @@ function App() {
   });
   const [offer, setOffer] = useState<OfferView | null>(hashOffer);
   const [beforeOffer, setBeforeOffer] = useState<View>('customer');
-  const [agentId, setAgentId] = useState(() => read('abc-agent') ?? AGENTS[0].id);
+  // Signed-in Business Partner for this tab (code + OTP from the customer page); no session, no partner screen.
+  const [partnerId, setPartnerIdState] = useState<string | null>(() => {
+    try {
+      const id = sessionStorage.getItem('abc-partner');
+      return id && AGENTS.some((a) => a.id === id) ? id : null;
+    } catch {
+      return null;
+    }
+  });
+  const setPartnerId = (id: string | null) => {
+    setPartnerIdState(id);
+    try {
+      if (id) sessionStorage.setItem('abc-partner', id);
+      else sessionStorage.removeItem('abc-partner');
+    } catch {
+      /* ignore */
+    }
+  };
   const [mktId, setMktId] = useState(() => read('abc-mkt') ?? MARKETING[0].id);
   const [staffId, setStaffId] = useState(() => read('abc-staff') ?? STAFF[0].id);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -82,7 +99,6 @@ function App() {
     document.documentElement.lang = lang;
   }, [lang]);
   useEffect(() => write('abc-staff', staffId), [staffId]);
-  useEffect(() => write('abc-agent', agentId), [agentId]);
   useEffect(() => write('abc-mkt', mktId), [mktId]);
   // Quotations open from anywhere (agent screens, share box) as their own page.
   useEffect(() => {
@@ -134,7 +150,6 @@ function App() {
   const unread = s.notifications.filter((n) => !n.read).length;
   const nav: [View, Parameters<typeof translate>[1]][] = [
     ['customer', 'navCustomer'],
-    ['agent', 'navAgent'],
     ['marketing', 'navMkt'],
     ['backoffice', 'navBack'],
     ['dashboard', 'navDash'],
@@ -183,9 +198,10 @@ function App() {
 
       <main className={`main view-${view}`}>
         {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
-        {view === 'agent' && <AgentApp agentId={agentId} setAgentId={setAgentId} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
+        {view === 'agent' && partnerId && <AgentApp agentId={partnerId} onLogout={() => { setPartnerId(null); setView('customer'); }} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
+        {view === 'agent' && !partnerId && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={null} openLogin onPartner={(id) => setPartnerId(id)} />}
         {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
-        {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} onPartner={(id) => { setAgentId(id); setView('agent'); }} />}
+        {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
         {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}
         {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
         {view === 'mail' && <Mail onOpenCase={openCase} />}

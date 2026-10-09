@@ -59,7 +59,7 @@ interface Prefill {
   renewalOf?: string;
 }
 
-export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string; setAgentId: (id: string) => void; onOpenOffer: (id: string, asAgent: boolean) => void }) {
+export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; onLogout: () => void; onOpenOffer: (id: string, asAgent: boolean) => void }) {
   const { t, lang } = useT();
   const s = useStore();
   const [tab, setTab] = useState<Tab>('sell');
@@ -101,14 +101,8 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
           </div>
         </div>
         <div className="ag-tools">
-          <label className="inline-field" htmlFor="ag-as">
-            <span>{t('agActAs')}</span>
-            <select id="ag-as" value={agent.id} onChange={(e) => { setAgentId(e.target.value); setTab('sell'); setPrefill(null); setFocusCase(null); }}>
-              {s.agents.map((a) => (
-                <option key={a.id} value={a.id}>{a.code} · {a[lang]}</option>
-              ))}
-            </select>
-          </label>
+          <span className="pill tone-good">● {t('plSignedIn')}</span>
+          <button type="button" className="btn small ghost" onClick={onLogout}>{t('plLogout')}</button>
         </div>
       </div>
       {!agent.active && <p className="callout tone-bad">{t('agSuspended')}</p>}

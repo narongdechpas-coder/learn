@@ -61,11 +61,15 @@ export function PartnerLogin({ onClose, onDone }: { onClose: () => void; onDone:
             <p className="hint">{t('plCodeHint')}</p>
             {err && <p className="error" role="alert">{err}</p>}
             <button type="submit" className="btn primary block">{t('plSend')}</button>
-            <div className="pl-samples">
-              <span className="hint">{t('plSamples')}</span>
-              {s.agents.slice(0, 3).map((a) => (
-                <button key={a.id} type="button" className="chip" onClick={() => { setCode(a.code); setErr(''); }}>{a.code}</button>
-              ))}
+            <div className="pl-demo">
+              <b>{t('plDemo')}</b>
+              <span>{t('plDemoCodes')}</span>
+              <div className="pl-samples">
+                {s.agents.map((a) => (
+                  <button key={a.id} type="button" className="chip" title={a.th} onClick={() => { setCode(a.code); setErr(''); }}>{a.code}</button>
+                ))}
+              </div>
+              <span>{t('plDemoOtp', { otp: SAMPLE_OTP })}</span>
             </div>
           </form>
         ) : (
@@ -76,6 +80,7 @@ export function PartnerLogin({ onClose, onDone }: { onClose: () => void; onDone:
               <input id="pl-otp" autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="••••••" value={otp} onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); setErr(''); }} />
               <button type="button" className="link" onClick={() => setOtp(SAMPLE_OTP)}>{t('otpFill')}</button>
             </div>
+            <p className="pl-demo">{t('plDemoOtp', { otp: SAMPLE_OTP })}</p>
             {err && <p className="error" role="alert">{err}</p>}
             <button type="submit" className="btn primary block" disabled={otp.length !== 6}>{t('plVerify')}</button>
             <div className="pl-foot">
