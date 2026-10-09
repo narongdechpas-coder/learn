@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thinking Dojo — ฝึก 18 วิธีคิด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F5F9; --card:#FFFFFF; --ink:#17233A; --ink-2:#4B5568; --ink-3:#8A93A6;
+    --line:#DDE2EC; --ok:#2E8B57; --warn:#C9A227; --bad:#C94F3D; --r:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans Thai",-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;font-size:16px;line-height:1.55}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #7C9CFF;outline-offset:2px}
+  textarea,input{font:inherit;width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--ink)}
+  textarea{min-height:84px;resize:vertical}
+  .app{max-width:760px;margin:0 auto;padding:16px 16px 80px;position:relative}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0 14px}
+  .brand{font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .brand small{display:block;font-weight:500;color:var(--ink-3);font-size:12px}
+  .pillrow{display:flex;gap:8px;align-items:center}
+  .xp,.streak{display:flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px}
+  .xp{background:var(--ink);color:#fff}
+  .streak{background:#FFF3D6;color:#8A5A00;border:1px solid #F1D48A}
+  .back{color:var(--ink-2);font-weight:500;padding:6px 0}
+
+  /* hero with canvas */
+  .hero{position:relative;padding:22px 0 12px;min-height:150px;overflow:hidden;border-radius:18px}
+  .hero canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.7}
+  .hero .in{position:relative;padding:0 4px}
+  .hero h1{font-size:30px;line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
+  .hero p{margin:0;color:var(--ink-2);max-width:52ch}
+
+  .tabs{display:flex;gap:6px;margin:16px 0 14px;overflow-x:auto;padding-bottom:2px}
+  .tabs button{flex:1 0 auto;padding:10px 14px;border-radius:12px;background:#fff;border:1.5px solid var(--line);font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .sec{margin:18px 0 8px;font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+  .sec span{font-weight:500;color:var(--ink-3);font-size:13px}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .tile{position:relative;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:14px 14px 14px;overflow:hidden;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .15s}
+  .tile:active{transform:scale(.97)}
+  .tile .num{font-size:12px;color:var(--ink-3);font-weight:600}
+  .tile .nm{font-weight:700;font-size:15px;line-height:1.25;margin-top:4px}
+  .tile .th{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .tile .lv{display:flex;gap:4px;margin-top:8px}
+  .tile .lv i{flex:1;height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+  .tile .lv i b{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .tile.new{border-style:dashed}
+  .tile .dot{position:absolute;top:12px;right:12px;width:10px;height:10px;border-radius:50%;background:var(--c)}
+  .tile .tag{position:absolute;top:10px;right:28px;font-size:11px;color:var(--c);font-weight:700}
+
+  .head{border-left:6px solid var(--c);padding:4px 0 4px 14px;margin:6px 0 16px}
+  .head .k{color:var(--ink-3);font-size:13px;font-weight:600}
+  .head h2{margin:2px 0 4px;font-size:24px;line-height:1.2;letter-spacing:-.015em}
+  .head .d{color:var(--ink-2)}
+  .card{background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+  .card.in{animation:rise .35s cubic-bezier(.2,.8,.2,1) both}
+  .card.in:nth-child(2){animation-delay:.06s}.card.in:nth-child(3){animation-delay:.12s}.card.in:nth-child(4){animation-delay:.18s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .card h3{margin:0 0 8px;font-size:16px}
+  .card p{margin:0 0 8px}.card p:last-child{margin:0}
+  .take{background:var(--ink);color:#fff;border-radius:12px;padding:12px 14px;margin:10px 0 0}
+  .qs{margin:0;padding-left:20px;color:var(--ink-2)}.qs li{margin:3px 0}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;font-weight:600;background:var(--ink);color:#fff;min-height:46px;transition:transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .btn.c{background:var(--c)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .muted{color:var(--ink-3);font-size:13.5px}
+  .prog{display:flex;gap:4px;margin-bottom:12px}
+  .prog i{flex:1;height:5px;border-radius:3px;background:var(--line)}.prog i.on{background:var(--c)}
+
+  /* levels */
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  .lvl{text-align:left;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:#fff;position:relative}
+  .lvl b{display:block;font-size:14px}.lvl span{font-size:12.5px;color:var(--ink-2)}
+  .lvl .st{color:var(--warn);letter-spacing:1px;font-size:13px;margin-top:4px;display:block}
+  .lvl.lock{opacity:.5}
+  .lvl.lock::after{content:"🔒";position:absolute;top:8px;right:10px}
+  @media (max-width:520px){.levels{grid-template-columns:1fr}}
+
+  /* timer ring */
+  .ring{width:110px;height:110px;margin:4px auto 10px;position:relative}
+  .ring svg{transform:rotate(-90deg);width:100%;height:100%}
+  .ring circle{fill:none;stroke-width:8}
+  .ring .bg{stroke:var(--line)}
+  .ring .fg{stroke:var(--c);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+  .ring .t{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+  .ring.low .fg{stroke:var(--bad)}.ring.low .t{color:var(--bad)}
+  .ideas{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+  .ideas li{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;animation:pop .25s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+  .count{font-weight:700;color:var(--c);display:inline-block}
+  .count.bump{animation:bump .3s}
+  @keyframes bump{40%{transform:scale(1.4)}}
+
+  .opt{display:block;width:100%;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px;line-height:1.45;transition:transform .12s,border-color .15s}
+  .opt:hover{border-color:var(--ink-3)}
+  .opt.right{border-color:var(--ok);background:#EEF8F1}
+  .opt.wrong{border-color:var(--bad);background:#FCEFEC;animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .why{border-radius:12px;padding:12px 14px;margin-top:6px;background:#F7F8FC;border:1.5px dashed var(--line);animation:rise .3s both}
+  .why.ok{background:#EEF8F1;border-color:#B8E0C5}.why.bad{background:#FCEFEC;border-color:#F1C4BC}
+  table.tb{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px}
+  .tb th,.tb td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center}
+  .tb th:first-child,.tb td:first-child{text-align:left;font-weight:600}
+  .tb th{color:var(--ink-3);font-weight:600;font-size:12.5px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;text-align:left;line-height:1.4;transition:transform .12s}
+  .chip.used{opacity:.35;pointer-events:none}
+  .chip.sel{border-color:var(--ink);background:#F7F8FC;transform:translateY(-2px)}
+  .chip.good{border-color:var(--ok);background:#EEF8F1;pointer-events:none}
+  .chip.badc{border-color:var(--bad);background:#FCEFEC;animation:shake .35s}
+  .seq{list-style:none;padding:0;margin:0 0 12px}
+  .seq li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;margin-bottom:6px}
+  .seq li .n{width:26px;height:26px;border-radius:50%;background:var(--c);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13px;flex:none}
+  .seq li.empty{border-style:dashed;color:var(--ink-3)}
+  .seq li.good{border-color:var(--ok);background:#EEF8F1}.seq li.badc{border-color:var(--bad);background:#FCEFEC}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cols .chip{width:100%}
+  .cols h4{margin:0 0 6px;font-size:13px;color:var(--ink-3);font-weight:600}
+
+  .step{margin-bottom:12px}.step label{display:block;font-weight:600;margin-bottom:6px}
+  .step .hint{color:var(--ink-3);font-size:13px;margin-bottom:6px}
+  .chk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px;cursor:pointer}
+  .chk input{width:18px;height:18px;margin-top:3px;flex:none}
+  .flip{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+  .flip .f{background:#FCEFEC;border-radius:10px;padding:8px 10px;font-size:14px}
+  @media (max-width:520px){.flip{grid-template-columns:1fr}}
+
+  .result{text-align:center;padding:26px 16px;position:relative;overflow:hidden}
+  .result .big{font-size:46px;letter-spacing:4px;color:var(--warn);margin:6px 0;display:flex;justify-content:center;gap:4px}
+  .result .big span{display:inline-block;transform:scale(0);animation:star .5s cubic-bezier(.2,1.4,.4,1) forwards}
+  .result .big span:nth-child(2){animation-delay:.15s}.result .big span:nth-child(3){animation-delay:.3s}
+  .result .big span.off{color:var(--line)}
+  @keyframes star{to{transform:scale(1)}}
+  .result h2{margin:0;font-size:24px}.result p{color:var(--ink-2)}
+  .result canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+  .scen{font-size:18px;line-height:1.5;font-weight:500}
+  .modegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px}
+  .mbtn{text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:#fff;border-left-width:5px;border-left-color:var(--c);line-height:1.3;transition:transform .12s}
+  .mbtn:active{transform:scale(.97)}
+  .mbtn b{display:block;font-size:14px}.mbtn span{font-size:12px;color:var(--ink-2)}
+  .mbtn.pick{outline:2px solid var(--ink)}
+  .mbtn.dis{opacity:.4;pointer-events:none}
+  .score{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0 14px}
+  .score div{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:8px 14px;text-align:center;min-width:90px}
+  .score b{display:block;font-size:22px}.score span{font-size:12px;color:var(--ink-3)}
+
+  .daily{background:linear-gradient(135deg,#17233A,#2F4570);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .daily h3{margin:0 0 4px;font-size:16px}.daily p{margin:0;opacity:.85;font-size:14px}
+  .daily .btn{background:#fff;color:var(--ink)}
+  .daily.done{background:#EEF8F1;color:var(--ink);border:1.5px solid #B8E0C5}
+  .rev{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+  .rev button{flex:0 0 auto;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;text-align:left;border-left:5px solid var(--c)}
+  .rev b{display:block;font-size:14px}.rev span{font-size:12px;color:var(--ink-3)}
+  .journal{border-left:4px solid var(--c);padding:8px 12px;background:#fff;border-radius:0 12px 12px 0;margin-bottom:8px}
+  .journal .d{font-size:12px;color:var(--ink-3)}
+  .journal p{margin:4px 0;font-size:14px}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9}
+  .toast.on{opacity:1;transform:translateX(-50%)}
+  .pill{display:inline-block;margin:6px 4px 0;padding:6px 14px;border-radius:999px;background:#FFF3D6;color:#8A5A00;border:1px solid #F1D48A;font-weight:600;font-size:14px;animation:pop .4s cubic-bezier(.2,1.4,.4,1) both}
+
+  /* ===== fun layer ===== */
+  body{background:radial-gradient(circle at 10% 0%,#FFE9D6 0,transparent 40%),radial-gradient(circle at 95% 10%,#E3E9FF 0,transparent 45%),radial-gradient(#DDE2EC 1px,transparent 1px) 0 0/22px 22px,var(--paper)}
+  .xp{border-left:6px solid var(--b,#eee)}
+  .mute{width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);font-size:15px;display:grid;place-items:center}
+  .hero{background:linear-gradient(135deg,#17233A 0%,#2F4570 60%,#5B3A8C 100%);color:#fff;padding:20px 16px 16px;box-shadow:0 10px 30px -12px rgba(23,35,58,.55)}
+  .hero h1{font-size:26px}.hero p{color:rgba(255,255,255,.8)}
+  .beltrow{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .beltico{width:54px;height:16px;outline:1.5px solid rgba(255,255,255,.35);border-radius:3px;background:var(--b);position:relative;flex:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+  .beltico::after{content:"";position:absolute;left:50%;top:-3px;width:14px;height:22px;margin-left:-7px;border-radius:3px;background:var(--b);filter:brightness(.88)}
+  .beltbar{flex:1;height:10px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden}
+  .beltbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#FFD36E,#FF8A5B);transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .beltlbl{font-size:13px;opacity:.9;margin-top:6px}
+  .quick{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .quick button{padding:9px 14px;border-radius:12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;font-weight:600;font-size:14px}
+  .quick button:active{transform:scale(.96)}
+
+  .tile{background:color-mix(in srgb,var(--c) 7%,#fff);border-color:color-mix(in srgb,var(--c) 22%,var(--line));transition:transform .15s,box-shadow .15s}
+  .tile:hover{transform:translateY(-3px);box-shadow:0 10px 20px -10px color-mix(in srgb,var(--c) 70%,transparent)}
+  .tile .ic{font-size:26px;line-height:1;margin-bottom:6px;display:inline-block;transition:transform .2s}
+  .tile:hover .ic{transform:scale(1.2) rotate(-8deg)}
+  .tile .crown{position:absolute;top:8px;right:10px;font-size:16px}
+  .head h2 .ic{margin-right:6px}
+
+  .sensei{display:flex;align-items:flex-end;gap:10px;margin:0 0 12px}
+  .sensei .av{font-size:34px;line-height:1;flex:none;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-4px)}}
+  .sensei .bub{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:14px 14px 14px 4px;padding:8px 12px;font-weight:600;font-size:14.5px}
+  .sensei .bub.say{animation:pop .3s cubic-bezier(.2,1.4,.4,1)}
+  .combo{display:inline-flex;align-items:center;gap:4px;font-weight:800;color:#E0482F;font-size:15px;min-height:22px}
+  .combo.hot{animation:bump .35s}
+  .float{position:fixed;pointer-events:none;font-weight:800;font-size:18px;color:var(--ok);z-index:20;animation:floatup .9s ease-out forwards;text-shadow:0 2px 0 #fff}
+  @keyframes floatup{to{transform:translateY(-48px);opacity:0}}
+  .card.shake{animation:shake .35s}
+  .ideas li{background:var(--h,#F3F5F9);border-color:transparent;font-weight:500}
+  .goal{display:flex;gap:6px;margin-top:8px}.goal span{font-size:22px;color:var(--line);transition:color .3s,transform .3s}.goal span.on{color:var(--warn);transform:scale(1.2)}
+
+  .lvup{position:fixed;inset:0;background:rgba(23,35,58,.75);display:grid;place-items:center;z-index:30;animation:fade .3s both;padding:16px}
+  @keyframes fade{from{opacity:0}}
+  .lvbox{position:relative;overflow:hidden;background:#fff;border-radius:20px;padding:28px 22px;text-align:center;max-width:340px;width:100%;animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+  .lvbox canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .lvbox h2{margin:8px 0 4px;font-size:26px}
+  .beltart{width:220px;height:30px;margin:14px auto 22px;background:var(--b);border-radius:4px;position:relative;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),0 6px 14px -6px rgba(0,0,0,.4)}
+  .beltart::before{content:"";position:absolute;left:50%;top:-6px;width:34px;height:42px;margin-left:-17px;background:var(--b);border-radius:5px;filter:brightness(.88);z-index:1}
+  .beltart::after{content:"";position:absolute;left:50%;top:26px;width:46px;height:30px;margin-left:-23px;background:linear-gradient(100deg,transparent 0 10%,var(--b) 10% 42%,transparent 42% 58%,var(--b) 58% 90%,transparent 90%);filter:brightness(.8)}
+  .badgepop{position:fixed;left:50%;top:14px;transform:translate(-50%,-160%);visibility:hidden;background:#fff;border:2px solid var(--warn);border-radius:16px;padding:10px 16px;display:flex;gap:10px;align-items:center;z-index:25;box-shadow:0 10px 30px -10px rgba(0,0,0,.35);transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
+  .badgepop.on{transform:translate(-50%,0);visibility:visible}
+  .badgepop .bi{font-size:30px}.badgepop b{display:block}.badgepop span{font-size:13px;color:var(--ink-2)}
+  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  .bdg{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+  .bdg .bi{font-size:28px;display:block}.bdg b{display:block;font-size:12.5px;line-height:1.3;margin-top:4px}.bdg span{font-size:11px;color:var(--ink-3);line-height:1.3;display:block}
+  .bdg.lock .bi{filter:grayscale(1);opacity:.35}.bdg.lock b{color:var(--ink-3)}
+
+  .blitz{border-color:#FFB547}
+  .bzhud{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .hearts{font-size:20px;letter-spacing:2px}
+  .bzt{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;min-width:60px;text-align:center}
+  .bzt.low{color:var(--bad);animation:bump .5s infinite}
+  .bzs{font-weight:600;color:var(--ink-2)}.bzs b{font-size:22px;color:var(--ink)}
+  .bzbar{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:8px 0 10px}
+  .bzbar i{display:block;height:100%;background:linear-gradient(90deg,#FF8A5B,#FFD36E);transition:width 1s linear}
+  .mtag{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff);border-radius:999px;padding:3px 10px;margin-bottom:6px}
+  .bzq{animation:rise .25s both}
+  .bzq h3{font-size:16.5px}
+  .bzhero{text-align:center;padding:22px 16px}
+  .bzhero .bolt{font-size:56px;display:inline-block;animation:bob 1.6s ease-in-out infinite}
+  .rec{display:inline-block;background:linear-gradient(90deg,#FF8A5B,#FFD36E);color:#4A2A00;font-weight:800;padding:6px 14px;border-radius:999px;margin:6px 0;animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.hero canvas{display:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="badgepop" id="badgepop" aria-live="polite"></div>
+<script>
+/* ===================== MODE DATA ===================== */
+/* level types: quiz{qs,pick,table?,intro} brainstorm{prompts,seconds,targets,flip?} sequence{chains,intro}
+   match{pool,pick,intro,l,r} chain{scens:[{intro,steps,check}]} reflect{intro,steps} */
+const MODES = [
+{id:'divergent',num:1,group:'สร้างและคัดเลือกไอเดีย',en:'Divergent Thinking',th:'คิดแตกกิ่ง',c:'#E07A2F',
+ def:'สร้างคำตอบที่เป็นไปได้ให้มากที่สุด แทนที่จะรีบหาคำตอบเดียว',
+ ex:'ตอน Airbnb กำลังแย่ ผู้ก่อตั้งไม่ได้คิดแค่ลดต้นทุนหรือปรับราคา แต่ไปปรับปรุงภาพถ่ายที่พักให้น่าดึงดูด ยอดจองจึงเพิ่มขึ้น',
+ take:'ไอเดียดี ๆ มักเกิดจากการเชื่อมโยงสิ่งที่ดูไม่เกี่ยวกันเข้าด้วยกัน',
+ ask:['ทางเลือกที่เห็นชัดที่สุดคืออะไร แล้วนอกจากนั้นมีอะไรอีก?','ถ้าไม่มีข้อจำกัดเรื่องงบ เวลา หรือกฎ จะทำอะไร?','ไอเดียแปลก ๆ ที่ดูไร้สาระ มีอะไรบ้าง (เขียนมาอย่างน้อย 3)','จะรวม 2 ไอเดียที่ไม่เกี่ยวกันให้เป็นไอเดียใหม่ได้ไหม?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'แยกให้ออกว่าอันไหนคือการ "แตกกิ่ง" จริง ๆ',qs:[
+   {q:'ในการประชุมระดมไอเดีย พฤติกรรมไหนทำลาย divergent thinking มากที่สุด?',o:['มีคนเสนอไอเดียแปลก ๆ','หัวหน้าพูดว่า "ทำไม่ได้หรอก" ทันทีที่มีคนเสนอ','ทุกคนเขียนไอเดียลงกระดาษก่อนพูด','ตั้งเวลา 10 นาที'],a:1,why:'การตัดสินระหว่างสร้างไอเดียปิดประตูของไอเดียถัดไป ให้แยกช่วง "สร้าง" กับ "ตัดสิน" ออกจากกัน'},
+   {q:'ข้อไหนเป็นสัญญาณว่าทีมยังแตกกิ่งไม่พอ?',o:['มีไอเดีย 30 ข้อแต่ทำได้จริง 3 ข้อ','ไอเดียทั้งหมดเป็นแบบเดียวกัน แค่ต่างรายละเอียด','มีไอเดียที่ไม่มีใครเข้าใจ','ใช้เวลานานเกิน'],a:1,why:'ปริมาณไม่ใช่ตัววัดเดียว ความหลากหลายของ "ประเภท" ไอเดียสำคัญกว่า'},
+   {q:'วิธีไหนช่วยให้ได้ไอเดียหลากหลายขึ้นมากที่สุด?',o:['ให้คนเก่งที่สุดเสนอก่อน','ระดมไอเดียเป็นกลุ่มใหญ่พร้อมกัน','ให้แต่ละคนคิดคนเดียวก่อน แล้วค่อยรวมและต่อยอด','จำกัดให้เสนอเฉพาะไอเดียที่ทำได้จริง'],a:2,why:'งานวิจัยชี้ว่าคิดคนเดียวก่อนแล้วรวม (brainwriting) ได้ไอเดียมากและหลากหลายกว่าระดมเสียงดัง ๆ เพราะไม่ถูกครอบงำโดยคนพูดคนแรก'},
+   {q:'"ยอดขายตก ต้องลดราคา" ประโยคนี้สะท้อนอะไร?',o:['convergent thinking ที่ดี','กระโดดไปคำตอบแรกโดยไม่แตกกิ่ง','การใช้ข้อมูล','การตัดสินใจเร็ว'],a:1,why:'ยอดขายตกมีทางแก้เป็นสิบทาง การกระโดดไปทางแรกที่นึกออกคือการข้ามช่วงแตกกิ่งไปเลย'}]},
+  {type:'brainstorm',seconds:60,targets:[6,10,15],prompts:['แก้วกาแฟกระดาษที่ใช้แล้ว เอาไปทำอะไรได้บ้าง?','วิธีทำให้คนในออฟฟิศเดินขึ้นบันไดแทนลิฟต์ โดยไม่ห้ามใช้ลิฟต์','ถ้าร้านหนังสือขายหนังสือไม่ได้อีกต่อไป มันจะทำอะไรได้บ้าง?']},
+  {type:'brainstorm',seconds:45,targets:[8,12,16],prompts:['วิธีให้ลูกค้ากลับมาซื้อซ้ำ โดย "ห้าม" ใช้ส่วนลดหรือแต้มสะสม','วิธีลดการประชุมลงครึ่งหนึ่งโดยงานยังเดิน โดยห้ามใช้คำว่า "อีเมล" หรือ "แชท"','ธุรกิจใหม่ที่เกิดจากการรวม "ร้านซักรีด" กับอะไรก็ได้ที่ไม่เกี่ยวกัน']}
+ ]},
+
+{id:'convergent',num:2,group:'สร้างและคัดเลือกไอเดีย',en:'Convergent Thinking',th:'คิดรวบยอด',c:'#2F6FB5',
+ def:'กรองความเป็นไปได้จำนวนมาก จนเหลือตัวเลือกที่แข็งแรงที่สุด',
+ ex:'NASA เปรียบเทียบจุดลงจอดบนดาวอังคารด้วยเกณฑ์ ความปลอดภัย ภูมิประเทศ คุณค่าทางวิทยาศาสตร์ และโอกาสรอด แทนที่จะเลือกจุดที่น่าตื่นเต้นที่สุด',
+ take:'การรู้ว่าเมื่อไหร่ควรหยุดคิดตัวเลือกแล้วเริ่มตัดสินใจ เป็นทักษะในตัวมันเอง',
+ ask:['เกณฑ์ตัดสินคืออะไร และเกณฑ์ไหนสำคัญที่สุด ให้น้ำหนักเท่าไหร่?','ตัวเลือกไหนตกเกณฑ์ขั้นต่ำ ตัดทิ้งได้เลย?','ตัวเลือกที่เหลือ ให้คะแนนตามเกณฑ์แล้วเป็นอย่างไร?','จะปิดรับไอเดียใหม่เมื่อไหร่ และใครเป็นคนเคาะ?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'หลักการของการคัดเลือกที่ดี',qs:[
+   {q:'ควรกำหนดเกณฑ์ตัดสินเมื่อไหร่?',o:['หลังจากเห็นตัวเลือกทั้งหมดแล้ว','ก่อนดูตัวเลือก','ระหว่างโหวต','ไม่ต้องกำหนด ใช้ความรู้สึก'],a:1,why:'ถ้ากำหนดเกณฑ์หลังเห็นตัวเลือก คนมักปรับเกณฑ์ให้เข้าข้างตัวเลือกที่ชอบอยู่แล้ว'},
+   {q:'ใกล้วันตัดสินใจ มีคนเสนอไอเดียใหม่มาอีก 3 ข้อ ควรทำอย่างไร?',o:['รับทั้งหมด เผื่อมีที่ดีกว่า','ปฏิเสธทั้งหมด เพราะปิดรับแล้ว','ประเมินแบบเร็วด้วยเกณฑ์เดิม เฉพาะที่ผ่านขั้นต่ำ แล้วปิดรับอย่างเป็นทางการ','เลื่อนการตัดสินใจออกไป'],a:2,why:'Convergent thinking ไม่ใช่ปิดหูปิดตา แต่คือใช้เกณฑ์เดียวกันคัดอย่างรวดเร็ว และมีจุดปิดรับที่ชัด'},
+   {q:'ทีมโหวตแล้วได้ตัวเลือกที่ทุกคน "พอรับได้" แต่ไม่มีใครตื่นเต้น สัญญาณนี้บอกอะไร?',o:['ตัวเลือกดีแล้ว','อาจเป็นการเลือกที่ปลอดภัยเกินไป ควรดูว่าเกณฑ์ให้น้ำหนัก "ความเสี่ยงต่ำ" มากเกินหรือไม่','ควรโหวตใหม่','ควรให้หัวหน้าเลือกแทน'],a:1,why:'การประนีประนอมมักได้ตัวเลือกกลาง ๆ ให้ย้อนดูว่าเกณฑ์สะท้อนเป้าหมายจริงไหม'},
+   {q:'"ตัดตัวเลือกที่ตกเกณฑ์ขั้นต่ำก่อน แล้วค่อยให้คะแนนที่เหลือ" วิธีนี้ดีอย่างไร?',o:['ประหยัดเวลาและป้องกันไม่ให้ตัวเลือกที่ดีมากด้านเดียวแต่ตกเกณฑ์สำคัญ ชนะเพราะคะแนนรวมสูง','ทำให้ทุกคนเห็นด้วย','ทำให้ตัวเลือกน้อยลงเสมอ','ไม่ต้องใช้เกณฑ์'],a:0,why:'เกณฑ์ขั้นต่ำ (must-have) กับเกณฑ์ให้คะแนน (nice-to-have) ทำงานต่างกัน ต้องแยก'}]},
+  {type:'quiz',pick:2,intro:'บริษัทกำลังเลือกทำเลเปิดร้านกาแฟสาขาใหม่ ให้คะแนน 1–5 (5 = ดีที่สุดในทุกเกณฑ์)',
+   table:{cols:['ทำเล','ค่าเช่า','คนเดินผ่าน','คู่แข่งน้อย','ที่จอดรถ'],rows:[['A',2,5,2,3],['B',4,3,4,4],['C',5,2,5,2],['D',3,4,3,5],['E',1,5,1,4]]},qs:[
+   {q:'ถ้า "คนเดินผ่าน" สำคัญเป็น 2 เท่าของเกณฑ์อื่น ควรเลือกทำเลไหน?',o:['A','B','C','D','E'],a:3,why:'คนเดินผ่าน ×2: A=17, B=18, C=16, D=19, E=16 ทำเล D ชนะแม้ไม่เด่นสุดในเกณฑ์ใดเลย'},
+   {q:'ถ้างบจำกัดมาก "ค่าเช่า" สำคัญเป็น 3 เท่า ควรเลือกทำเลไหน?',o:['A','B','C','D','E'],a:2,why:'ค่าเช่า ×3: A=16, B=23, C=24, D=21, E=13 ทำเล C ชนะ เปลี่ยนน้ำหนักเกณฑ์ คำตอบเปลี่ยนทันที'},
+   {q:'ถ้า "ที่จอดรถ" สำคัญเป็น 3 เท่า ควรเลือกทำเลไหน?',o:['A','B','C','D','E'],a:3,why:'ที่จอดรถ ×3: A=18, B=23, C=18, D=25, E=19 ทำเล D'}]},
+  {type:'chain',scens:[
+   {intro:'ทีมมี 6 ไอเดียลดต้นทุน: (1) ลดขนาดออฟฟิศ (2) เปลี่ยนซัพพลายเออร์ (3) หยุดรับพนักงานใหม่ 6 เดือน (4) ตัดโปรเจกต์ที่ยังไม่ทำกำไร (5) ลดค่าเดินทาง (6) เจรจาค่าเช่าใหม่ คุณต้องเลือก 2 ไอเดียเสนอผู้บริหาร',
+    steps:[{l:'1. เกณฑ์ตัดสิน 3–4 ข้อ พร้อมน้ำหนัก',h:'เช่น ผลต่อกำไร ×3, ความเร็วในการเห็นผล ×2, ผลกระทบต่อขวัญกำลังใจ ×2, ความเสี่ยงที่ย้อนกลับไม่ได้ ×1'},{l:'2. ตัวเลือกไหนตกเกณฑ์ขั้นต่ำ ตัดเพราะอะไร',h:'ต้องมีเกณฑ์ที่เป็น must-have อย่างน้อย 1 ข้อ'},{l:'3. ให้คะแนนตัวเลือกที่เหลือ แล้วสรุป 2 ไอเดียที่เลือก',h:'แสดงตัวเลขคร่าว ๆ'},{l:'4. เขียน 2 บรรทัดที่จะพูดกับผู้บริหาร ว่าทำไมไม่เลือกตัวเลือกที่ดูน่าสนใจตัวอื่น',h:''}],
+    check:['เกณฑ์ถูกตั้งก่อนให้คะแนน และมีน้ำหนักต่างกัน','มีการตัดด้วยเกณฑ์ขั้นต่ำก่อนให้คะแนน','ตัวเลือกที่เลือกมาจากคะแนน ไม่ใช่จากความรู้สึกแล้วค่อยหาเหตุผล','อธิบายได้ว่าทำไมตัวเลือกที่ "ดูดี" ถึงไม่ได้ไป']},
+   {intro:'คุณมีผู้สมัครงาน 5 คน ผ่านสัมภาษณ์หมด แต่ละคนเด่นคนละด้าน: A เก่งเทคนิคสุด, B สื่อสารดีสุด, C เรียนรู้เร็วสุด, D มีประสบการณ์ตรงสุด, E เงินเดือนต่ำสุด รับได้ 1 คน',
+    steps:[{l:'1. งานนี้ต้องการอะไรมากที่สุด 3 ข้อ พร้อมน้ำหนัก',h:'อย่าลิสต์ทุกอย่างว่าสำคัญเท่ากัน'},{l:'2. เกณฑ์ขั้นต่ำที่ไม่ผ่านแล้วตัดทันที',h:''},{l:'3. ให้คะแนนและเลือก 1 คน',h:''},{l:'4. ความเสี่ยงของคนที่เลือก และจะชดเชยอย่างไร',h:''}],
+    check:['น้ำหนักเกณฑ์สะท้อนความต้องการของงาน ไม่ใช่ความชอบส่วนตัว','มีเกณฑ์ขั้นต่ำ','ตัดสินใจได้ 1 คนจริง ๆ ไม่ใช่ "แล้วแต่"','ยอมรับข้อเสียของคนที่เลือกได้ตรง ๆ']}]}
+ ]},
+
+{id:'lateral',num:3,group:'เปลี่ยนมุมมอง',en:'Lateral Thinking',th:'คิดนอกกรอบ',c:'#8E44AD',
+ def:'มองปัญหาจากทิศทางที่ไม่คาดคิด แทนที่จะพุ่งชนตรง ๆ',
+ ex:'โรงพยาบาลลดเวลารอไม่ได้ แต่ติดกระจก จอ และข้อมูลในห้องรอ ทำให้ "รู้สึก" ว่ารอสั้นลง',
+ take:'เมื่อทางแก้ที่ชัดเจนใช้ไม่ได้ผล ให้เปลี่ยนมุมที่มองปัญหา',
+ ask:['ปัญหาจริง ๆ คืออะไร ตัวเลข หรือความรู้สึกของคน?','ถ้าแก้ตรง ๆ ไม่ได้ จะแก้ที่ "รอบ ๆ" มันได้ไหม?','ถ้าเปลี่ยนคำถามจาก "จะลด X ยังไง" เป็น "จะทำให้ X ไม่สำคัญยังไง" ได้อะไร?','ใครในโลกแก้ปัญหาคล้ายกันด้วยวิธีที่ไม่คาดคิด?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'เลือกทางแก้ที่ "เปลี่ยนมุมมอง" ไม่ใช่พุ่งชนตรง ๆ',qs:[
+   {q:'ผู้เช่าอาคารบ่นว่าลิฟต์ช้ามาก แต่เปลี่ยนระบบลิฟต์แพงเกินไป',o:['เปลี่ยนมอเตอร์ลิฟต์','ติดกระจกและจอข่าวสั้นในลิฟต์และหน้าลิฟต์','ห้ามใช้ลิฟต์สำหรับชั้น 1–3','ส่งจดหมายขอโทษทุกเดือน'],a:1,why:'ปัญหาจริงไม่ใช่ "ลิฟต์ช้า" แต่คือ "คนเบื่อระหว่างรอ"'},
+   {q:'ร้านอาหารคิวยาวช่วงเที่ยง ลูกค้าเห็นคิวแล้วเดินหนี ขยายร้านไม่ได้',o:['ลดจำนวนเมนู','ให้สั่งและจ่ายผ่านมือถือระหว่างต่อคิว เปลี่ยนคิวรอโต๊ะเป็นคิวรับกลับ','จ้างพนักงานเสิร์ฟเพิ่ม','ขึ้นราคาช่วงเที่ยง'],a:1,why:'เปลี่ยนความหมายของคิว จากอุปสรรคเป็นช่วงเวลาที่ลูกค้าใช้ประโยชน์'},
+   {q:'พนักงานไม่อ่านอีเมลประกาศจากฝ่ายบุคคล',o:['ส่งซ้ำสามรอบ','บังคับกดตอบรับ','ย้ายประกาศไปไว้ในที่ที่พนักงานเปิดอยู่แล้วทุกวัน','ให้หัวหน้าลงโทษ'],a:2,why:'แทนที่จะดึงคนมาหาอีเมล ให้เอาข้อความไปหาคน'},
+   {q:'เมืองหนึ่งมีปัญหาคนทิ้งขยะไม่ลงถัง เพิ่มค่าปรับแล้วไม่ดีขึ้น',o:['เพิ่มค่าปรับอีก','เพิ่มถังขยะ 2 เท่า','ทำถังขยะให้ส่งเสียงตลกเมื่อทิ้งลงถัง (ทำให้การทิ้งสนุก)','ตั้งกล้องวงจรปิด'],a:2,why:'จากแก้ด้วย "โทษ" เป็นแก้ด้วย "ความสนุก" การเปลี่ยนแรงจูงใจคือการเปลี่ยนมุม'}]},
+  {type:'brainstorm',seconds:60,targets:[4,7,10],prompts:['โรงเรียนอยากให้นักเรียนอ่านหนังสือมากขึ้น โดย "ห้าม" บังคับ ห้ามให้รางวัล ห้ามสอบ มีวิธีอะไรบ้าง?','ร้านค้าออนไลน์มีของตีกลับเยอะ อยากลดโดย "ไม่" เข้มงวดกับนโยบายคืนสินค้า','บริษัทอยากให้พนักงานเสนอไอเดียมากขึ้น โดยไม่ต้องมีกล่องรับไอเดียหรือประชุม']},
+  {type:'chain',scens:[
+   {intro:'ปัญหา: "ลูกค้าโทรเข้ามาที่ call center มากเกินไป สายรอนาน ลูกค้าโกรธ" ก่อนแก้ ให้เปลี่ยนกรอบของปัญหา',
+    steps:[{l:'1. เขียนปัญหาใหม่ 3 แบบ ด้วยกรอบที่ต่างกัน',h:'เช่น "ทำไมลูกค้าถึงต้องโทร?" "การรอจะไม่น่าโกรธได้ยังไง?" "ลูกค้าอยากได้อะไรจริง ๆ ไม่ใช่การคุยกับคน?"'},{l:'2. เลือกกรอบที่เปิดทางแก้ใหม่ที่สุด และอธิบายว่าทำไม',h:''},{l:'3. ทางแก้ 2 ทางที่มาจากกรอบใหม่ ซึ่งไม่ใช่ "เพิ่มคนรับสาย"',h:''}],
+    check:['กรอบทั้ง 3 ต่างกันจริง ไม่ใช่แค่เปลี่ยนคำ','ทางแก้ไม่ได้พุ่งไปที่ "ลดเวลารอ" ตรง ๆ','ทางแก้อย่างน้อย 1 ทางทำให้ปัญหาเดิม "ไม่สำคัญ" แทนที่จะแก้มัน']},
+   {intro:'ปัญหา: "พนักงานมาสายบ่อย ตักเตือนแล้วก็ยังสาย" เปลี่ยนกรอบก่อนแก้',
+    steps:[{l:'1. เขียนปัญหาใหม่ 3 แบบ ด้วยกรอบที่ต่างกัน',h:'เช่น "การมาตรงเวลาสำคัญกับงานนี้จริงไหม?" "อะไรทำให้การมาสายคุ้มค่าสำหรับเขา?"'},{l:'2. เลือกกรอบที่เปิดทางแก้ใหม่ที่สุด',h:''},{l:'3. ทางแก้ 2 ทางที่ไม่ใช่การลงโทษหรือตักเตือน',h:''}],
+    check:['กรอบทั้ง 3 ต่างกันจริง','ทางแก้ไม่ได้อยู่บนแกน "เข้มงวดขึ้น/ผ่อนลง"','อย่างน้อย 1 ทางตั้งคำถามกับตัวปัญหาเอง']}]}
+ ]},
+
+{id:'systemic',num:4,group:'เปลี่ยนมุมมอง',en:'Systemic Thinking',th:'คิดเชิงระบบ',c:'#1E8F6E',
+ def:'เข้าใจว่าส่วนต่าง ๆ ปฏิสัมพันธ์กันอย่างไรในระบบใหญ่ มองความสัมพันธ์ วงจรป้อนกลับ และแรงจูงใจ',
+ ex:'หมาป่ากลับสู่ Yellowstone → กวางเปลี่ยนพฤติกรรม → พืชฟื้น → ตลิ่งแม่น้ำมั่นคง',
+ take:'สิ่งที่ดูเหมือนปัญหา มักเป็นแค่อาการ ให้มองลึกลงไปหาระบบที่สร้างมันขึ้นมา',
+ ask:['อาการที่เห็น เชื่อมกับส่วนไหนของระบบบ้าง?','ใครได้ประโยชน์จากสภาพปัจจุบัน แรงจูงใจใครกำลังผลักให้เกิดพฤติกรรมนี้?','มีวงจรป้อนกลับที่ทำให้ปัญหาซ้ำหรือขยายตัวอยู่ไหม?','ถ้าแก้ที่จุดนี้ ส่วนไหนของระบบจะได้รับผลกระทบตามมา?'],
+ levels:[
+  {type:'sequence',intro:'เรียงลำดับผลกระทบที่ไหลไปในระบบ',chains:[
+   {t:'บริษัทเปลี่ยนมาให้โบนัสพนักงานขายตาม "ยอดขาย" เพียงอย่างเดียว',items:['พนักงานเร่งปิดการขายให้ได้มากที่สุด','ลูกค้าได้สินค้าที่ไม่ตรงความต้องการมากขึ้น','ยอดคืนสินค้าและร้องเรียนเพิ่ม','ทีมบริการหลังการขายทำงานหนัก ต้นทุนพุ่ง','ยอดขายสูงแต่กำไรสุทธิไม่เพิ่ม ผู้บริหารงงว่าทำไม']},
+   {t:'เมืองสร้างถนนเพิ่มเพื่อแก้รถติด',items:['ถนนใหม่เปิด รถวิ่งคล่องขึ้นชั่วคราว','คนที่เคยใช้ขนส่งสาธารณะหันมาขับรถเพราะสะดวก','จำนวนรถบนถนนเพิ่มจนถนนใหม่ก็ติด','รายได้ขนส่งสาธารณะลด ต้องลดเที่ยววิ่ง','คนยิ่งพึ่งรถส่วนตัว รถติดหนักกว่าเดิม']}]},
+  {type:'quiz',pick:3,intro:'มองหาระบบที่อยู่ข้างใต้อาการ',qs:[
+   {q:'"พนักงานลาออกเยอะ" ข้อไหนเป็นการมองแบบ "ระบบ" มากที่สุด?',o:['ขึ้นเงินเดือนให้ทุกคน','หาว่าคนลาออกจากทีมไหนเป็นพิเศษ หัวหน้าถูกวัดผลด้วยอะไร และการวัดผลนั้นสร้างพฤติกรรมอะไร','สัมภาษณ์คนลาออกแล้วแก้ทีละเรื่อง','จ้างคนใหม่ให้เร็วขึ้น'],a:1,why:'มองหาแรงจูงใจและโครงสร้างที่ "ผลิต" การลาออก ไม่ใช่แก้ทีละอาการ'},
+   {q:'วงจรป้อนกลับแบบ "เสริมแรง" (reinforcing loop) คือข้อไหน?',o:['ยิ่งขายดี ยิ่งมีงบโฆษณา ยิ่งขายดี','เทอร์โมสตัทปรับอุณหภูมิห้องให้คงที่','ราคาสูงขึ้น คนซื้อน้อยลง ราคาลดลง','ฝนตกแล้วหยุด'],a:0,why:'วงจรเสริมแรงขยายตัวเรื่อย ๆ (ทั้งทางดีและร้าย) ส่วนเทอร์โมสตัทและราคาเป็นวงจร "ถ่วงดุล"'},
+   {q:'แก้ปัญหาที่จุดหนึ่งแล้วปัญหาไปโผล่อีกจุด เรียกว่าอะไร?',o:['โชคร้าย','การย้ายปัญหา (shifting the burden) ซึ่งเป็นสัญญาณว่ายังไม่ได้แตะต้นตอ','ความสำเร็จ','ผลข้างเคียงที่หลีกเลี่ยงไม่ได้'],a:1,why:'ระบบมักดันปัญหาไปทางที่ต้านทานน้อยที่สุด'},
+   {q:'ข้อไหนคือคำถามเชิงระบบ?',o:['ใครทำผิด?','ทำไมโครงสร้างนี้ถึงทำให้คนมีเหตุผลทำแบบนี้?','ต้องลงโทษยังไง?','จะทำให้เร็วขึ้นได้ไหม?'],a:1,why:'ระบบที่ดีทำให้คนธรรมดาทำสิ่งที่ถูก ระบบที่แย่ทำให้คนดีทำสิ่งที่ผิดอย่างมีเหตุผล'}]},
+  {type:'chain',scens:[
+   {intro:'สถานการณ์: โรงพยาบาลเอกชนแห่งหนึ่งมีปัญหา "หมอลาออกบ่อย" แม้จะจ่ายสูงกว่าตลาด ลองวาดแผนที่ระบบ',
+    steps:[{l:'1. ผู้เล่นในระบบและสิ่งที่แต่ละคนถูกวัดผล',h:'หมอ ผู้บริหาร พยาบาล ผู้ป่วย ผู้ถือหุ้น... แต่ละคนอยากได้อะไร ถูกวัดด้วยอะไร'},{l:'2. วงจรป้อนกลับที่ทำให้ปัญหาขยายตัว',h:'เช่น หมอลาออก → หมอที่เหลือทำงานหนัก → เหนื่อย → ลาออกเพิ่ม'},{l:'3. "อาการ" ที่คนมักแก้ กับ "ต้นตอ" ที่ระบบผลิตมันขึ้นมา',h:''},{l:'4. จุดคานงัด 1 จุดที่ถ้าเปลี่ยนแล้วระบบเปลี่ยนตาม และผลข้างเคียงที่ต้องเฝ้าระวัง',h:''}],
+    check:['ระบุแรงจูงใจของอย่างน้อย 3 ผู้เล่น','มีวงจรป้อนกลับที่อธิบายว่าทำไมปัญหาถึงคงอยู่','แยกอาการกับต้นตอได้ชัด','จุดคานงัดไม่ใช่ "ขึ้นเงินเดือน" และมีการคาดผลข้างเคียง']},
+   {intro:'สถานการณ์: แอปสั่งอาหารมีปัญหา "ไรเดอร์ขับเร็ว เกิดอุบัติเหตุบ่อย" ออกกฎเข้มงวดแล้วไม่ดีขึ้น',
+    steps:[{l:'1. ผู้เล่นในระบบและสิ่งที่แต่ละคนถูกวัดผล',h:'ไรเดอร์ ร้าน ลูกค้า แพลตฟอร์ม อัลกอริทึม'},{l:'2. วงจรป้อนกลับที่ผลักให้ไรเดอร์ขับเร็ว',h:''},{l:'3. ทำไมกฎเข้มงวดถึงไม่ได้ผล ในมุมของระบบ',h:''},{l:'4. จุดคานงัดและผลข้างเคียง',h:''}],
+    check:['ระบุแรงจูงใจของอย่างน้อย 3 ผู้เล่น','เห็นว่าการขับเร็วเป็นพฤติกรรม "มีเหตุผล" ภายใต้ระบบ','จุดคานงัดแตะที่โครงสร้างแรงจูงใจ ไม่ใช่กฎ','คาดผลข้างเคียงได้']}]}
+ ]},
+
+{id:'associative',num:5,group:'เปลี่ยนมุมมอง',en:'Associative Thinking',th:'เชื่อมโยงข้ามศาสตร์',c:'#C0392B',
+ def:'นำไอเดียจากสาขาที่ไม่เกี่ยวข้องมาต่อกันเพื่อสร้างสิ่งใหม่',
+ ex:'ทีมแพทย์ศึกษา pit crew ของ F1 เพื่อพัฒนาการส่งต่อผู้ป่วยในห้องผ่าตัด',
+ take:'ไอเดียที่ดีที่สุดของคุณ อาจซ่อนอยู่ในสาขาที่คุณยังไม่เคยสำรวจ',
+ ask:['อุตสาหกรรมไหนเจอปัญหา "โครงสร้างเดียวกัน" แต่แก้เก่งกว่าเรา?','จากธรรมชาติ กีฬา ศิลปะ หรือเกม มีอะไรคล้ายเรื่องนี้?','หลักการที่ถอดออกมาได้คืออะไร (ไม่ใช่วิธีการ)?','ถ้าให้คนนอกวงการมาดู เขาจะเห็นอะไรที่เรามองข้าม?'],
+ levels:[
+  {type:'match',pick:5,intro:'จับคู่ "แหล่งที่มา" กับ "สิ่งที่ถูกนำไปสร้างจริง"',l:'ต้นแบบ',r:'นำไปใช้กับ',pool:[['Pit crew ของ F1','การส่งต่อผู้ป่วยในห้องผ่าตัด'],['สายการผลิตของโตโยต้า','ลดเวลารอในโรงพยาบาลด้วย Lean'],['เกมมือถือ (แต้ม/สตรีค)','แอปเรียนภาษา'],['ปากนกกระเต็น','หัวรถไฟชินคันเซ็นที่ลดเสียงบูม'],['หนามพืชที่ติดขนสุนัข','แถบตีนตุ๊กแก (Velcro)'],['จอมปลวก (ระบายอากาศ)','อาคารที่ไม่ต้องใช้แอร์'],['การบิน (checklist ก่อนบิน)','checklist ก่อนผ่าตัด']]},
+  {type:'brainstorm',seconds:60,targets:[4,7,10],prompts:['ร้านตัดผมเรียนอะไรจาก "สายการบิน" ได้บ้าง?','โรงเรียนเรียนอะไรจาก "เกมออนไลน์" ได้บ้าง?','ธนาคารเรียนอะไรจาก "ร้านสะดวกซื้อ" ได้บ้าง?']},
+  {type:'chain',scens:[
+   {intro:'โจทย์: บริษัทซอฟต์แวร์อยากลด "ข้อผิดพลาดตอนปล่อยเวอร์ชันใหม่" เลือกศาสตร์ที่ไกลตัวมาช่วย',
+    steps:[{l:'1. เลือกสาขาที่ไม่เกี่ยวกับซอฟต์แวร์เลย ซึ่งเก่งเรื่อง "ปล่อยของออกไปโดยไม่พลาด"',h:'เช่น การบิน ครัวร้านอาหารระดับสูง วงออร์เคสตรา การปล่อยจรวด'},{l:'2. หลักการที่สาขานั้นใช้ (ถอดเป็นหลักการ ไม่ใช่วิธี)',h:''},{l:'3. แปลหลักการนั้นเป็นการปฏิบัติจริงในทีมซอฟต์แวร์ 2 ข้อ',h:''},{l:'4. อะไรที่ "ไม่ควร" ยกมาใช้ เพราะบริบทต่างกัน',h:''}],
+    check:['สาขาที่เลือกไกลตัวจริง ไม่ใช่ IT ด้วยกัน','ถอดเป็นหลักการได้ ไม่ใช่ลอกวิธี','การปฏิบัติที่แปลมาใช้ได้จริง','ระบุขอบเขตที่อุปมาพังได้']}]}
+ ]},
+
+{id:'critical',num:6,group:'เหตุผลและหลักฐาน',en:'Critical Thinking',th:'คิดเชิงวิพากษ์',c:'#34495E',
+ def:'ทดสอบหลักฐาน ท้าทายสมมติฐาน และใช้เหตุผลไปสู่ข้อสรุปที่เชื่อถือได้',
+ ex:'Barry Marshall ท้าทายความเชื่อว่าความเครียดทำให้เกิดแผลในกระเพาะ จนพบบทบาทของเชื้อ H. pylori',
+ take:'การตัดสินใจที่แย่อยู่รอดได้ เพราะไม่มีใครหยุดตั้งคำถามกับสมมติฐานที่อยู่ข้างใต้',
+ ask:['หลักฐานอะไรสนับสนุนเรื่องนี้ มาจากไหน ใครเก็บ และเก็บอย่างไร?','กำลังตั้งสมมติฐานอะไรไว้โดยไม่รู้ตัว?','อะไรจะพิสูจน์ว่ามันผิด และเราไปหาหลักฐานนั้นหรือยัง?','ใครได้ประโยชน์ถ้าเราเชื่อเรื่องนี้?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'หาสมมติฐานที่ซ่อนอยู่หรืออคติ',qs:[
+   {q:'"ยอดขายเพิ่ม 20% หลังลงโฆษณา แปลว่าโฆษณาได้ผล" พึ่งพาสมมติฐานอะไรมากที่สุด?',o:['ลูกค้าชอบโฆษณา','ไม่มีปัจจัยอื่นเปลี่ยนในช่วงเดียวกัน','โฆษณามีคุณภาพ','ยอดขายวัดถูกต้อง'],a:1,why:'กับดัก "เกิดหลังจึงเกิดเพราะ" ถ้าคู่แข่งขาดสต็อกพอดี ยอดก็เพิ่มได้'},
+   {q:'"90% ของลูกค้าที่ตอบแบบสอบถามพอใจ" ควรระวังอะไร?',o:['ตัวเลขสูงเกินจริง','คนไม่พอใจมักไม่ตอบ กลุ่มตัวอย่างเอนเอียง','แบบสอบถามยาวไป','ควรใช้ 5 ระดับ'],a:1,why:'self-selection bias คนโกรธเดินหนีเงียบ ๆ'},
+   {q:'"บริษัทที่ประสบความสำเร็จทุกแห่งมีวัฒนธรรมทำงานหนัก ดังนั้นทำงานหนักทำให้สำเร็จ" ผิดตรงไหน?',o:['ไม่ผิด','ดูแต่บริษัทที่รอด ไม่ดูบริษัทที่ทำงานหนักแล้วเจ๊ง (survivorship bias)','ทำงานหนักไม่ดี','ต้องดูตัวเลข'],a:1,why:'ถ้าบริษัทที่เจ๊งก็ทำงานหนักเหมือนกัน การทำงานหนักก็อธิบายความสำเร็จไม่ได้'},
+   {q:'ผู้เชี่ยวชาญมีชื่อเสียงบอกว่า X ดี ควรทำอย่างไร?',o:['เชื่อทันที','ถามว่าเขามีหลักฐานอะไร อยู่ในสาขาที่เขาเชี่ยวชาญไหม และเขาได้ประโยชน์อะไร','ไม่เชื่อเลย','ถามคนอื่นให้มากขึ้น'],a:1,why:'ความน่าเชื่อถือของคนไม่ใช่หลักฐาน ต้องดูหลักฐานที่เขาใช้'},
+   {q:'ข้อไหนเป็น "สมมติฐานที่ซ่อนอยู่" ในประโยค "เราต้องขึ้นราคาเพราะต้นทุนขึ้น"?',o:['ต้นทุนขึ้นจริง','ลูกค้าจะยอมจ่ายเพิ่มและไม่หนีไปคู่แข่ง','ราคาเดิมถูกไป','คู่แข่งก็ขึ้นราคา'],a:1,why:'ประโยคนี้ข้ามคำถามว่าตลาดจะรับได้ไหม ไปที่ทางแก้เดียวทันที'}]},
+  {type:'quiz',pick:3,intro:'หลักฐานแบบไหนจะ "หักล้าง" สมมติฐานได้',qs:[
+   {q:'สมมติฐาน: "พนักงานลาออกเพราะเงินเดือนต่ำ" หลักฐานไหนหักล้างได้?',o:['บางคนที่ลาออกบ่นเรื่องเงิน','คู่แข่งจ่ายสูงกว่า','คนเงินเดือนสูงกว่าค่าเฉลี่ยก็ลาออกในอัตราเท่ากัน และ exit interview ชี้ไปที่หัวหน้า','ผลสำรวจบอกว่าอยากได้เงินเพิ่ม'],a:2,why:'หลักฐานที่ดีคือหลักฐานที่ "ขัด" กับสมมติฐานได้'},
+   {q:'สมมติฐาน: "แอปช้าเพราะเซิร์ฟเวอร์ไม่พอ" ทดสอบอย่างไรถูกที่สุด?',o:['เพิ่มเซิร์ฟเวอร์แล้วดู','ดูว่าตอนที่โหลดต่ำ แอปยังช้าไหม ถ้ายังช้าแสดงว่าไม่ใช่เซิร์ฟเวอร์','ถามผู้ใช้','เปลี่ยนผู้ให้บริการ'],a:1,why:'หาสถานการณ์ที่ถ้าสมมติฐานถูก ปัญหาต้องหายไป แล้วดูว่ามันหายจริงไหม'},
+   {q:'ทีมเชื่อว่า "ลูกค้าอยากได้ฟีเจอร์ X" อะไรคือหลักฐานที่ "อ่อน" ที่สุด?',o:['ลูกค้า 30% กดปุ่มทดลองฟีเจอร์ X ในเวอร์ชันทดสอบ','ลูกค้าตอบแบบสอบถามว่า "สนใจ"','ลูกค้ายอมจ่ายเงินล่วงหน้าเพื่อ X','ลูกค้าเลิกใช้คู่แข่งเพราะไม่มี X'],a:1,why:'สิ่งที่คนพูดกับสิ่งที่คนทำต่างกันมาก คำว่า "สนใจ" แทบไม่มีต้นทุน'},
+   {q:'"หลังจากเราเริ่มประชุมเช้าทุกวัน ยอดขายเพิ่ม" จะรู้ได้อย่างไรว่าประชุมเป็นเหตุจริง?',o:['ถามทีมว่าคิดว่าใช่ไหม','เทียบกับทีมที่ไม่ได้ประชุมเช้าในช่วงเดียวกัน หรือหยุดประชุมชั่วคราวแล้วดู','ประชุมให้นานขึ้น','ดูตัวเลขย้อนหลัง'],a:1,why:'ต้องมีกลุ่มเปรียบเทียบ ไม่งั้นแยกผลของประชุมออกจากฤดูกาลหรือปัจจัยอื่นไม่ได้'}]},
+  {type:'chain',scens:[
+   {intro:'ข้อความที่ต้องประเมิน: "รายงานภายในระบุว่าลูกค้าที่ใช้ฟีเจอร์แชทบอทมีอัตราซื้อซ้ำสูงกว่าลูกค้าทั่วไป 2 เท่า ทีมจึงเสนอให้ลงทุนขยายแชทบอท 10 ล้านบาท"',
+    steps:[{l:'1. หลักฐานคืออะไร และคุณภาพเป็นอย่างไร',h:'ใครทำรายงาน เทียบกับกลุ่มไหน ช่วงเวลาไหน ขนาดกลุ่มเท่าไหร่'},{l:'2. สมมติฐานที่ซ่อนอยู่ระหว่าง "ข้อมูล" กับ "ข้อเสนอ"',h:'เช่น แชทบอทเป็น "เหตุ" ของการซื้อซ้ำ ไม่ใช่ลูกค้าที่ซื้อซ้ำอยู่แล้วเป็นคนใช้แชทบอท'},{l:'3. อะไรจะพิสูจน์ว่าข้อสรุปนี้ผิด และจะไปหาหลักฐานนั้นได้ที่ไหน',h:''},{l:'4. ใครได้ประโยชน์ถ้าข้อเสนอผ่าน และมันกระทบความน่าเชื่อถือไหม',h:''},{l:'5. คำตัดสินของคุณ และเงื่อนไขที่จะเปลี่ยนใจ',h:''}],
+    check:['ตั้งคำถามกับที่มาและวิธีเก็บข้อมูล','ชี้ปัญหา "สหสัมพันธ์ไม่ใช่เหตุ" หรือกลุ่มตัวอย่างเอนเอียงได้','ระบุหลักฐานที่จะหักล้างได้ชัดเจน','คำตัดสินมีเงื่อนไข ไม่ใช่ตอบเชื่อ/ไม่เชื่อแบบสุดขั้ว']}]}
+ ]},
+
+{id:'analogical',num:7,group:'เหตุผลและหลักฐาน',en:'Analogical Thinking',th:'คิดเทียบเคียง',c:'#D68910',
+ def:'ใช้สิ่งที่คุ้นเคยเพื่อทำความเข้าใจหรือแก้สิ่งที่ไม่คุ้นเคย โดยถ่ายโอน "โครงสร้าง" ไม่ใช่ผิวเผิน',
+ ex:'PageRank ยืมตรรกะจากการอ้างอิงงานวิจัย: ถูกอ้างโดยงานสำคัญมาก = ทรงอิทธิพล',
+ take:'หาอุปมาที่ใช่ได้ คุณอาจมีคำตอบอยู่ในมือแล้วครึ่งหนึ่ง',
+ ask:['ปัญหานี้มี "โครงสร้าง" เหมือนอะไรที่เรารู้จักดีอยู่แล้ว?','ในระบบต้นแบบ อะไรทำหน้าที่แทนอะไรในปัญหาของเรา (map ทีละส่วน)?','ต้นแบบแก้ปัญหานี้อย่างไร แล้วแปลมาได้อย่างไร?','อุปมานี้พังตรงไหน ต่างกันจุดไหนที่อาจทำให้ใช้ไม่ได้?'],
+ levels:[
+  {type:'match',pick:5,intro:'จับคู่ "ระบบต้นแบบ" กับ "ปัญหาใหม่ที่ใช้โครงสร้างเดียวกัน"',l:'ต้นแบบ',r:'โครงสร้างเดียวกันกับ',pool:[['การอ้างอิงงานวิจัย','จัดอันดับความสำคัญของเว็บเพจ'],['ระบบภูมิคุ้มกัน','ซอฟต์แวร์ตรวจจับไวรัสที่ "จำ" ภัยเก่า'],['มดหาเส้นทางไปแหล่งอาหาร','อัลกอริทึมจัดเส้นทางรถส่งของ'],['ค่าทางด่วนแพงขึ้นชั่วโมงเร่งด่วน','ราคาตั๋วเครื่องบินแบบไดนามิก'],['บัตรยืมหนังสือห้องสมุด','ระบบยืม-คืนอุปกรณ์ในบริษัท'],['ระบบประปา (ท่อ แรงดัน คอขวด)','กระแสเงินสดในธุรกิจ'],['วิวัฒนาการ (กลายพันธุ์ + คัดเลือก)','การทดลอง A/B แล้วเก็บตัวที่ชนะ']]},
+  {type:'quiz',pick:3,intro:'อุปมาทุกอันมีจุดที่พัง ต้องรู้ว่าพังตรงไหน',qs:[
+   {q:'"บริษัทเหมือนครอบครัว" อุปมานี้พังตรงไหนที่อันตรายที่สุด?',o:['ครอบครัวไม่มีเงินเดือน','ครอบครัวไม่ไล่สมาชิกออกเมื่อผลงานตก แต่บริษัทต้องทำ ทำให้คนรู้สึกถูกทรยศ','บริษัทใหญ่กว่า','ครอบครัวไม่มีหัวหน้า'],a:1,why:'อุปมาสร้างความคาดหวัง ถ้าโครงสร้างต้นแบบไม่มีสิ่งที่เป้าหมายต้องมี จะเกิดความผิดหวัง'},
+   {q:'"ข้อมูลคือน้ำมันยุคใหม่" จุดที่อุปมานี้ใช้ไม่ได้คือ',o:['ข้อมูลไม่มีค่า','น้ำมันใช้แล้วหมด แต่ข้อมูลใช้ซ้ำได้และยิ่งรวมยิ่งมีค่า','น้ำมันแพงกว่า','ข้อมูลไม่ต้องกลั่น'],a:1,why:'อุปมาช่วยเรื่อง "มีค่า ต้องกลั่น" แต่พังเรื่อง "หมดไป" ซึ่งเปลี่ยนวิธีคิดเรื่องการแบ่งปันข้อมูลทั้งหมด'},
+   {q:'ทีมใช้อุปมา "เปิดตัวสินค้าเหมือนยิงจรวด ต้องเตรียมทุกอย่างให้พร้อมก่อนกดปุ่ม" อาจทำให้ทีมพลาดอะไร?',o:['ยิงเร็วเกิน','ไม่ทดสอบกับตลาดจริงก่อนเพราะคิดว่าต้องสมบูรณ์ก่อนปล่อย ทั้งที่ซอฟต์แวร์แก้หลังปล่อยได้','ใช้งบมาก','ทีมเครียด'],a:1,why:'จรวดยิงแล้วแก้ไม่ได้ ซอฟต์แวร์แก้ได้ อุปมาเลือกผิดทำให้ใช้กลยุทธ์ผิด'},
+   {q:'วิธีเช็คว่าอุปมาใช้ได้ คือ',o:['ดูว่าฟังดูดีไหม','เขียน mapping ทีละส่วนว่าอะไรแทนอะไร แล้วดูว่าส่วนสำคัญของปัญหามีตัวแทนในต้นแบบไหม','ถามว่าคนอื่นใช้ไหม','ใช้อุปมาหลายอัน'],a:1,why:'อุปมาที่ดีต้องตรงกันที่ "ความสัมพันธ์" ไม่ใช่แค่ผิวหน้า'}]},
+  {type:'chain',scens:[
+   {intro:'โจทย์: ทีมใหม่ต้องออกแบบ "ระบบจัดการความรู้ในองค์กร" ที่คนจะใช้จริง แต่ไม่รู้จะเริ่มยังไง ให้สร้างอุปมาอย่างเป็นระบบ',
+    steps:[{l:'1. เลือกระบบต้นแบบที่เก่งเรื่อง "คนเอาความรู้มาแบ่งและมีคนใช้จริง"',h:'เช่น Wikipedia, ตลาดสด, ห้องสมุด, Stack Overflow, สูตรอาหารครอบครัว'},{l:'2. Mapping: อะไรในต้นแบบ แทนอะไรในองค์กร (อย่างน้อย 4 คู่)',h:'เช่น บรรณาธิการ = ?, การให้คะแนน = ?, การค้นหา = ?'},{l:'3. ต้นแบบแก้ปัญหา "คนไม่ยอมเขียน" และ "หาไม่เจอ" อย่างไร แล้วแปลมาเป็นการออกแบบของเรา',h:''},{l:'4. อุปมาพังตรงไหน และจะเสริมส่วนนั้นอย่างไร',h:''}],
+    check:['mapping ตรงกันที่ความสัมพันธ์ ไม่ใช่ชื่อ','ได้กลไกที่ใช้ได้จริงอย่างน้อย 2 ข้อจากต้นแบบ','ระบุจุดที่อุปมาใช้ไม่ได้และมีวิธีเสริม']}]}
+ ]},
+
+{id:'abductive',num:8,group:'เหตุผลและหลักฐาน',en:'Abductive Thinking',th:'หาคำอธิบายที่เป็นไปได้ที่สุด',c:'#5D6D7E',
+ def:'สร้างคำอธิบายที่สมเหตุสมผลที่สุดจากข้อมูลที่ไม่ครบ โดยรวมเบาะแส บริบท และรูปแบบ',
+ ex:'นักสืบสังเกตรอยผิวไหม้แดด ท่าทาง เสื้อผ้า และบาดแผล แต่ละอย่างพิสูจน์อะไรไม่ได้ แต่รวมกันชี้คำอธิบายที่น่าจะเป็นที่สุด',
+ take:'การตัดสินใจที่ดีไม่ต้องการข้อมูลสมบูรณ์ แต่ต้องการเหตุผลที่ดีกับข้อมูลที่มี',
+ ask:['เบาะแสทั้งหมดที่มีคืออะไร (ลิสต์ให้ครบ รวมสิ่งที่ "ไม่เกิด")?','คำอธิบายที่เป็นไปได้มีอะไรบ้าง อย่างน้อย 3 ทาง?','คำอธิบายไหน "ง่ายที่สุด" ที่อธิบายเบาะแสได้ครบ?','ข้อมูลชิ้นไหนที่ถ้าได้มาจะยืนยันหรือล้มคำอธิบายนี้?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'เลือกคำอธิบายที่ "น่าจะเป็นที่สุด" ไม่ใช่ที่แน่นอนที่สุด',qs:[
+   {q:'ร้านชานมสาขาหนึ่ง ยอดตกเฉพาะวันเสาร์ตั้งแต่เดือนก่อน • หน้าร้านมีป้ายก่อสร้างถนนช่วงวันหยุด • รีวิวยังดี • สาขาอื่นปกติ',o:['พนักงานวันเสาร์บริการไม่ดี','คู่แข่งเปิดใหม่','ก่อสร้างช่วงวันหยุดทำให้เข้าถึงหรือจอดรถยาก','สินค้าคุณภาพตก'],a:2,why:'เบาะแส "เฉพาะวันเสาร์ + เฉพาะสาขานี้ + รีวิวยังดี + ก่อสร้างวันหยุด" ชี้ทางเดียวกัน'},
+   {q:'พนักงานที่เคยตรงเวลา เริ่มมาสาย 3 วันติด • แต่งตัวสุภาพกว่าปกติ • ลาพักเที่ยงนาน • ผลงานยังดี',o:['ป่วยเรื้อรัง','กำลังสัมภาษณ์งานที่อื่น','ขี้เกียจขึ้น','รถติด'],a:1,why:'ไม่มีอะไรพิสูจน์ได้ แต่คำอธิบายนี้ครอบคลุมเบาะแสมากที่สุด ขั้นต่อไปคือหาข้อมูลยืนยัน'},
+   {q:'เว็บไซต์ยอดสมัครสมาชิกตก 40% ในสัปดาห์นี้ • ยอดเข้าชมเท่าเดิม • ทีมเทคนิคเพิ่งอัปเดตหน้าสมัคร • ไม่มีคู่แข่งใหม่',o:['คนเบื่อสินค้า','หน้าสมัครใหม่มีปัญหาบางอย่างที่ทำให้สมัครไม่สำเร็จ','เศรษฐกิจแย่','โฆษณาไม่ดี'],a:1,why:'ยอดเข้าชมเท่าเดิมตัดเรื่องโฆษณาและความสนใจ การเปลี่ยนแปลงเดียวคือหน้าสมัคร'},
+   {q:'หลักการเลือกระหว่างคำอธิบายหลายอันคือ',o:['เลือกอันที่ซับซ้อนที่สุด','เลือกอันที่ต้องตั้งสมมติฐานเพิ่มน้อยที่สุดแต่อธิบายเบาะแสได้ครบ','เลือกอันที่คนส่วนใหญ่เชื่อ','เลือกอันที่ร้ายแรงที่สุดเพื่อความปลอดภัย'],a:1,why:'มีดโกนของอ็อคคัม: คำอธิบายที่ง่ายที่สุดที่ครอบคลุมหลักฐานทั้งหมด'}]},
+  {type:'quiz',pick:3,intro:'ระดับนี้มีเบาะแสลวง ต้องแยกให้ออก',qs:[
+   {q:'บริษัทกำไรลด • ยอดขายเพิ่ม • ต้นทุนวัตถุดิบเท่าเดิม • เพิ่งเปิดสาขาใหม่ 3 แห่งเมื่อ 2 เดือนก่อน • CEO เพิ่งลาป่วย',o:['CEO ลาป่วยทำให้บริหารไม่ดี','สาขาใหม่ยังไม่คืนทุน ต้นทุนคงที่เพิ่มเร็วกว่ายอดขาย','ขายของขาดทุน','วัตถุดิบแพง'],a:1,why:'CEO ลาป่วยเป็นเบาะแสลวง ไม่มีกลไกอธิบายกำไรลดใน 2 เดือน ส่วนสาขาใหม่อธิบายทั้ง "ยอดขายเพิ่ม" และ "กำไรลด" พร้อมกัน'},
+   {q:'แอปมีรีวิว 1 ดาวพุ่งใน 3 วัน • ไม่มีอัปเดตเวอร์ชันใหม่ • รีวิวส่วนใหญ่มาจากประเทศเดียว • ข้อความรีวิวคล้ายกัน • คู่แข่งเพิ่งเปิดแคมเปญ',o:['แอปมีบั๊ก','ผู้ใช้เบื่อ','การโจมตีด้วยรีวิวปลอมที่มีการจัดตั้ง','ผู้ใช้ประเทศนั้นไม่ชอบแอป'],a:2,why:'"ไม่มีอัปเดต" ตัดเรื่องบั๊ก "ข้อความคล้ายกัน + ประเทศเดียว + 3 วัน" ชี้ไปที่การจัดตั้ง ส่วนคู่แข่งเป็นข้อสงสัยที่ยังต้องหาหลักฐาน'},
+   {q:'พนักงานทีมหนึ่งลาป่วยพร้อมกัน 4 คนวันจันทร์ • ทั้ง 4 ไปงานเลี้ยงบริษัทวันศุกร์ • ทีมอื่นที่ไปงานเลี้ยงปกติดี • ทั้ง 4 นั่งโซนเดียวกันในออฟฟิศ • ทีมนี้ทะเลาะกับหัวหน้าเมื่อสัปดาห์ก่อน',o:['อาหารเป็นพิษจากงานเลี้ยง','ประท้วงหัวหน้าด้วยการลาพร้อมกัน','แอร์ในโซนนั้นมีปัญหา','บังเอิญ'],a:1,why:'ถ้าเป็นอาหาร ทีมอื่นที่ไปงานเดียวกันควรป่วยด้วย "ลาพร้อมกัน + ทะเลาะกับหัวหน้า" อธิบายได้ครบกว่า แม้จะไม่แน่ใจ ก็ควรคุยกับทีมนี้ก่อนหาแอร์'},
+   {q:'ข้อไหนเป็นข้อผิดพลาดของ abductive thinking?',o:['ยึดคำอธิบายแรกแล้วเลือกมองแต่เบาะแสที่สนับสนุนมัน','คิดคำอธิบายหลายทาง','หาข้อมูลเพิ่มก่อนสรุปสุดท้าย','ยอมรับว่ายังไม่แน่ใจ'],a:0,why:'confirmation bias คือศัตรูอันดับหนึ่งของการอนุมาน ต้องคิดคำอธิบายคู่แข่งเสมอ'}]},
+  {type:'chain',scens:[
+   {intro:'เบาะแส: ร้านอาหารของคุณยอดขายวันธรรมดาตกลง 25% ใน 6 สัปดาห์ • วันหยุดปกติ • รีวิวออนไลน์ยังดี • มีร้านใหม่เปิดในซอยเมื่อ 2 เดือนก่อน • พนักงานเสิร์ฟคนเก่งลาออกเมื่อ 7 สัปดาห์ก่อน • บริษัทใหญ่ในตึกข้าง ๆ เพิ่งให้พนักงานทำงานจากบ้าน 3 วัน/สัปดาห์',
+    steps:[{l:'1. คำอธิบายที่เป็นไปได้ อย่างน้อย 3 ทาง',h:'ทางละ 1–2 บรรทัด'},{l:'2. แต่ละคำอธิบาย อธิบายเบาะแสข้อไหนได้ และข้อไหนไม่ได้',h:'โดยเฉพาะ "วันหยุดปกติ" ซึ่งเป็นเบาะแสสำคัญ'},{l:'3. คำอธิบายที่น่าจะเป็นที่สุด และเพราะอะไร',h:''},{l:'4. ข้อมูล 1–2 ชิ้นที่จะไปหาเพื่อยืนยันหรือล้ม และจะทำอะไรถ้าผลออกมาแต่ละแบบ',h:''}],
+    check:['มีคำอธิบายคู่แข่งอย่างน้อย 3 ทาง','ใช้เบาะแส "วันหยุดปกติ" ในการตัดคำอธิบาย','คำอธิบายที่เลือกครอบคลุมเบาะแสมากที่สุด ไม่ใช่แค่น่ากลัวที่สุด','มีแผนหาข้อมูลยืนยันที่ชัดเจน']}]}
+ ]},
+
+{id:'first',num:9,group:'รื้อสมมติฐานและมองไกล',en:'First-Principles Thinking',th:'คิดจากหลักการพื้นฐาน',c:'#117A8B',
+ def:'แยกปัญหาลงไปถึงความจริงพื้นฐาน แล้วสร้างขึ้นมาใหม่ ถามว่า "อะไรที่ต้องเป็นจริงแน่ ๆ" แทน "ปกติเขาทำกันยังไง"',
+ ex:'IKEA ไม่ยึดว่าเฟอร์นิเจอร์ต้องส่งแบบประกอบเสร็จ แยกเป็นชิ้นให้ลูกค้าประกอบเอง กล่องแบนลดต้นทุนขนส่งและจัดเก็บ',
+ take:'ข้อจำกัดหลายอย่างไม่ใช่กฎฟิสิกส์ แต่เป็นสมมติฐานที่รับสืบทอดมาจากอดีต',
+ ask:['สิ่งที่ "ทุกคนรู้" ว่าต้องทำในเรื่องนี้ มีอะไรบ้าง?','ในนั้น อะไรเป็นข้อจำกัดจริง (ฟิสิกส์ กฎหมาย) อะไรเป็นแค่ธรรมเนียม?','ความจริงพื้นฐานที่ตัดไม่ได้จริง ๆ มีกี่ข้อ?','ถ้าเริ่มจากศูนย์ด้วยความจริงเหล่านั้น จะออกแบบยังไง?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'แยก "ข้อจำกัดจริง" ออกจาก "ธรรมเนียมที่รับสืบทอดมา"',qs:[
+   {q:'ข้อไหนเป็นข้อจำกัดจริง ไม่ใช่ธรรมเนียม?',o:['ร้านอาหารต้องมีโต๊ะให้ลูกค้านั่ง','ธนาคารต้องมีสาขา','อาหารต้องปลอดภัยต่อการบริโภคตามกฎหมาย','พนักงานต้องทำงาน 9 โมงถึง 6 โมง'],a:2,why:'สามข้อที่เหลือถูกทำลายไปแล้วโดยธุรกิจจริง (ร้านส่งอย่างเดียว ธนาคารดิจิทัล งานยืดหยุ่น)'},
+   {q:'คำถามแบบ first-principles คือ',o:['คู่แข่งทำยังไง?','ปีที่แล้วเราทำยังไง?','ถ้าไม่มีวิธีเดิมเลย อะไรที่ต้องเป็นจริงเพื่อให้ลูกค้าได้สิ่งที่ต้องการ?','ผู้เชี่ยวชาญแนะนำยังไง?'],a:2,why:'สามข้อแรกเริ่มจาก "สิ่งที่มีอยู่" ข้อนี้เริ่มจาก "สิ่งที่ต้องเป็นจริง"'},
+   {q:'ต้นทุนแบตเตอรี่ "แพงเกินไป" คนทั่วไปสรุปว่ารถไฟฟ้าไม่คุ้ม first-principles จะถามว่า',o:['ใครขายแบตถูกที่สุด','แบตทำจากวัตถุดิบอะไร วัตถุดิบเหล่านั้นราคาเท่าไหร่ในตลาด แล้วช่องว่างระหว่างราคาวัตถุดิบกับราคาแบตมาจากไหน','รอให้ราคาลง','ใช้แบตให้น้อยลง'],a:1,why:'ถ้าวัตถุดิบรวมกันถูกกว่าราคาแบตมาก ช่องว่างนั้นคือ "ธรรมเนียมการผลิต" ที่รื้อได้'},
+   {q:'ข้อไหนคือสัญญาณว่าคุณกำลังใช้ "ธรรมเนียม" แทน "หลักการ"?',o:['อธิบายได้ว่าทำไมต้องทำแบบนี้','ตอบว่า "เพราะทำกันมาแบบนี้" หรือ "ทุกคนในวงการทำแบบนี้"','มีข้อมูลรองรับ','เคยทดลองทางอื่นแล้ว'],a:1,why:'ประโยค "ทำกันมาแบบนี้" คือธงแดงที่ควรหยุดแล้วถามว่าทำไม'}]},
+  {type:'chain',scens:[
+   {intro:'โจทย์: "ร้านอาหารต้องมีหน้าร้านและโต๊ะให้ลูกค้านั่ง" รื้อสมมติฐานนี้',
+    steps:[{l:'1. สมมติฐานที่คนทั่วไปเชื่อว่า "ต้องมี" อย่างน้อย 3 ข้อ',h:'หน้าร้าน พนักงานเสิร์ฟ ครัวในร้าน เมนู...'},{l:'2. อะไรที่ "ต้องเป็นจริงแน่ ๆ" ในการขายอาหาร',h:'ความจริงพื้นฐานที่ตัดไม่ได้'},{l:'3. ทางแก้ใหม่ที่สร้างจากความจริงพื้นฐาน',h:''}],
+    check:['ระบุสมมติฐานที่รับสืบทอดมาได้อย่างน้อย 3 ข้อ','แยกได้ชัดว่าข้อไหนเป็นข้อจำกัดจริง','ทางแก้ไม่ได้เริ่มจาก "ปกติเขาทำกันยังไง"','ทางแก้ตอบโจทย์ความจริงพื้นฐานครบ']},
+   {intro:'โจทย์: "การประชุมต้องมีคนมานั่งรวมกันในเวลาเดียวกัน" รื้อสมมติฐานนี้',
+    steps:[{l:'1. สมมติฐานที่ซ่อนอยู่ในการประชุมแบบเดิม อย่างน้อย 3 ข้อ',h:'ต้องพร้อมกัน ต้องมีคนนำ ต้องมีห้อง ต้องใช้เวลา 1 ชั่วโมง...'},{l:'2. การประชุมมีไว้เพื่ออะไรจริง ๆ (ความจริงพื้นฐาน)',h:'ตัดสินใจ? แชร์ข้อมูล? สร้างความสัมพันธ์?'},{l:'3. ออกแบบวิธีบรรลุเป้าหมายนั้นโดยไม่ยึดสมมติฐานในข้อ 1',h:''}],
+    check:['ระบุสมมติฐานได้อย่างน้อย 3 ข้อ','แยกเป้าหมายจริงออกจากรูปแบบได้','ทางแก้ต่างจากประชุมแบบเดิมอย่างมีนัย','ยังตอบเป้าหมายจริงครบ']}]},
+  {type:'chain',scens:[
+   {intro:'โจทย์ยาก: บริษัทขนส่งพัสดุมีต้นทุน "ไมล์สุดท้าย" (ส่งถึงบ้าน) สูงถึง 50% ของต้นทุนทั้งหมด ทุกคนในวงการบอกว่า "มันก็เป็นแบบนี้"',
+    steps:[{l:'1. แตกต้นทุนไมล์สุดท้ายออกเป็นองค์ประกอบพื้นฐาน',h:'คน รถ น้ำมัน เวลาต่อจุด จำนวนครั้งที่ส่งไม่สำเร็จ ระยะทางระหว่างจุด...'},{l:'2. องค์ประกอบไหนเป็นฟิสิกส์/กฎหมาย องค์ประกอบไหนเป็นธรรมเนียม',h:'เช่น "ต้องส่งถึงหน้าประตู" เป็นธรรมเนียมหรือข้อบังคับ?'},{l:'3. สร้างโมเดลใหม่จากความจริงพื้นฐาน อย่างน้อย 2 แบบ',h:''},{l:'4. ประเมินคร่าว ๆ ว่าแต่ละแบบลดต้นทุนส่วนไหนได้ และเพิ่มต้นทุนหรือความเสี่ยงส่วนไหน',h:''}],
+    check:['แตกต้นทุนเป็นองค์ประกอบได้อย่างน้อย 4 ส่วน','แยกฟิสิกส์กับธรรมเนียมได้อย่างมีเหตุผล','โมเดลใหม่แตะที่องค์ประกอบใหญ่ที่สุด ไม่ใช่ส่วนเล็ก','ซื่อสัตย์กับข้อเสียของโมเดลใหม่']}]}
+ ]},
+
+{id:'inverted',num:10,group:'รื้อสมมติฐานและมองไกล',en:'Inverted Thinking',th:'คิดกลับด้าน',c:'#7B241C',
+ def:'แก้ปัญหาโดยเริ่มจากถามว่า "จะทำให้มันล้มเหลวแน่ ๆ ได้อย่างไร" แล้วกำจัดเงื่อนไขเหล่านั้น',
+ ex:'วิศวกรสะพานถามว่าอะไรจะทำลายสะพานได้ แล้วออกแบบป้องกันจุดเหล่านั้น',
+ take:'การกำจัดสาเหตุของความล้มเหลว บางครั้งได้ผลกว่าการเพิ่มวิธีสู่ความสำเร็จไปเรื่อย ๆ',
+ ask:['ถ้าอยากให้เรื่องนี้พังแน่ ๆ ต้องทำอะไร (อย่างน้อย 5 ข้อ)?','ข้อไหนในนั้นที่เรากำลังทำอยู่โดยไม่รู้ตัว?','กำจัดข้อไหนก่อน ได้ผลมากที่สุด?','สัญญาณเตือนล่วงหน้าของแต่ละความล้มเหลวคืออะไร?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'เข้าใจว่าเมื่อไหร่การกลับด้านได้ผล',qs:[
+   {q:'ทำไม "ลิสต์วิธีทำให้พัง" มักได้ไอเดียมากกว่า "ลิสต์วิธีทำให้สำเร็จ"?',o:['คนมองโลกในแง่ร้าย','วิธีพังมีน้อยกว่า','สมองจำความล้มเหลวที่เคยเห็นได้ชัดเจนกว่า และการวิจารณ์ง่ายกว่าการสร้าง','ไม่จริง ได้เท่ากัน'],a:2,why:'เราเคยเห็นโปรเจกต์พังมากกว่าเห็นสูตรสำเร็จ การกลับด้านดึงประสบการณ์นั้นออกมาใช้'},
+   {q:'"Pre-mortem" คือ',o:['ประชุมหลังโปรเจกต์พัง','ก่อนเริ่ม สมมติว่าโปรเจกต์พังไปแล้ว ให้ทุกคนเขียนว่าพังเพราะอะไร','การตรวจสอบสุดท้าย','แผนสำรอง'],a:1,why:'การสมมติว่า "พังไปแล้ว" ปลดล็อกให้คนพูดความกังวลที่ปกติไม่กล้าพูด'},
+   {q:'ข้อไหนคือการใช้ inverted thinking กับ "อยากมีความสัมพันธ์ที่ดีกับทีม"?',o:['อ่านหนังสือภาวะผู้นำ','ลิสต์สิ่งที่ทำให้ทีมเกลียดหัวหน้าแน่ ๆ แล้วเลิกทำสิ่งเหล่านั้น','จัดเลี้ยงบ่อยขึ้น','ให้โบนัส'],a:1,why:'การ "หยุดทำสิ่งที่ทำลาย" มักได้ผลเร็วกว่า "เพิ่มสิ่งที่สร้าง"'}]},
+  {type:'brainstorm',seconds:60,targets:[4,7,10],flip:true,prompts:['บริษัทกำลังจะเปิดตัวสินค้าใหม่ จะทำอย่างไรให้การเปิดตัว "ล้มเหลวแน่ ๆ"?','คุณเพิ่งได้เป็นหัวหน้าทีมใหม่ จะทำอย่างไรให้ทีม "เกลียดคุณภายใน 1 เดือน"?','จะทำอย่างไรให้การเรียนภาษาใหม่ "ล้มเหลวแน่ ๆ ภายใน 3 เดือน"?']},
+  {type:'chain',scens:[
+   {intro:'Pre-mortem: อีก 12 เดือนข้างหน้า โปรเจกต์ "ย้ายระบบหลักของบริษัทขึ้นคลาวด์" ล้มเหลวไปแล้ว เขียนรายงานสาเหตุ',
+    steps:[{l:'1. เรื่องเล่าความล้มเหลว: มันพังเพราะอะไร เขียนเหมือนเกิดขึ้นแล้ว',h:'เล่าเป็นลำดับเหตุการณ์ ไม่ใช่ลิสต์'},{l:'2. สาเหตุราก 3–5 ข้อ แยกเป็น "ควบคุมได้" กับ "ควบคุมไม่ได้"',h:''},{l:'3. สัญญาณเตือนล่วงหน้าของแต่ละสาเหตุ ที่จะเห็นได้ก่อนพังจริง',h:'เช่น เดือนที่ 3 ถ้าเห็น X แปลว่ากำลังจะพัง'},{l:'4. มาตรการป้องกัน 3 ข้อ เรียงตามผลกระทบ และใครเป็นเจ้าของ',h:''}],
+    check:['เรื่องเล่ามีลำดับเหตุการณ์ที่สมจริง','แยกสาเหตุที่ควบคุมได้/ไม่ได้','มีสัญญาณเตือนที่วัดได้จริง','มาตรการป้องกันมีเจ้าของและลำดับความสำคัญ']}]}
+ ]},
+
+{id:'second',num:11,group:'รื้อสมมติฐานและมองไกล',en:'Second-Order Thinking',th:'คิดผลกระทบลำดับที่สอง',c:'#6C3483',
+ def:'มองไกลกว่าผลลัพธ์ทันที ถามต่อว่า "แล้วเพราะสิ่งนั้น จะเกิดอะไรตามมาอีก"',
+ ex:'อุดหนุนค่าโดยสาร → คนใช้มากขึ้น → เมืองลดคุณภาพเพื่อคุมต้นทุน → แออัด → คนกลับไปใช้รถส่วนตัว',
+ take:'การคิดลำดับแรกเจอผลที่ชัดเจน การคิดลำดับที่สองมองหาผลของผลนั้นอีกที',
+ ask:['ผลทันทีคืออะไร แล้วคนจะ "ปรับตัว" ต่อผลนั้นอย่างไร?','แรงจูงใจใหม่ที่เกิดขึ้นคืออะไร ใครได้ ใครเสีย?','คู่แข่ง ลูกค้า หรือหน่วยงานกำกับจะตอบโต้อย่างไร?','อีก 1 ปีและ 3 ปีข้างหน้า ระบบจะหน้าตาเป็นอย่างไร?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'ผลลำดับที่สองที่คนมักมองข้าม',qs:[
+   {q:'ร้านค้าออนไลน์ให้ "ส่งฟรีทุกออเดอร์" ผลลำดับที่สองที่น่าจะเกิดคือ',o:['ยอดขายเพิ่ม','ลูกค้าสั่งของชิ้นเล็กหลายครั้งแทนรวมออเดอร์ ต้นทุนส่งต่อชิ้นพุ่ง และคู่แข่งต้องทำตามจนทั้งตลาดกำไรบาง','ลูกค้าพอใจ','ต้องจ้างคนแพ็คเพิ่ม'],a:1,why:'ผลลำดับแรกคือยอดเพิ่ม ลำดับสองคือ "พฤติกรรมเปลี่ยน" และ "ตลาดตอบโต้"'},
+   {q:'ห้ามพนักงานทำงานล่วงเวลาเพื่อลดค่าใช้จ่าย ผลลำดับที่สองคือ',o:['ประหยัดเงิน','งานที่ต้องเสร็จก็ต้องเสร็จ พนักงานทำนอกระบบโดยไม่บันทึก หรืองานค้างจนลูกค้าเสีย','พนักงานมีความสุข','ไม่มีผลอะไร'],a:1,why:'กฎเปลี่ยน "รูปแบบ" ของงาน ไม่ได้เปลี่ยน "ปริมาณ" ของงาน'},
+   {q:'ให้รางวัลทีมที่ "ปิดตั๋วปัญหาลูกค้าได้เร็วที่สุด" ผลลำดับที่สองคือ',o:['ลูกค้าได้รับการช่วยเหลือเร็ว','ทีมปิดตั๋วก่อนแก้จริง หรือแตกปัญหาเดียวเป็นหลายตั๋ว ตัวเลขดีแต่ลูกค้าแย่ลง','ทีมทำงานหนักขึ้น','ต้นทุนลด'],a:1,why:'ตัววัดใดที่กลายเป็นเป้าหมาย จะเลิกเป็นตัววัดที่ดี (Goodhart)'},
+   {q:'วิธีคิดลำดับที่สองที่ใช้ได้จริงคือ',o:['เดาอนาคต','ถาม "แล้วไงต่อ?" อย่างน้อย 3 รอบ และมองผลต่อคนแต่ละกลุ่มแยกกัน','รอดูผล','ถามผู้เชี่ยวชาญ'],a:1,why:'ทำต่อเนื่องเป็นลูกโซ่ และแยกตามผู้เล่น เพราะแต่ละกลุ่มปรับตัวไม่เหมือนกัน'}]},
+  {type:'sequence',intro:'ต่อลูกโซ่ผลกระทบให้ถูกลำดับ',chains:[
+   {t:'รัฐบาลอุดหนุนค่าโดยสารขนส่งสาธารณะ',items:['ผู้โดยสารประหยัดเงินและพอใจ','คนใช้ขนส่งสาธารณะมากขึ้น','ผู้โดยสารหนาแน่นจนเมืองต้องคุมต้นทุนด้วยการลดคุณภาพบริการ','แออัด ล่าช้า ความพอใจลด','บางส่วนกลับไปใช้รถส่วนตัว']},
+   {t:'แพลตฟอร์มโซเชียลเพิ่มปุ่ม "ไม่ชอบ" (dislike)',items:['ผู้ใช้กดไม่ชอบเนื้อหาที่ไม่ถูกใจได้ง่าย','ครีเอเตอร์เลี่ยงเนื้อหาที่เสี่ยงถูกไม่ชอบ ผลิตแต่เนื้อหาปลอดภัย','เนื้อหาบนแพลตฟอร์มคล้ายกันมากขึ้น น่าเบื่อ','ผู้ใช้ใช้เวลาน้อยลง','แพลตฟอร์มรายได้โฆษณาลด ต้องถอดปุ่มออก']}]},
+  {type:'chain',scens:[
+   {intro:'การกระทำ: "บริษัทประกาศให้พนักงานทุกคนทำงานจากบ้านได้ 100% ตลอดไป"',
+    steps:[{l:'ลำดับที่ 1: ผลทันที',h:'สัปดาห์แรก'},{l:'ลำดับที่ 2: คนจะเปลี่ยนพฤติกรรมอย่างไร',h:'พนักงาน หัวหน้า ฝ่ายบุคคล เจ้าของอาคาร'},{l:'ลำดับที่ 3: แรงจูงใจใหม่ที่เกิดขึ้น ใครได้ ใครเสีย',h:''},{l:'ลำดับที่ 4: ผลระยะยาว 2–3 ปี',h:'วัฒนธรรม การรักษาคน ต้นทุน ความเสี่ยงใหม่'}],
+    check:['แต่ละลำดับเชื่อมด้วย "เพราะ...จึง..."','มีผลกระทบด้านลบที่คนมักมองข้ามอย่างน้อย 1 ข้อ','มีผลต่อกลุ่มคนที่ไม่ใช่พนักงานโดยตรง','มองไกลถึงระดับปี']},
+   {intro:'การกระทำ: "เมืองห้ามใช้ถุงพลาสติกทุกชนิดตั้งแต่เดือนหน้า"',
+    steps:[{l:'ลำดับที่ 1: ผลทันที',h:''},{l:'ลำดับที่ 2: ผู้บริโภค ร้านค้า และผู้ผลิตปรับตัวอย่างไร',h:''},{l:'ลำดับที่ 3: แรงจูงใจใหม่และผลที่ไม่ตั้งใจ',h:'เช่น ถุงผ้าที่ผลิตแล้วใช้ไม่กี่ครั้ง ถุงกระดาษที่ใช้ทรัพยากรมากกว่า'},{l:'ลำดับที่ 4: ผลระยะยาวและวิธีทำให้นโยบายได้ผลจริง',h:''}],
+    check:['แต่ละลำดับเชื่อมด้วยเหตุผล','มีผลที่ไม่ตั้งใจอย่างน้อย 1 ข้อ','แยกผลต่อผู้เล่นต่างกลุ่ม','ปิดท้ายด้วยข้อเสนอที่คำนึงถึงลำดับสอง']}]}
+ ]},
+
+{id:'janusian',num:12,group:'ความขัดแย้งและตัวเอง',en:'Janusian Thinking',th:'ถือสองขั้วพร้อมกัน',c:'#1F618D',
+ def:'ถือไอเดียที่ขัดแย้งกันสองอย่างไว้พร้อมกัน แล้วถามว่า "ถ้าทั้งสองฝั่งมีสิ่งที่มีค่าอยู่ล่ะ"',
+ ex:'ทีมหนึ่งสร้างไอเดียให้แข็งแรงที่สุด อีกทีมโจมตีหาจุดอ่อน แล้วทีมแรกใช้คำวิจารณ์นั้นปรับปรุง',
+ take:'นักคิดต้นแบบไม่ได้กำจัดความขัดแย้งเสมอไป บางครั้งใช้แรงตึงระหว่างมันสร้างสิ่งที่ดีกว่า',
+ ask:['แต่ละฝั่งกำลังปกป้องคุณค่าอะไร (เขียนให้ยุติธรรมที่สุด)?','ทั้งสองฝั่งถูกพร้อมกันได้ในเงื่อนไขไหน?','ถ้าไม่ต้องเลือก จะรวมจุดแข็งของทั้งสองได้อย่างไร?','ความขัดแย้งนี้บอกอะไรเกี่ยวกับปัญหาจริงที่อยู่ข้างใต้?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'แยกการ "รวมสองขั้ว" ออกจากการ "เอากลาง ๆ"',qs:[
+   {q:'ทีมเถียงว่าควร "เร็ว" หรือ "รอบคอบ" ข้อไหนคือ Janusian ไม่ใช่ประนีประนอม?',o:['เร็วปานกลาง รอบคอบปานกลาง','แบ่งงานเป็นส่วนที่ย้อนกลับได้ (ทำเร็ว) กับส่วนที่ย้อนกลับไม่ได้ (ทำรอบคอบ)','โหวต','ให้หัวหน้าตัดสิน'],a:1,why:'การเอากลาง ๆ ได้ทั้งสองอย่างครึ่งเดียว การรวมสองขั้วได้ทั้งสองอย่างเต็มที่ในบริบทที่เหมาะ'},
+   {q:'"ลูกค้าอยากได้ตัวเลือกเยอะ" กับ "ลูกค้าสับสนเมื่อตัวเลือกเยอะ" จัดการอย่างไร?',o:['ลดตัวเลือกให้เหลือ 3','มีตัวเลือกเยอะแต่ "แนะนำ" 3 ตัวเด่น และซ่อนที่เหลือไว้ให้คนที่อยากดู','ให้ลูกค้าเลือกเอง','ทำแบบสอบถาม'],a:1,why:'ทั้งสองความจริงถูกพร้อมกัน ทางแก้คือออกแบบให้แต่ละความจริงทำงานกับคนที่ต้องการมัน'},
+   {q:'สัญญาณว่าคุณกำลัง "เลือกข้าง" เร็วเกินไปคือ',o:['อธิบายจุดแข็งของฝั่งตรงข้ามได้ดีจนเขาพอใจ','นึกไม่ออกว่าคนฉลาดจะอยู่ฝั่งตรงข้ามได้ยังไง','ใช้เวลาตัดสินใจนาน','ถามหลายคน'],a:1,why:'ถ้ามองฝั่งตรงข้ามว่าโง่ แสดงว่ายังไม่เข้าใจคุณค่าที่เขาปกป้อง'}]},
+  {type:'chain',scens:[
+   {intro:'ไอเดีย A: "ต้องตอบแชทลูกค้าภายใน 1 นาที" กับ ไอเดีย B: "ต้องตอบให้ถูกต้องครบถ้วน แม้ใช้เวลานาน" อย่าเพิ่งเลือกข้าง',
+    steps:[{l:'จุดแข็งของ A (ตอบเร็ว) ปกป้องคุณค่าอะไร',h:''},{l:'จุดแข็งของ B (ตอบถูก) ปกป้องคุณค่าอะไร',h:''},{l:'ทางเลือกที่ 3 ที่ได้ทั้งสองจริง ๆ',h:'ไม่ใช่ "ตอบภายใน 5 นาที"'}],
+    check:['อธิบายจุดแข็งทั้งสองฝั่งได้ยุติธรรม','ทางเลือกที่ 3 ไม่ใช่แค่เอากลาง ๆ','ระบุได้ว่าความขัดแย้งนี้บอกอะไรเกี่ยวกับความต้องการของลูกค้า']},
+   {intro:'ไอเดีย A: "ควรให้ทีมตัดสินใจเองเต็มที่ (อิสระ)" กับ ไอเดีย B: "ควรมีมาตรฐานกลางที่ทุกทีมต้องทำตาม (ควบคุม)"',
+    steps:[{l:'A ปกป้องคุณค่าอะไร และเมื่อไหร่ที่ A ถูกที่สุด',h:''},{l:'B ปกป้องคุณค่าอะไร และเมื่อไหร่ที่ B ถูกที่สุด',h:''},{l:'โครงสร้างที่ให้ทั้งอิสระและมาตรฐานพร้อมกัน',h:'คิดเรื่อง "อิสระในอะไร ควบคุมในอะไร"'}],
+    check:['อธิบายเงื่อนไขที่แต่ละฝั่งถูกได้','ทางแก้แยก "แกน" ที่ให้อิสระกับแกนที่ควบคุมได้ชัด','ไม่ใช่การประนีประนอมแบบครึ่ง ๆ']}]},
+  {type:'chain',scens:[
+   {intro:'Build → Challenge → Strengthen: ทำเองทั้งสามบทบาท',
+    steps:[{l:'1. BUILD: เขียนไอเดียหรือแผนที่คุณเชื่อมั่นที่สุดตอนนี้ (เรื่องอะไรก็ได้) ให้แข็งแรงที่สุด',h:'4–6 บรรทัด ใส่เหตุผลว่าทำไมมันดี'},{l:'2. CHALLENGE: สวมบทคนที่ไม่เห็นด้วยที่ฉลาดที่สุด โจมตี 3 จุดที่เจ็บที่สุด',h:'ห้ามโจมตีจุดง่าย ๆ ต้องเป็นจุดที่คุณไม่อยากได้ยิน'},{l:'3. STRENGTHEN: ปรับไอเดียให้รับมือคำโจมตีได้ โดยไม่ทิ้งแก่นของมัน',h:''},{l:'4. คำโจมตีข้อไหนที่คุณตอบไม่ได้จริง ๆ และมันหมายความว่าอะไร',h:''}],
+    check:['คำโจมตีแรงพอที่จะทำให้อึดอัด','ไอเดียที่ปรับแล้วต่างจากเดิมอย่างมีนัย','ซื่อสัตย์กับจุดที่ตอบไม่ได้','แก่นของไอเดียยังอยู่']}]}
+ ]},
+
+{id:'meta',num:13,group:'ความขัดแย้งและตัวเอง',en:'Metacognitive Thinking',th:'คิดเกี่ยวกับการคิดของตัวเอง',c:'#B03A6E',
+ def:'สังเกต ประเมิน และปรับการใช้เหตุผลของตัวเองระหว่างทำงาน ผ่านวงจร วางแผน → ติดตาม → ประเมิน → ปรับ → สะท้อน',
+ ex:'Feynman Technique: ถ้าอธิบายให้ง่ายไม่ได้ แปลว่ายังเข้าใจไม่พอ',
+ take:'ข้อได้เปรียบใหญ่ที่สุดไม่ใช่การรู้มากกว่า แต่คือการสังเกตว่าตัวเองคิดอย่างไร พลาดตรงไหน และแก้ไขได้อย่างไร',
+ ask:['ตอนนี้กำลังใช้วิธีคิดแบบไหนอยู่ เหมาะกับโจทย์ไหม?','หลักฐานอะไรบอกว่ากำลังคืบหน้าจริง ไม่ใช่แค่รู้สึกว่าคืบหน้า?','อะไรที่อาจมองข้าม เพราะรีบ เพราะเชื่อ หรือเพราะกลัว?','ครั้งหน้าจะทำอะไรต่างออกไป และจะรู้ได้ยังไงว่าทำจริง?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'จับให้ได้ว่าตัวเองอยู่ขั้นไหนของวงจร และพลาดตรงไหน',qs:[
+   {q:'คุณทำงานมา 2 ชั่วโมง รู้สึกว่าคืบหน้า แต่ยังไม่ได้อะไรที่ใช้ได้ ควรทำอะไร?',o:['ทำต่อ','หยุดถามว่า "หลักฐานอะไรบอกว่าคืบหน้า" และ "วิธีที่ใช้อยู่ยังเหมาะไหม" (Monitor + Evaluate)','พัก','เริ่มใหม่'],a:1,why:'ความรู้สึกว่าคืบหน้าไม่ใช่หลักฐาน การหยุดเช็คคือหัวใจของ metacognition'},
+   {q:'ข้อไหนคือคำถามช่วง "วางแผน" (Plan)?',o:['อะไรได้ผล อะไรไม่ได้ผล?','เป้าหมายคืออะไร รู้อะไรอยู่แล้ว จะใช้วิธีไหน?','ควรเปลี่ยนกลยุทธ์ไหม?','หลักฐานอะไรสนับสนุน?'],a:1,why:'Plan เกิดก่อนลงมือ อีก 3 ข้อคือ Reflect, Adjust, Evaluate'},
+   {q:'คุณอธิบายแนวคิดหนึ่งให้เพื่อนฟังแล้วเพื่อนงง สิ่งที่ metacognition บอกคือ',o:['เพื่อนไม่ฉลาด','คุณอาจยังเข้าใจไม่พอ ให้หาว่าติดตรงไหน','ใช้คำยาก ๆ มากขึ้น','เลิกอธิบาย'],a:1,why:'Feynman: การอธิบายไม่ได้คือเครื่องตรวจจับช่องว่างความเข้าใจที่ดีที่สุด'},
+   {q:'ข้อไหนเป็นการ "สะท้อน" (Reflect) ที่มีประโยชน์จริง?',o:['"ครั้งหน้าจะพยายามมากขึ้น"','"ครั้งนี้พลาดเพราะไม่ได้เช็คสมมติฐานเรื่อง X ครั้งหน้าจะเขียนสมมติฐานลงกระดาษก่อนเริ่ม"','"ทำได้ดีแล้ว"','"โชคไม่ดี"'],a:1,why:'การสะท้อนที่ดีระบุพฤติกรรมเฉพาะเจาะจงที่จะเปลี่ยน ไม่ใช่ความตั้งใจกว้าง ๆ'}]},
+  {type:'reflect',intro:'สะท้อนการเล่นเกมนี้ของคุณ ตอบให้ตรง ไม่ต้องสวย',steps:[{l:'วางแผน: ก่อนเริ่มแต่ละด่าน คุณตั้งเป้าหมายไว้ไหม หรือกดเล่นทันที?',h:''},{l:'ติดตาม: ด่านไหนที่คุณรู้ตัวว่าเริ่มเดา แทนที่จะคิด?',h:''},{l:'ประเมิน: วิธีคิดแบบไหนที่คุณใช้ได้ดีอยู่แล้ว และแบบไหนที่อ่อน?',h:''},{l:'ปรับ: ถ้าเล่นด่านที่อ่อนอีกครั้ง จะเปลี่ยนวิธีอย่างไร?',h:''},{l:'สะท้อน: วิธีคิดแบบไหนที่จะเอาไปใช้ในงานจริงสัปดาห์นี้ กับเรื่องอะไร?',h:''}]},
+  {type:'chain',scens:[
+   {intro:'Feynman Technique: เลือกวิธีคิด 1 แบบจากเกมนี้ที่คุณคิดว่าเข้าใจดีที่สุด แล้วทดสอบ',
+    steps:[{l:'1. อธิบายวิธีคิดนั้นให้เด็ก 12 ขวบเข้าใจ ห้ามใช้ศัพท์เทคนิค',h:'ใช้ตัวอย่างจากชีวิตเด็ก'},{l:'2. อ่านคำอธิบายตัวเอง ตรงไหนที่คุณใช้คำกว้าง ๆ เพราะจริง ๆ ยังไม่แน่ใจ',h:'ซื่อสัตย์'},{l:'3. ช่องว่างนั้นคืออะไร และจะไปหาคำตอบจากไหน',h:''},{l:'4. เขียนคำอธิบายใหม่ที่ปิดช่องว่างแล้ว',h:''}],
+    check:['คำอธิบายข้อ 1 ไม่มีศัพท์เทคนิคจริง','หาช่องว่างเจออย่างน้อย 1 จุด','คำอธิบายใหม่สั้นและชัดกว่าเดิม']}]}
+ ]},
+
+/* ---------- 5 โหมดใหม่: กลยุทธ์และความไม่แน่นอน ---------- */
+{id:'ooda',num:14,group:'กลยุทธ์และความไม่แน่นอน',en:'OODA Loop',th:'สังเกต–ตีความ–ตัดสินใจ–ลงมือ',c:'#1A5276',isNew:true,
+ def:'วงจร Observe → Orient → Decide → Act แล้วทำซ้ำเมื่อสถานการณ์เปลี่ยน ฝ่ายที่หมุนวงจรได้เร็วและแม่นกว่าจะได้เปรียบ',
+ ex:'นักบินขับไล่ John Boyd พบว่าเครื่องบินที่ "ด้อยกว่า" ชนะได้ถ้านักบินสังเกตและปรับตัวได้เร็วกว่าคู่ต่อสู้ ธุรกิจก็เช่นกัน: บริษัทที่ปล่อยของเร็ว เรียนรู้เร็ว ปรับเร็ว ชนะบริษัทที่วางแผนสมบูรณ์แบบแต่ช้า',
+ take:'เมื่อสถานการณ์เปลี่ยน อย่าแข็งทื่อ สังเกต ปรับ แล้วลงมืออีกครั้ง',
+ ask:['Observe: อะไรเปลี่ยนไปจากที่คาดไว้ (ข้อเท็จจริง ไม่ใช่การตีความ)?','Orient: การเปลี่ยนแปลงนี้หมายความว่าอะไร สมมติฐานเดิมข้อไหนใช้ไม่ได้แล้ว?','Decide: ทางเลือกที่ทำได้ทันทีมีอะไร เลือกอะไร?','Act: จะลงมืออะไรภายใน 24 ชั่วโมง และจะกลับมาสังเกตอีกเมื่อไหร่?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'เข้าใจแต่ละขั้นของวงจร และจุดที่คนมักติด',qs:[
+   {q:'ขั้นไหนของ OODA ที่มักเป็น "คอขวด" และสำคัญที่สุด?',o:['Observe เพราะต้องมีข้อมูล','Orient เพราะเป็นการตีความด้วยประสบการณ์ อคติ และโมเดลในหัว ซึ่งกำหนดว่าจะเห็นอะไรและตัดสินใจอะไร','Decide เพราะต้องเลือก','Act เพราะต้องลงมือ'],a:1,why:'Boyd ถือว่า Orient คือหัวใจ ข้อมูลเดียวกัน คนที่ตีความต่างกันจะตัดสินใจต่างกันสิ้นเชิง'},
+   {q:'ทีมวางแผนไว้ 6 เดือน ทำไป 2 เดือนแล้วตลาดเปลี่ยน ทีมยังทำตามแผนเดิมเพราะ "ลงทุนไปแล้ว" นี่คือความล้มเหลวที่ขั้นไหน?',o:['Observe','Orient (ไม่ยอมอัปเดตโมเดลในหัว เพราะ sunk cost)','Decide','Act'],a:1,why:'พวกเขาเห็นว่าตลาดเปลี่ยน (Observe ได้) แต่ไม่ยอมตีความใหม่'},
+   {q:'"หมุนวงจรให้เร็วกว่าคู่แข่ง" หมายความว่า',o:['ตัดสินใจโดยไม่ต้องคิด','ทำวงจรเล็ก ๆ ถี่ ๆ: ลงมือเล็ก สังเกตผลเร็ว ปรับเร็ว แทนที่จะวางแผนใหญ่แล้วลงมือทีเดียว','ทำงานหนักขึ้น','ข้ามขั้น Orient'],a:1,why:'ความเร็วมาจากการทำวงจรให้สั้นลง ไม่ใช่รีบในแต่ละขั้น'},
+   {q:'ข้อไหนคือ "Observe" ที่ดี?',o:['"ลูกค้าไม่ชอบสินค้าเรา"','"ยอดขายสัปดาห์นี้ลด 15% โดยกลุ่มอายุ 25–34 ลดมากที่สุด และคู่แข่งเพิ่งลดราคา"','"เราควรลดราคา"','"ตลาดแย่"'],a:1,why:'Observe คือข้อเท็จจริงที่ยังไม่ผ่านการตีความ อีก 3 ข้อคือการตีความหรือตัดสินใจไปแล้ว'}]},
+  {type:'sequence',intro:'เรียงลำดับสิ่งที่ทีมทำ ให้ตรงกับวงจร Observe → Orient → Decide → Act → Observe อีกรอบ',chains:[
+   {t:'ร้านอาหารเพิ่งเปิดเมนูใหม่ แล้วพบว่าลูกค้าสั่งน้อยกว่าคาดมาก',items:['ดูข้อมูล: เมนูใหม่ถูกสั่ง 5% ของออเดอร์ รีวิวบอกว่า "ราคาแพงเมื่อเทียบกับปริมาณ"','ตีความ: ปัญหาไม่ใช่รสชาติ แต่คือความคุ้มค่าที่รับรู้ สมมติฐานเดิมว่า "ลูกค้ายอมจ่ายเพื่อของใหม่" ใช้ไม่ได้','ตัดสินใจ: ลดขนาดจานและราคาลง 20% แทนที่จะถอดเมนู','ลงมือ: เปลี่ยนราคาและขนาดตั้งแต่พรุ่งนี้ 1 สัปดาห์','กลับมาดูข้อมูลอีกครั้ง: สัดส่วนการสั่งและรีวิวเปลี่ยนไหม']},
+   {t:'สตาร์ทอัพปล่อยแอปเวอร์ชันแรก แล้วคู่แข่งใหญ่ปล่อยฟีเจอร์เดียวกันฟรี',items:['สังเกต: ยอดสมัครใหม่ลด 40% หลังคู่แข่งประกาศ แต่ผู้ใช้เดิมยังใช้ต่อ','ตีความ: เราแข่งด้วยฟีเจอร์ไม่ได้อีกแล้ว แต่ผู้ใช้เดิมยังอยู่แสดงว่ามีอะไรที่คู่แข่งไม่มี','ตัดสินใจ: หยุดพัฒนาฟีเจอร์ที่ซ้ำ หันไปเน้นสิ่งที่ผู้ใช้เดิมชอบ','ลงมือ: สัมภาษณ์ผู้ใช้เดิม 20 คนภายในสัปดาห์นี้ และเปลี่ยนหน้าแรกให้เน้นจุดต่าง','สังเกตรอบใหม่: อัตราการสมัครและการใช้งานหลังเปลี่ยนหน้าแรก']}]},
+  {type:'chain',scens:[
+   {intro:'สถานการณ์เปลี่ยนกลางทาง: คุณกำลังจัดงานเปิดตัวสินค้ากลางแจ้งใน 3 วัน ขายบัตรไปแล้ว 500 ใบ เช้านี้พยากรณ์อากาศบอกโอกาสฝนตกหนัก 70% และซัพพลายเออร์เต็นท์เพิ่งโทรมาบอกว่าส่งได้แค่ครึ่งเดียว',
+    steps:[{l:'รอบที่ 1 — Observe: ข้อเท็จจริงที่รู้ตอนนี้ (ห้ามใส่การตีความ)',h:''},{l:'รอบที่ 1 — Orient: มันหมายความว่าอะไร สมมติฐานเดิมข้อไหนพัง',h:''},{l:'รอบที่ 1 — Decide + Act: ทำอะไรภายในวันนี้',h:''},{l:'รอบที่ 2 — ข้อมูลใหม่: อีก 1 วันต่อมา พยากรณ์เปลี่ยนเป็น 30% แต่ผู้ถือบัตร 80 คนขอคืนเงินแล้ว Observe/Orient/Decide ใหม่',h:'อย่ายึดการตัดสินใจรอบแรก'}],
+    check:['Observe รอบแรกเป็นข้อเท็จจริงล้วน','Orient ระบุสมมติฐานเดิมที่พัง','การตัดสินใจรอบแรกทำได้จริงภายในวัน','รอบที่ 2 ปรับการตัดสินใจตามข้อมูลใหม่ ไม่ยึดติดกับรอบแรก']}]}
+ ]},
+
+{id:'game',num:15,group:'กลยุทธ์และความไม่แน่นอน',en:'Game Theory',th:'คิดถึงการตอบโต้ของทุกฝ่าย',c:'#4A235A',isNew:true,
+ def:'พิจารณาผลประโยชน์และแรงจูงใจของผู้เล่นทุกฝ่าย คิดไกลกว่าการเดินหมากของตัวเอง ไปถึงหมากที่คนอื่นจะเดินตอบ',
+ ex:'สายการบิน A ลดราคา คาดว่าจะแย่งลูกค้าได้ แต่ถ้า B ลดตาม ทั้งคู่ได้ลูกค้าเท่าเดิมด้วยกำไรที่น้อยลง การคิดแบบเกมจะถามก่อนว่า "B จะทำอะไรถ้าเราลด" ไม่ใช่แค่ "เราจะได้อะไรถ้าลด"',
+ take:'วางแผนผลประโยชน์ของเราและของเขา แล้วหาจุดที่ทั้งสองฝ่ายชนะได้',
+ ask:['ผู้เล่นในเกมนี้มีใครบ้าง (รวมคนที่ไม่ได้อยู่บนโต๊ะ)?','แต่ละคนอยากได้อะไรจริง ๆ และกลัวอะไร?','ถ้าเราเดินหมากนี้ แต่ละคนจะตอบโต้อย่างไรที่เป็นประโยชน์กับตัวเขา?','มีทางเลือกไหนที่ทำให้ทุกฝ่ายดีขึ้นพร้อมกัน หรือทำให้การร่วมมือเป็นทางเลือกที่ดีที่สุดสำหรับเขา?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'คาดการณ์การตอบโต้และแรงจูงใจ',qs:[
+   {q:'คุณกับคู่แข่งขายของเหมือนกัน ถ้าคุณลดราคา 10% ผลที่น่าจะเกิดคือ',o:['ได้ลูกค้าเพิ่ม 10%','คู่แข่งลดตามภายในไม่กี่วัน ส่วนแบ่งตลาดเท่าเดิม กำไรทั้งคู่ลด','คู่แข่งเลิกกิจการ','ลูกค้าไม่สนใจ'],a:1,why:'ถ้าคู่แข่งมีเหตุผล เขาจะไม่ยอมเสียลูกค้า สงครามราคาคือเกมที่ทั้งคู่แพ้'},
+   {q:'ทำไมข้อตกลง "ทุกคนจะไม่ลดราคา" ระหว่างร้านค้ามักพังเอง?',o:['ผิดกฎหมาย','แต่ละร้านมีแรงจูงใจแอบลดราคาเพื่อแย่งลูกค้า ถ้าเชื่อว่าคนอื่นจะไม่ลด (ปัญหานักโทษ)','ลูกค้าไม่ชอบ','ราคาสูงเกิน'],a:1,why:'เมื่อการโกงให้ผลตอบแทนดีกว่าการร่วมมือสำหรับแต่ละคน ข้อตกลงจะไม่มั่นคงถ้าไม่มีกลไกลงโทษ'},
+   {q:'จะทำให้การร่วมมือมั่นคงขึ้นได้อย่างไร?',o:['ขอร้อง','ทำให้เกมเล่นซ้ำหลายรอบ (ชื่อเสียงมีค่า) และมีวิธีตรวจจับกับตอบโต้การโกงได้ชัด','เล่นครั้งเดียวจบ','ปิดข้อมูล'],a:1,why:'เกมรอบเดียวคนโกงคุ้ม เกมหลายรอบการโกงทำลายอนาคต'},
+   {q:'ก่อนเจรจา ควรรู้อะไรเกี่ยวกับอีกฝ่ายมากที่สุด?',o:['เขาอยากได้เงินเท่าไหร่','ทางเลือกที่ดีที่สุดของเขาถ้าไม่ตกลงกับเรา (BATNA) เพราะมันกำหนดว่าเขายอมได้แค่ไหน','เขาชอบอะไร','เขามีเงินเท่าไหร่'],a:1,why:'อำนาจต่อรองมาจากทางเลือกนอกโต๊ะ ไม่ใช่จากความต้องการ'},
+   {q:'ข้อไหนคือ "ผู้เล่นที่ไม่ได้อยู่บนโต๊ะ" ที่มักถูกลืม?',o:['ลูกค้า','หน่วยงานกำกับดูแล ผู้ที่จะเข้ามาแข่งในอนาคต และพนักงานที่ต้องทำตามแผน','คู่แข่ง','ผู้ถือหุ้น'],a:1,why:'ผู้เล่นที่ตอบโต้ช้าหรือเงียบ มักเป็นคนที่พลิกเกมทีหลัง'}]},
+  {type:'match',pick:5,intro:'จับคู่ "หมากที่เราเดิน" กับ "การตอบโต้ที่น่าจะเกิดจากอีกฝ่าย"',l:'เราเดินหมาก',r:'อีกฝ่ายน่าจะตอบโต้',pool:[['ลดราคาแรงเพื่อแย่งตลาด','คู่แข่งลดตาม กลายเป็นสงครามราคา'],['ขึ้นราคาเพราะเป็นเจ้าตลาด','ผู้เล่นใหม่เข้ามาด้วยราคาถูกกว่า'],['บังคับพนักงานเข้าออฟฟิศ 5 วัน','คนเก่งที่มีทางเลือกลาออกไปที่ที่ยืดหยุ่นกว่า'],['ยื่นข้อเสนอสุดท้ายแบบไม่ให้ต่อรอง','อีกฝ่ายถอนตัวหรือหาทางเลือกอื่น แม้ข้อเสนอจะดี'],['ให้ส่วนลดใหญ่เฉพาะลูกค้าใหม่','ลูกค้าเก่าโกรธ หรือยกเลิกแล้วสมัครใหม่'],['เปิดเผยแผนกลยุทธ์ต่อสาธารณะ','คู่แข่งปรับตัวก่อนที่แผนจะสำเร็จ'],['ตั้งราคาต่ำมากในตลาดใหม่','หน่วยงานกำกับดูแลตรวจสอบเรื่องทุ่มตลาด']]},
+  {type:'chain',scens:[
+   {intro:'สถานการณ์: คุณเป็นซัพพลายเออร์รายเล็ก ลูกค้ารายใหญ่ (60% ของยอดขาย) ขอลดราคา 15% โดยอ้างว่ามีซัพพลายเออร์อื่นเสนอถูกกว่า',
+    steps:[{l:'1. ผู้เล่นทั้งหมดและสิ่งที่แต่ละคนต้องการจริง ๆ',h:'รวมทีมจัดซื้อของลูกค้า (ถูกวัดผลด้วยอะไร) ซัพพลายเออร์รายอื่น และลูกค้ารายอื่นของคุณ'},{l:'2. ทางเลือกของเขาถ้าคุณปฏิเสธ (BATNA ของเขา) และของคุณถ้าเขาไป',h:'ประเมินอย่างซื่อสัตย์: การเปลี่ยนซัพพลายเออร์มีต้นทุนอะไรสำหรับเขา'},{l:'3. หมากที่คุณเดินได้ 3 แบบ และการตอบโต้ที่น่าจะเกิดจากแต่ละแบบ',h:'เช่น ยอมลด / ปฏิเสธ / เสนอโครงสร้างใหม่'},{l:'4. ข้อเสนอที่ทำให้ทีมจัดซื้อของเขา "ชนะ" ในตัววัดของเขา โดยคุณไม่เสียกำไรทั้งหมด',h:''}],
+    check:['ระบุแรงจูงใจของทีมจัดซื้อ (ไม่ใช่แค่ "บริษัทลูกค้า")','ประเมิน BATNA ของทั้งสองฝ่ายอย่างเป็นจริง','แต่ละหมากมีการคาดการณ์การตอบโต้','ข้อเสนอสุดท้ายสร้างมูลค่า ไม่ใช่แค่แบ่งส่วนลด']}]}
+ ]},
+
+{id:'leverage',num:16,group:'กลยุทธ์และความไม่แน่นอน',en:'Leverage Thinking',th:'หาจุดคานงัด',c:'#7D6608',isNew:true,
+ def:'หาปัจจัย เครื่องมือ หรือระบบที่ให้ผลลัพธ์ใหญ่โตเกินสัดส่วนของแรงที่ใส่ลงไป ค้นหาคอขวดที่เปลี่ยนนิดเดียวแล้วพลิกทั้งระบบ',
+ ex:'ร้านค้าออนไลน์ปรับปุ่ม "ชำระเงิน" ให้ชัดขึ้นในหน้าที่ลูกค้าทิ้งตะกร้ามากที่สุด ใช้เวลาครึ่งวัน ยอดขายเพิ่มมากกว่าแคมเปญโฆษณาทั้งเดือน เพราะแก้ที่จุดที่ทุกคนต้องผ่าน',
+ take:'หาคอขวดที่การเปลี่ยนเล็ก ๆ หนึ่งครั้งสร้างผลลัพธ์ใหญ่',
+ ask:['ผลลัพธ์ที่ต้องการไหลผ่านขั้นตอนอะไรบ้าง และขั้นไหนคือคอขวดตอนนี้?','การกระทำไหนที่ทำครั้งเดียวแล้วให้ผลซ้ำ ๆ (ระบบ เครื่องมือ การตัดสินใจเชิงโครงสร้าง)?','80% ของผลลัพธ์มาจาก 20% ของอะไร?','สิ่งที่กำลังทำอยู่ตอนนี้ อะไรที่ใส่แรงมากแต่ผลน้อย ควรหยุด?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'แยกงานที่มีคานงัดสูงออกจากงานที่แค่ยุ่ง',qs:[
+   {q:'ข้อไหนมี leverage สูงที่สุด?',o:['ตอบอีเมลลูกค้าเองทุกฉบับให้ดีที่สุด','เขียนคำตอบมาตรฐานสำหรับคำถาม 10 ข้อที่ถูกถามบ่อยที่สุด แล้วให้ทีมใช้','ทำงานล่วงเวลาเพื่อตอบให้ทัน','จ้างคนเพิ่ม'],a:1,why:'ทำครั้งเดียว ใช้ได้พันครั้ง คือนิยามของคานงัด'},
+   {q:'โรงงานมี 5 ขั้นตอน ขั้นที่ 3 ผลิตได้ 100 ชิ้น/ชม. ขั้นอื่นได้ 200 ชิ้น/ชม. ควรลงทุนที่ไหน?',o:['ทุกขั้นเท่ากัน','ขั้นที่ 1 เพราะเป็นจุดเริ่ม','ขั้นที่ 3 เพราะเป็นคอขวด การปรับขั้นอื่นไม่เพิ่มผลผลิตรวมเลย','ขั้นที่ 5 เพราะใกล้ลูกค้า'],a:2,why:'ระบบผลิตได้เท่ากับคอขวด การปรับที่อื่นคือแรงที่สูญเปล่า (Theory of Constraints)'},
+   {q:'ข้อไหนคือ "leverage" ในความหมายของการสร้างผลระยะยาว?',o:['ทำงานให้เร็วขึ้น','สร้างสิ่งที่ทำงานแทนคุณได้แม้คุณไม่อยู่: ระบบ โค้ด เนื้อหา ทีมที่ตัดสินใจเองได้','ประชุมมากขึ้น','ทำหลายงานพร้อมกัน'],a:1,why:'แรงงานมีขีดจำกัดที่ชั่วโมง คานงัดไม่มี'},
+   {q:'สัญญาณว่ากำลังทำงานที่ leverage ต่ำคือ',o:['เหนื่อยมากแต่ผลลัพธ์ไม่ขยับ และถ้าหยุดทำ ทุกอย่างก็หยุด','ผลลัพธ์เกินคาด','งานเสร็จเร็ว','คนอื่นทำแทนได้'],a:0,why:'ถ้าผลลัพธ์แปรผันตรงกับชั่วโมงที่ใส่ ยังไม่มีคานงัด'}]},
+  {type:'sequence',intro:'เรียงการกระทำจาก "คานงัดสูงสุด" (บนสุด) ไป "ต่ำสุด" (ล่างสุด)',chains:[
+   {t:'ร้านค้าออนไลน์อยากเพิ่มยอดขาย งบจำกัด',items:['แก้หน้าชำระเงินที่ลูกค้า 60% ทิ้งตะกร้า','ตั้งระบบอีเมลอัตโนมัติเตือนตะกร้าที่ทิ้งไว้','เพิ่มสินค้าใหม่ 20 รายการ','ลงโฆษณาเพิ่มเพื่อดึงคนเข้าเว็บมากขึ้น','ตอบคอมเมนต์ในโซเชียลทุกอันด้วยตัวเอง']},
+   {t:'หัวหน้าทีม 8 คน อยากให้ทีมทำงานได้ดีขึ้น',items:['กำหนดเกณฑ์การตัดสินใจให้ทีมตัดสินใจเองได้โดยไม่ต้องรอหัวหน้า','เขียนคู่มือกระบวนการที่ทำซ้ำบ่อย 5 อย่าง','จัดอบรมทักษะ 1 ครั้ง','ตรวจงานทุกชิ้นด้วยตัวเองให้ละเอียดขึ้น','ทำงานแทนคนที่ทำช้า']}]},
+  {type:'chain',scens:[
+   {intro:'สถานการณ์: คุณดูแลกระบวนการรับสมัครพนักงาน ใช้เวลาเฉลี่ย 45 วันต่อตำแหน่ง ผู้บริหารอยากได้ 20 วัน ขั้นตอน: (1) เขียนประกาศ 3 วัน (2) รอผู้สมัคร 10 วัน (3) คัดใบสมัคร 5 วัน (4) นัดสัมภาษณ์รอบแรก 12 วัน (5) สัมภาษณ์รอบสอง 7 วัน (6) ทำข้อเสนอและรอตอบ 8 วัน',
+    steps:[{l:'1. คอขวดจริง ๆ อยู่ที่ไหน และทำไม (อย่าตอบขั้นที่ใช้เวลามากสุดโดยอัตโนมัติ)',h:'ถามว่าเวลาในแต่ละขั้นเป็น "เวลาทำงาน" หรือ "เวลารอ"'},{l:'2. การเปลี่ยนแปลงเล็ก ๆ 1 อย่างที่คอขวด ซึ่งลดเวลาได้มากที่สุด',h:''},{l:'3. สิ่งที่ทำครั้งเดียวแล้วทำให้ทุกการรับสมัครในอนาคตเร็วขึ้น',h:'ระบบ เทมเพลต กฎการตัดสินใจ'},{l:'4. อะไรที่ทีมกำลังทำอยู่ที่ควร "หยุด" เพราะใส่แรงมากแต่ไม่ลดเวลา',h:''}],
+    check:['ระบุคอขวดด้วยเหตุผล ไม่ใช่แค่ตัวเลขใหญ่สุด','การเปลี่ยนแปลงในข้อ 2 เล็กจริงแต่ผลใหญ่','ข้อ 3 เป็นสิ่งที่ทำซ้ำได้โดยไม่ต้องใส่แรงเพิ่ม','กล้าระบุสิ่งที่ควรหยุด']}]}
+ ]},
+
+{id:'scenario',num:17,group:'กลยุทธ์และความไม่แน่นอน',en:'Scenario Planning',th:'วางแผนรับหลายอนาคต',c:'#0E6655',isNew:true,
+ def:'สำรวจอนาคตที่เป็นไปได้หลายแบบ แทนที่จะเดิมพันทุกอย่างกับคำทำนายเดียว แล้วเตรียมการตอบสนองไว้ล่วงหน้า',
+ ex:'Shell ใช้ scenario planning ในทศวรรษ 1970 จึงเป็นบริษัทน้ำมันไม่กี่แห่งที่ไม่ตกใจเมื่อเกิดวิกฤตน้ำมัน เพราะเคย "ซ้อม" สถานการณ์นั้นในหัวมาแล้ว',
+ take:'จินตนาการกรณีดีที่สุด น่าจะเป็น และแย่ที่สุด แล้ววางแผนตอบสนองแต่ละกรณี',
+ ask:['ปัจจัยไม่แน่นอน 2 ตัวที่ส่งผลต่อเรื่องนี้มากที่สุดคืออะไร?','อนาคต 3 แบบ (ดีสุด / น่าจะเป็น / แย่สุด) หน้าตาเป็นอย่างไร?','ในแต่ละแบบ เราจะทำอะไร และอะไรที่ทำได้ดีในทุกแบบ (robust)?','สัญญาณล่วงหน้าอะไรบอกว่ากำลังเข้าสู่อนาคตแบบไหน?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'หลักการวางแผนสถานการณ์',qs:[
+   {q:'จุดประสงค์หลักของ scenario planning คือ',o:['ทำนายอนาคตให้แม่น','เตรียมองค์กรให้ตอบสนองได้ดีไม่ว่าอนาคตแบบไหนจะเกิด และไม่ตกใจเมื่อมันมา','เลือกอนาคตที่ดีที่สุด','ทำงบประมาณ'],a:1,why:'มันไม่ใช่การพยากรณ์ แต่คือการซ้อมรับมือ'},
+   {q:'ข้อไหนคือการตัดสินใจแบบ "robust"?',o:['ตัดสินใจที่ให้ผลดีที่สุดในกรณีที่น่าจะเป็น','ตัดสินใจที่ให้ผลรับได้ในทุกสถานการณ์ แม้จะไม่ดีที่สุดในสถานการณ์ใดเลย','ตัดสินใจช้าที่สุด','ตัดสินใจตามผู้บริหาร'],a:1,why:'เมื่อไม่รู้ว่าอนาคตไหนจะมา ทางเลือกที่ "ไม่พังในทุกกรณี" มักดีกว่า "เยี่ยมในกรณีเดียว"'},
+   {q:'"สัญญาณล่วงหน้า" (early indicator) ที่ดีคือ',o:['ข่าวที่ทุกคนรู้แล้ว','ตัวชี้วัดที่จะเปลี่ยนก่อนสถานการณ์นั้นจะเกิดเต็มตัว และเราติดตามได้จริง','ความรู้สึกของผู้บริหาร','ผลประกอบการไตรมาสที่แล้ว'],a:1,why:'สัญญาณต้องมาก่อน ไม่ใช่ยืนยันสิ่งที่เกิดไปแล้ว'},
+   {q:'ข้อผิดพลาดที่พบบ่อยที่สุดของ scenario planning คือ',o:['ทำสถานการณ์มากเกิน','ทำ 3 สถานการณ์แล้วก็วางแผนสำหรับ "น่าจะเป็น" อย่างเดียวอยู่ดี','ใช้เวลานาน','ไม่ใช้ตัวเลข'],a:1,why:'ถ้าสุดท้ายเตรียมแค่กรณีเดียว ก็ไม่ต่างจากไม่ได้ทำ'}]},
+  {type:'chain',scens:[
+   {intro:'การตัดสินใจ: ร้านกาแฟของคุณกำลังพิจารณาเซ็นสัญญาเช่า 3 ปีเพื่อขยายเป็น 2 เท่า ค่าเช่าเพิ่มจาก 30,000 เป็น 70,000 บาท/เดือน',
+    steps:[{l:'1. ปัจจัยไม่แน่นอนที่สำคัญที่สุด 2 ตัว',h:'เช่น ความต้องการในย่านนี้ / ต้นทุนวัตถุดิบ / คู่แข่ง / เศรษฐกิจ'},{l:'2. สถานการณ์ดีที่สุด: เกิดอะไร ตัวเลขคร่าว ๆ และเราจะทำอะไร',h:''},{l:'3. สถานการณ์น่าจะเป็น: เกิดอะไร ตัวเลข และเราจะทำอะไร',h:''},{l:'4. สถานการณ์แย่ที่สุด: เกิดอะไร ตัวเลข และเราจะรอดได้ไหม ทำอะไร',h:''},{l:'5. การตัดสินใจ: เซ็นหรือไม่ หรือมีทางที่สาม และสัญญาณอะไรที่จะบอกว่าเข้าสู่กรณีไหน',h:'เช่น ต่อรองสัญญาแบบยกเลิกได้หลัง 1 ปี'}],
+    check:['ปัจจัยไม่แน่นอนเป็นสิ่งที่ส่งผลจริงและคาดเดายาก','สถานการณ์แย่ที่สุดแย่พอที่จะทดสอบว่าจะรอดไหม','การตัดสินใจไม่ได้อิงแค่กรณีน่าจะเป็น','มีสัญญาณล่วงหน้าที่ติดตามได้']}]},
+  {type:'chain',scens:[
+   {intro:'ระดับยาก: บริษัทของคุณต้องตัดสินใจว่าจะลงทุน 3 ปีกับเทคโนโลยี A (ที่ตลาดใช้กันตอนนี้) หรือ B (ใหม่ ยังไม่แน่ว่าจะเป็นมาตรฐาน) สร้าง scenario matrix 2×2',
+    steps:[{l:'1. เลือกความไม่แน่นอน 2 แกน (แต่ละแกนมี 2 ทาง) ให้ได้ 4 สถานการณ์',h:'เช่น แกน 1: B กลายเป็นมาตรฐาน / ไม่ ; แกน 2: ตลาดโตเร็ว / โตช้า'},{l:'2. ตั้งชื่อและบรรยาย 4 สถานการณ์สั้น ๆ',h:''},{l:'3. ในแต่ละสถานการณ์ ทางเลือก A และ B ให้ผลอย่างไร',h:''},{l:'4. ทางเลือกที่ robust หรือทางที่สาม (เช่น ลงทุน A แต่ซื้อ option ใน B) และสัญญาณล่วงหน้าที่จะบอกว่าอยู่ในสถานการณ์ไหน',h:''},{l:'5. จุดตัดสินใจ (trigger): ถ้าเห็นสัญญาณ X ภายในเดือน Y จะเปลี่ยนแผนอย่างไร',h:''}],
+    check:['สองแกนเป็นอิสระต่อกันและสำคัญจริง','ประเมิน A/B ครบทั้ง 4 สถานการณ์','มีทางเลือกที่ไม่ใช่แค่ A หรือ B','trigger ระบุสัญญาณ เวลา และการกระทำที่ชัด']}]}
+ ]},
+
+{id:'prob',num:18,group:'กลยุทธ์และความไม่แน่นอน',en:'Probabilistic Thinking',th:'คิดเป็นความน่าจะเป็น',c:'#922B21',isNew:true,
+ def:'แทนความมั่นใจด้วยความน่าจะเป็น คิดในเชิงโอกาส ความเสี่ยง และค่าคาดหวัง แล้วอัปเดตเมื่อได้ข้อมูลใหม่',
+ ex:'นักลงทุนที่เก่งไม่ได้ถามว่า "หุ้นนี้จะขึ้นไหม" แต่ถามว่า "โอกาสขึ้นกี่เปอร์เซ็นต์ ขึ้นแล้วได้เท่าไหร่ ลงแล้วเสียเท่าไหร่" การเดิมพันที่ถูกต้องอาจแพ้ได้ และการเดิมพันที่ผิดอาจชนะได้ ต้องแยกคุณภาพการตัดสินใจออกจากผลลัพธ์',
+ take:'ถามว่า "แต่ละผลลัพธ์มีโอกาสเท่าไหร่" แล้วปรับประมาณการเมื่อได้ข้อมูลใหม่',
+ ask:['ผลลัพธ์ที่เป็นไปได้มีอะไรบ้าง และให้โอกาสแต่ละอันกี่เปอร์เซ็นต์?','อัตราพื้นฐาน (base rate) ของเรื่องแบบนี้โดยทั่วไปเป็นเท่าไหร่?','ค่าคาดหวัง (โอกาส × ผล) ของแต่ละทางเลือกเป็นอย่างไร และรับความเสี่ยงของกรณีแย่ได้ไหม?','ข้อมูลใหม่อะไรจะทำให้ปรับตัวเลข และปรับไปทางไหน?'],
+ levels:[
+  {type:'quiz',pick:3,intro:'กับดักที่พบบ่อยเมื่อคิดเรื่องความน่าจะเป็น',qs:[
+   {q:'สตาร์ทอัพ 90% ล้มเหลวใน 5 ปี ผู้ก่อตั้งคนหนึ่งมั่นใจ 80% ว่าจะรอด เพราะ "ทีมเราเก่ง" ปัญหาคือ',o:['เขามั่นใจน้อยไป','เขาละเลยอัตราพื้นฐาน (base rate) ทุกทีมคิดว่าตัวเองเก่ง ควรเริ่มจาก 10% แล้วค่อยปรับขึ้นตามหลักฐานเฉพาะ','ไม่มีปัญหา','เขาควรเลิกทำ'],a:1,why:'เริ่มจากมุมมองภายนอก (outside view) ก่อนแล้วปรับด้วยข้อมูลเฉพาะ'},
+   {q:'คุณตัดสินใจอย่างดีด้วยข้อมูลที่มี แต่ผลออกมาแย่ ควรสรุปว่า',o:['ตัดสินใจผิด','การตัดสินใจอาจดีอยู่แล้ว ผลแย่เกิดได้จากความน่าจะเป็น ต้องประเมินกระบวนการ ไม่ใช่แค่ผลลัพธ์','โชคร้ายอย่างเดียว ไม่ต้องทบทวน','ครั้งหน้าอย่าตัดสินใจ'],a:1,why:'resulting: ตัดสินคุณภาพการตัดสินใจจากผลลัพธ์ เป็นกับดักที่ทำให้เรียนรู้ผิด'},
+   {q:'ทางเลือก A: ได้ 100,000 แน่นอน ทางเลือก B: 50% ได้ 250,000 / 50% ได้ 0 ค่าคาดหวังของ B คือ',o:['100,000','125,000','250,000','0'],a:1,why:'0.5×250,000 + 0.5×0 = 125,000 สูงกว่า A แต่จะเลือก B ไหมขึ้นกับว่ารับกรณีได้ 0 ได้หรือไม่'},
+   {q:'"ตรวจสุขภาพแม่นยำ 95%" ผลออกมาบวกสำหรับโรคที่คน 1 ใน 1,000 เป็น โอกาสที่คุณเป็นโรคจริงประมาณ',o:['95%','ประมาณ 2% เพราะผลบวกปลอมจากคน 999 ที่ไม่เป็นโรค (≈50 คน) มีมากกว่าผลบวกจริง (≈1 คน)','50%','100%'],a:1,why:'นี่คือความสำคัญของ base rate ที่แม้แต่แพทย์ก็พลาดบ่อย'},
+   {q:'ข้อไหนคือการ "อัปเดต" ที่ถูกต้อง?',o:['ได้ข้อมูลใหม่ที่ขัดกับความเชื่อ → ปฏิเสธข้อมูล','ได้ข้อมูลใหม่ → ปรับความน่าจะเป็นตามน้ำหนักของหลักฐาน ไม่ใช่พลิกไปสุดขั้ว','ได้ข้อมูลใหม่ → เปลี่ยนความเชื่อทั้งหมดทันที','ไม่เปลี่ยนจนกว่าจะแน่ใจ 100%'],a:1,why:'หลักฐานแรงปรับมาก หลักฐานอ่อนปรับน้อย (Bayesian updating)'}]},
+  {type:'quiz',pick:3,intro:'ประเมินความน่าจะเป็นให้สมเหตุสมผล (คำตอบคือช่วงที่สมเหตุสมผลที่สุด)',qs:[
+   {q:'โปรเจกต์ IT ในองค์กรทั่วไป โอกาสที่จะเสร็จตรงเวลาและงบประมาณเดิมประมาณ',o:['80–90%','50–60%','20–35%','ต่ำกว่า 5%'],a:2,why:'งานวิจัยหลายชิ้นชี้ว่าโปรเจกต์ IT ขนาดใหญ่ส่วนใหญ่เกินเวลาหรืองบ ถ้าไม่มีข้อมูลเฉพาะ ควรเริ่มจากตัวเลขนี้'},
+   {q:'ร้านอาหารเปิดใหม่ โอกาสที่ยังเปิดอยู่หลัง 3 ปีประมาณ',o:['90%','70%','40–50%','10%'],a:2,why:'ข้อมูลหลายประเทศชี้ว่าประมาณครึ่งหนึ่งไม่รอดถึงปีที่ 3 หากคุณคิดว่าร้านตัวเองจะรอด 90% ถามว่ามีหลักฐานเฉพาะอะไร'},
+   {q:'ทีมประเมินว่างานจะเสร็จใน 2 สัปดาห์ "แน่นอน" คุณควรตั้งความน่าจะเป็นว่าเสร็จจริงใน 2 สัปดาห์ที่',o:['95%','75%','40–55%','10%'],a:2,why:'planning fallacy: คนประเมินเวลาต่ำกว่าจริงอย่างเป็นระบบ คำว่า "แน่นอน" คือธงแดง'},
+   {q:'คุณโยนเหรียญปกติ 5 ครั้งออกหัวหมด โอกาสที่ครั้งที่ 6 ออกหัวคือ',o:['ต่ำกว่า 50% เพราะถึงคราวก้อย','50%','สูงกว่า 50% เพราะเหรียญกำลังร้อน','ไม่รู้'],a:1,why:'gambler\'s fallacy: เหตุการณ์อิสระไม่มี "ความจำ"'}]},
+  {type:'chain',scens:[
+   {intro:'การตัดสินใจ: บริษัทของคุณได้รับข้อเสนอเข้าประมูลงานใหญ่ ต้นทุนเตรียมข้อเสนอ 500,000 บาท ถ้าชนะจะได้กำไร 4,000,000 บาท มีคู่แข่ง 4 ราย บริษัทเคยชนะประมูลลักษณะนี้ 2 ใน 9 ครั้ง',
+    steps:[{l:'1. ความน่าจะเป็นที่จะชนะ: เริ่มจาก base rate แล้วปรับด้วยปัจจัยเฉพาะครั้งนี้ (ระบุตัวเลขและเหตุผลการปรับ)',h:'base rate ≈ 22% แล้วปรับขึ้น/ลงเพราะอะไร'},{l:'2. คำนวณค่าคาดหวังของการเข้าประมูล และเทียบกับไม่เข้า',h:'ค่าคาดหวัง = p × 4,000,000 − 500,000'},{l:'3. กรณีแย่ที่สุดรับได้ไหม ถ้าแพ้ 3 ครั้งติดจะเกิดอะไรกับบริษัท',h:''},{l:'4. ข้อมูลอะไรที่หาได้ก่อนตัดสินใจ ซึ่งจะเปลี่ยนความน่าจะเป็นอย่างมีนัย และคุ้มที่จะหาไหม',h:''},{l:'5. การตัดสินใจ พร้อมเงื่อนไขที่จะเปลี่ยนใจ',h:''}],
+    check:['เริ่มจาก base rate ก่อนปรับ ไม่ใช่เดาจากความรู้สึก','คำนวณค่าคาดหวังถูกต้อง','พิจารณาความเสี่ยงของกรณีแย่ ไม่ใช่แค่ค่าเฉลี่ย','ระบุข้อมูลที่จะเปลี่ยนการตัดสินใจได้']}]}
+ ]}
+];
+/* ===================== CASE CLINIC DATA ===================== */
+/* basic: {s,best,ok,why}  hard: {s,seq:[first,second],ok:[alt first],why} */
+const CASES = [
+ {s:'ทีมเสนอไอเดียงานอีเวนต์มา 20 ไอเดีย งบและเวลาเหลือน้อย ต้องเลือกให้ได้ภายในพรุ่งนี้',best:['convergent'],ok:['critical'],why:'ตอนนี้ปัญหาไม่ใช่ขาดไอเดีย แต่คือต้อง "เลือก" ให้ทันเวลา ต้องตั้งเกณฑ์แล้วคัด'},
+ {s:'ลูกค้าบ่นว่าแอปโหลดช้า ทีมเทคนิคยืนยันว่าปรับให้เร็วกว่านี้ไม่ได้ในปีนี้',best:['lateral'],ok:['first'],why:'เมื่อแก้ตรง ๆ ไม่ได้ ให้เปลี่ยนมุม: ทำให้การรอรู้สึกสั้นลง แสดงความคืบหน้า โหลดส่วนสำคัญก่อน'},
+ {s:'บริษัทจะลดราคา 30% เพื่อกระตุ้นยอดขาย ผู้บริหารอยากรู้ว่าหลังจากนั้นจะเกิดอะไรขึ้นบ้าง',best:['second'],ok:['systemic','game'],why:'คำถามคือ "แล้วจะเกิดอะไรตามมา" ลูกค้าจะรอลดราคาครั้งหน้าไหม คู่แข่งจะตอบโต้ไหม'},
+ {s:'คุณกำลังจะดูแลโปรเจกต์ใหญ่ครั้งแรก อยากรู้ว่าต้องระวังอะไรเพื่อไม่ให้พัง',best:['inverted'],ok:['critical','scenario'],why:'ลิสต์ทุกวิธีที่จะทำให้พังแน่ ๆ แล้วป้องกันทีละข้อ ได้ผลกว่าหาสูตรสำเร็จ'},
+ {s:'ยอดขายของสาขาหนึ่งตกลงโดยไม่ทราบสาเหตุ มีข้อมูลแค่บางส่วน ผู้บริหารต้องการคำตอบเบื้องต้นวันนี้',best:['abductive'],ok:['systemic','critical'],why:'ข้อมูลไม่ครบ แต่ต้องมีคำอธิบายที่น่าจะเป็นที่สุดเพื่อลงมือหาข้อมูลเพิ่มให้ถูกจุด'},
+ {s:'อยากออกแบบระบบต้อนรับพนักงานใหม่ แต่ไม่รู้จะเริ่มจากไหน รู้ว่ามีองค์กรที่ทำเรื่องนี้ได้ดีมาก',best:['analogical'],ok:['associative'],why:'ยืมโครงสร้างจากระบบที่พิสูจน์แล้ว แล้วปรับให้เข้ากับบริบทเรา'},
+ {s:'ทีมการตลาดอยากทุ่มงบสร้างแบรนด์ ทีมการเงินอยากประหยัดเพื่อรักษากระแสเงินสด เถียงกันมา 3 สัปดาห์',best:['janusian'],ok:['critical'],why:'ทั้งสองฝ่ายปกป้องคุณค่าที่จริงทั้งคู่ คำตอบอยู่ที่การออกแบบทางเลือกที่ได้ทั้งสอง'},
+ {s:'ต้นทุนการจัดส่งสูงมาก ทุกคนบอกว่า "มันก็เป็นแบบนี้ในอุตสาหกรรมนี้"',best:['first'],ok:['critical'],why:'ประโยค "มันก็เป็นแบบนี้" คือสัญญาณของสมมติฐานที่รับสืบทอดมา'},
+ {s:'ที่ประชุมต้องการไอเดียสินค้าใหม่สำหรับปีหน้า ยังไม่ต้องตัดสินใจอะไรทั้งนั้นในวันนี้',best:['divergent'],ok:['associative'],why:'ช่วงเปิดกว้าง ห้ามตัดสินไอเดียเร็วเกินไป ปริมาณสำคัญกว่าคุณภาพ'},
+ {s:'ขึ้นเงินเดือนแก้ปัญหาพนักงานลาออกไปแล้ว แต่คนก็ยังลาออกในอัตราเท่าเดิม',best:['systemic'],ok:['critical'],why:'การลาออกเป็นอาการ ต้องหาระบบที่ผลิตมันขึ้นมา'},
+ {s:'รายงานอ้างว่าสินค้า X ทำให้ลูกค้ากลับมาซื้อซ้ำเพิ่ม 2 เท่า ก่อนเสนอผู้บริหาร อยากรู้ว่าเชื่อได้แค่ไหน',best:['critical'],ok:['abductive','prob'],why:'ต้องทดสอบหลักฐาน: เทียบกับอะไร กลุ่มไหน ปัจจัยอื่นเปลี่ยนไหม ใครทำรายงาน'},
+ {s:'จบโปรเจกต์ใหญ่แล้ว อยากให้ทีมคิดและตัดสินใจได้ดีขึ้นในโปรเจกต์หน้า',best:['meta'],ok:['systemic'],why:'ทบทวนว่า "ทีมคิดอย่างไร" ตอนตัดสินใจสำคัญ ไม่ใช่แค่ทบทวนว่าเกิดอะไร'},
+ {s:'ทีมโรงพยาบาลอยากลดความผิดพลาดตอนส่งต่อผู้ป่วยระหว่างเปลี่ยนกะ',best:['associative'],ok:['analogical'],why:'อุตสาหกรรมอื่นที่ส่งต่องานภายใต้ความกดดันสูงแก้เรื่องนี้เก่งมากแล้ว'},
+ {s:'คู่แข่งเพิ่งลดราคา 20% ทีมขายกดดันให้เราลดตามทันที',best:['game'],ok:['second'],why:'ก่อนเดินหมาก ต้องคิดว่าถ้าเราลด คู่แข่งจะทำอะไรต่อ และมีทางที่ไม่ต้องเข้าสงครามราคาไหม'},
+ {s:'ต้องตัดสินใจเซ็นสัญญา 5 ปีกับซัพพลายเออร์รายเดียว ในตลาดที่เทคโนโลยีเปลี่ยนเร็ว',best:['scenario'],ok:['prob','second'],why:'ระยะยาว + ความไม่แน่นอนสูง = ต้องซ้อมรับหลายอนาคต ไม่ใช่เดิมพันกับคำทำนายเดียว'},
+ {s:'หัวหน้าทีมทำงาน 12 ชั่วโมงทุกวัน แต่ผลงานทีมไม่ขยับ',best:['leverage'],ok:['systemic'],why:'แรงมากผลน้อยคือสัญญาณว่ายังไม่เจอจุดคานงัด ต้องหาว่าอะไรที่ทำครั้งเดียวแล้วผลทวีคูณ'},
+ {s:'ต้องตัดสินใจว่าจะลงทุน 2 ล้านในโครงการที่ "อาจ" ได้กำไร 10 ล้าน ทีมเถียงกันว่า "จะได้หรือไม่ได้"',best:['prob'],ok:['scenario'],why:'คำถาม "ได้หรือไม่ได้" ผิดตั้งแต่ต้น ต้องถามว่าโอกาสกี่เปอร์เซ็นต์ ค่าคาดหวังเท่าไหร่ รับกรณีแย่ได้ไหม'},
+ {s:'ระหว่างแคมเปญ ข้อมูลเริ่มบอกว่ากลุ่มเป้าหมายไม่ใช่กลุ่มที่วางแผนไว้ แต่ทีมยังทำตามแผนเดิมเพราะ "อนุมัติมาแล้ว"',best:['ooda'],ok:['meta'],why:'สถานการณ์เปลี่ยนแล้ว ต้องสังเกต ตีความใหม่ ตัดสินใจใหม่ ไม่ใช่แข็งทื่อกับแผน'},
+ {s:'คุณมีสัญญา 10 ฉบับต้องต่อรองใหม่ปีนี้ อยากรู้ว่าควรทุ่มเวลาไปที่ฉบับไหน',best:['leverage'],ok:['convergent'],why:'หาว่าฉบับไหนที่การเปลี่ยนแปลงเล็กน้อยให้ผลใหญ่ที่สุด ไม่ใช่ทำทุกฉบับเท่ากัน'},
+ {s:'พนักงานเสนอไอเดียแล้วถูกหัวหน้าปฏิเสธทันที ทำให้ไม่มีใครกล้าเสนออีก',best:['divergent'],ok:['systemic'],why:'ปัญหาคือช่วง "สร้าง" กับ "ตัดสิน" ถูกรวมกัน ต้องแยกออกให้ชัดเจน'},
+ /* hard: ต้องเลือก 2 โหมดเรียงลำดับ */
+ {s:'ลูกค้าร้องเรียนเพิ่มขึ้น 3 เท่าในเดือนนี้ ยังไม่รู้สาเหตุ และผู้บริหารอยากได้แผนแก้ที่ยั่งยืน ไม่ใช่แก้เฉพาะหน้า',seq:['abductive','systemic'],ok:['critical'],why:'ต้องหาคำอธิบายที่น่าจะเป็นที่สุดจากข้อมูลที่มีก่อน (abductive) แล้วจึงมองหาระบบที่ผลิตปัญหานั้นเพื่อแก้ให้ยั่งยืน (systemic)'},
+ {s:'ทีมต้องการทางออกใหม่ ๆ สำหรับปัญหาที่แก้แบบเดิมไม่ได้ผล และต้องเลือกทางที่จะทำจริงภายในสัปดาห์นี้',seq:['divergent','convergent'],ok:['lateral'],why:'แตกกิ่งให้กว้างก่อน (divergent) แล้วค่อยคัดด้วยเกณฑ์ (convergent) การทำกลับด้านหรือทำพร้อมกันจะฆ่าไอเดียดี ๆ'},
+ {s:'จะออกนโยบายใหม่ที่กระทบพนักงานทุกคน อยากรู้ว่ามันจะพังได้ยังไง และมันจะทำให้พฤติกรรมเปลี่ยนไปในทางไหน',seq:['inverted','second'],ok:['systemic'],why:'เริ่มจากถามว่าจะพังได้ยังไง (inverted) แล้วต่อลูกโซ่ว่าคนจะปรับตัวยังไง (second-order) ทั้งสองมุมช่วยกันปิดจุดบอด'},
+ {s:'มีคนเสนอว่า "ควรทำแบบบริษัท X เพราะเขาสำเร็จ" ทีมกำลังจะตกลง',seq:['critical','analogical'],ok:['first'],why:'ต้องเช็คหลักฐานก่อนว่า X สำเร็จเพราะสิ่งนั้นจริงไหม (critical) แล้วดูว่าโครงสร้างของเราเหมือนพอที่จะยืมได้ไหม (analogical)'},
+ {s:'คู่แข่งใหญ่กำลังจะเข้าตลาดเรา ต้องวางกลยุทธ์ 2 ปีข้างหน้า โดยไม่รู้ว่าเขาจะเข้ามาแรงแค่ไหน',seq:['scenario','game'],ok:['prob'],why:'สร้างอนาคตหลายแบบก่อน (scenario) แล้วในแต่ละแบบคิดว่าเขาจะเดินอย่างไรและเราจะตอบอย่างไร (game theory)'},
+ {s:'ยอดขายตกกลางไตรมาส ทีมเพิ่งได้ข้อมูลใหม่ที่ขัดกับแผนเดิม ต้องตัดสินใจภายในวันนี้ว่าจะปรับแผนไหม',seq:['ooda','prob'],ok:['second'],why:'สังเกตและตีความข้อมูลใหม่ก่อน (OODA) แล้วตัดสินใจโดยให้น้ำหนักตามความน่าจะเป็น ไม่ใช่พลิกแผนทั้งหมดจากข้อมูลชิ้นเดียว (probabilistic)'},
+ {s:'ประชุมมี 2 ฝ่ายเถียงกันเรื่องกลยุทธ์ราคาไม่จบ ผู้บริหารขอให้คุณช่วยหาข้อสรุปที่ทั้งสองยอมรับและมีหลักฐานรองรับ',seq:['janusian','critical'],ok:['convergent'],why:'เข้าใจคุณค่าที่แต่ละฝ่ายปกป้องก่อน (janusian) แล้วทดสอบสมมติฐานของทั้งสองด้วยหลักฐาน (critical) เพื่อหาทางที่สาม'},
+ {s:'ทีมทำงานหนักมากแต่ผลลัพธ์ไม่ขยับ อยากรู้ว่าพลาดตรงไหน และจะโฟกัสที่อะไร',seq:['meta','leverage'],ok:['systemic'],why:'หยุดสังเกตวิธีคิดและวิธีทำงานของทีมก่อน (meta) แล้วหาจุดที่แรงน้อยผลมากเพื่อย้ายแรงไปตรงนั้น (leverage)'}
+];
+
+/* ===================== STATE ===================== */
+const KEY='thinkingDojo.v2';
+const DEF=()=>({xp:0,stars:{},last:{},clinic:{played:0,correct:0,near:0},reflect:{},journal:[],streak:0,lastDaily:'',dailyDone:'',badges:[],mute:false,maxCombo:0,ideasMax:0,blitz:{best:0,played:0}});
+let S=DEF();
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(DEF(),JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),1800)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function sample(a,n){return shuffle(a).slice(0,n)}
+function today(){return new Date().toISOString().slice(0,10)}
+function starsOf(id){return S.stars[id]||[0,0,0]}
+function bestStar(id){return Math.max(...starsOf(id))}
+function unlocked(id,lv){return lv===0||starsOf(id)[lv-1]>=2}
+const LV=['พื้นฐาน','ประยุกต์','ท้าทาย'];
+const M=id=>MODES.find(x=>x.id===id);
+
+/* ===================== FUN LAYER ===================== */
+const ICON={divergent:'🌳',convergent:'🎯',lateral:'🔀',systemic:'🕸️',associative:'🧩',critical:'🔍',analogical:'🪞',abductive:'🕵️',first:'⚛️',inverted:'🙃',second:'🌊',janusian:'🎭',meta:'🧠',ooda:'🔄',game:'♟️',leverage:'⚙️',scenario:'🔮',prob:'🎲'};
+const ic=m=>ICON[m.id]||'🥋';
+const BELTS=[{n:'ขาว',c:'#F2F2F2',xp:0},{n:'เหลือง',c:'#F4D03F',xp:150},{n:'ส้ม',c:'#E67E22',xp:400},{n:'เขียว',c:'#27AE60',xp:800},{n:'ฟ้า',c:'#2E86DE',xp:1400},{n:'ม่วง',c:'#8E44AD',xp:2200},{n:'น้ำตาล',c:'#8B5A2B',xp:3200},{n:'ดำ',c:'#1B1B1B',xp:4500}];
+function beltIdx(xp){let i=0;BELTS.forEach((b,k)=>{if(xp>=b.xp)i=k});return i}
+const pickOne=a=>a[Math.floor(Math.random()*a.length)];
+const SAY={
+  start:['สูดหายใจลึก ๆ แล้วเริ่มกัน','สมองพร้อม ใจพร้อม ลุย!','วันนี้มาลับคมความคิดกัน 🗡️','อย่ารีบ แต่ก็อย่าช้านะ 😏'],
+  ok:['เฉียบ!','คมมาก ✨','นั่นแหละศิษย์ข้า','ถูกต้อง! สมองเริ่มร้อนแล้ว','สวย ๆ 👌'],
+  combo:['คอมโบมาแล้ว 🔥','หยุดไม่อยู่แล้ว!','ไฟลุกท่วมสมอง!','ใครก็หยุดเจ้าไม่ได้ 😤'],
+  bad:['ไม่เป็นไร พลาดคือครู','เกือบแล้ว อ่านเหตุผลดูก่อน','ล้มแล้วลุก นี่คือวิถี dojo','ฮึ่ม... ลองคิดอีกมุมนะ'],
+  idle:['พิมพ์อะไรก็ได้ ไม่มีไอเดียไหนผิด!','ไอเดียแย่ ๆ ก็นับนะ 😆','ลองคิดแบบเด็ก 5 ขวบดูสิ','ถ้างบไม่จำกัดล่ะ?'],
+  res:[['ทุกปรมาจารย์เคยเป็นมือใหม่ ลองอีกรอบ'],['เริ่มจับทางได้แล้ว ฝึกอีกนิด'],['ดีมาก! อีกนิดเดียวก็สุดทาง'],['สมบูรณ์แบบ! อาจารย์ภูมิใจ 🥹','ไร้ที่ติ ศิษย์เอก!']]
+};
+function sensei(t){return `<div class="sensei"><div class="av">🥋</div><div class="bub" id="say">${t}</div></div>`}
+function say(t){const el=document.getElementById('say');if(!el)return;el.textContent=t;el.classList.remove('say');void el.offsetWidth;el.classList.add('say')}
+
+let AC=null;
+function sfx(k){if(S.mute)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const seq={ok:[[660,.07],[990,.12]],bad:[[200,.12,'square',.05],[150,.2,'square',.05]],tick:[[1300,.03,'sine',.08]],pop:[[600,.05,'sine',.1]],star:[[784,.09],[988,.09],[1319,.22]],level:[[523,.12],[659,.12],[784,.12],[1047,.4]]}[k];
+  let t=AC.currentTime+.01;for(const [f,d,type,v] of seq){const o=AC.createOscillator(),g=AC.createGain();o.type=type||'triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.16,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02);t+=d*.85}}catch(e){}}
+function buzz(){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}
+function toggleMute(){S.mute=!S.mute;save();const b=document.getElementById('mute');if(b)b.textContent=S.mute?'🔇':'🔊';if(!S.mute)sfx('pop')}
+function floatAt(el,text,color){if(!el)return;const r=el.getBoundingClientRect();const f=document.createElement('div');f.className='float';f.textContent=text;if(color)f.style.color=color;f.style.left=(r.left+r.width/2-20)+'px';f.style.top=(r.top-6)+'px';document.body.appendChild(f);setTimeout(()=>f.remove(),950)}
+function shakeCard(){const c=document.querySelector('.card:last-of-type');if(!c)return;c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake')}
+
+const BADGES=[
+  {id:'first',i:'🌱',n:'ก้าวแรก',d:'ได้ดาวแรก',t:()=>MODES.some(m=>bestStar(m.id)>0)},
+  {id:'perfect',i:'⭐',n:'สามดาวแรก',d:'ได้ ★★★ สักด่าน',t:()=>MODES.some(m=>bestStar(m.id)>=3)},
+  {id:'combo5',i:'🔥',n:'ไฟลุก',d:'ตอบถูกติดกัน 5 ข้อ',t:()=>S.maxCombo>=5},
+  {id:'combo10',i:'☄️',n:'ดาวหาง',d:'ตอบถูกติดกัน 10 ข้อ',t:()=>S.maxCombo>=10},
+  {id:'blitz10',i:'⚡',n:'สายฟ้า',d:'Blitz ได้ 10 คะแนน',t:()=>S.blitz.best>=10},
+  {id:'blitz20',i:'🌩️',n:'เทพสายฟ้า',d:'Blitz ได้ 20 คะแนน',t:()=>S.blitz.best>=20},
+  {id:'ideas',i:'💡',n:'น้ำพุไอเดีย',d:'15 ไอเดียในรอบเดียว',t:()=>S.ideasMax>=15},
+  {id:'clinic',i:'🩺',n:'หมอประจำคลินิก',d:'ตรงเป๊ะ 5 เคส',t:()=>S.clinic.correct>=5},
+  {id:'journal',i:'📓',n:'นักบันทึก',d:'โจทย์ของฉัน 3 เรื่อง',t:()=>S.journal.length>=3},
+  {id:'explore',i:'🗺️',n:'นักสำรวจ',d:'ลองครบ 9 โหมด',t:()=>MODES.filter(m=>bestStar(m.id)>0).length>=9},
+  {id:'streak3',i:'📅',n:'ไม่ขาดซ้อม',d:'สตรีค 3 วัน',t:()=>S.streak>=3},
+  {id:'master5',i:'👑',n:'ปรมาจารย์',d:'เชี่ยวชาญ 5 โหมด',t:()=>MODES.filter(m=>starsOf(m.id).every(x=>x>=2)).length>=5},
+  {id:'black',i:'🥋',n:'สายดำ',d:'ถึง 4500 XP',t:()=>S.xp>=4500}
+];
+function flushRewards(){const bi=beltIdx(S.xp);if(S.belt===undefined){S.belt=bi;save()}
+  const nb=BADGES.filter(b=>!S.badges.includes(b.id)&&b.t());if(nb.length){nb.forEach(b=>S.badges.push(b.id));save()}
+  let wait=500;if(bi>S.belt){S.belt=bi;save();setTimeout(()=>levelUp(bi),500);wait=3200}
+  nb.forEach((b,k)=>setTimeout(()=>badgePop(b),wait+k*2400))}
+function badgePop(b){const el=document.getElementById('badgepop');el.innerHTML=`<div class="bi">${b.i}</div><div><b>ได้เหรียญ: ${b.n}</b><span>${b.d}</span></div>`;el.classList.add('on');sfx('star');setTimeout(()=>el.classList.remove('on'),2100)}
+function levelUp(bi){const b=BELTS[bi];const o=document.createElement('div');o.className='lvup';o.onclick=()=>o.remove();
+  o.innerHTML=`<div class="lvbox"><canvas></canvas><div class="muted">เลื่อนขั้น!</div><h2>สาย${b.n}</h2><div class="beltart" style="--b:${b.c}"></div><p>${bi===BELTS.length-1?'คุณคือปรมาจารย์แห่ง Thinking Dojo':'ฝึกต่อไป สาย'+BELTS[bi+1].n+'รออยู่'}</p><button class="btn">ไปต่อ</button></div>`;
+  document.body.appendChild(o);sfx('level');confetti(o.querySelector('canvas'),b.c==='#F2F2F2'?'#C9A227':b.c)}
+function countUp(id,to){const el=document.getElementById(id);if(!el)return;const t0=performance.now();const st=t=>{const p=Math.min(1,(t-t0)/900);el.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(st)};requestAnimationFrame(st)}
+function randomDrill(){const o=[];MODES.forEach(m=>m.levels.forEach((l,i)=>{if(unlocked(m.id,i))o.push([m.id,i])}));const [id,l]=pickOne(o);sfx('pop');toast(`🎲 ${ic(M(id))} ${M(id).en} — ระดับ${LV[l]}`);drill(id,l)}
+
+const app=document.getElementById('app');
+let timerHandle=null,raf=null;
+function render(html){clearInterval(timerHandle);cancelAnimationFrame(raf);app.innerHTML=html;window.scrollTo({top:0});tweenXP();flushRewards()}
+function starHTML(n){return `<span>${'★'.repeat(n)}</span><span class="off">${'★'.repeat(3-n)}</span>`.replace('<span></span>','')}
+function topbar(back){
+  return `<div class="top">${back?`<button class="back" onclick="${back}">← กลับ</button>`:`<div class="brand">Thinking Dojo<small>ฝึก 18 วิธีคิดขั้นสูง</small></div>`}
+  <div class="pillrow">${S.streak?`<div class="streak">🔥 ${S.streak}</div>`:''}<div class="xp" style="--b:${BELTS[beltIdx(S.xp)].c}" title="สาย${BELTS[beltIdx(S.xp)].n}">XP <b id="xpv" data-v="${S.xp}">${S.xp}</b></div><button class="mute" id="mute" onclick="toggleMute()" aria-label="เปิด/ปิดเสียง">${S.mute?'🔇':'🔊'}</button></div></div>`;
+}
+let shownXP=S.xp;
+function tweenXP(){const el=document.getElementById('xpv');if(!el)return;const target=S.xp,start=shownXP,t0=performance.now();
+  if(start===target){el.textContent=target;return}
+  const step=t=>{const p=Math.min(1,(t-t0)/700),e=1-Math.pow(1-p,3);el.textContent=Math.round(start+(target-start)*e);if(p<1)raf=requestAnimationFrame(step);else shownXP=target};raf=requestAnimationFrame(step)}
+
+/* ===================== ANIMATIONS ===================== */
+function heroCanvas(){const c=document.getElementById('hc');if(!c)return;const ctx=c.getContext('2d');let w,h,nodes=[];
+  const resize=()=>{w=c.width=c.offsetWidth*devicePixelRatio;h=c.height=c.offsetHeight*devicePixelRatio};resize();
+  const cols=MODES.map(m=>m.c);
+  for(let i=0;i<22;i++)nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.25*devicePixelRatio,vy:(Math.random()-.5)*.25*devicePixelRatio,r:(2+Math.random()*2.5)*devicePixelRatio,c:cols[i%cols.length]});
+  const draw=()=>{ctx.clearRect(0,0,w,h);
+    for(const n of nodes){n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>w)n.vx*=-1;if(n.y<0||n.y>h)n.vy*=-1}
+    ctx.lineWidth=devicePixelRatio;
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j],d=Math.hypot(a.x-b.x,a.y-b.y),lim=120*devicePixelRatio;if(d<lim){ctx.strokeStyle=`rgba(255,255,255,${(1-d/lim)*.25})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}}
+    for(const n of nodes){ctx.fillStyle=n.c;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fill();ctx.globalAlpha=1}
+    raf=requestAnimationFrame(draw)};
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)draw();
+}
+function confetti(canvas,color){if(!canvas||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const ctx=canvas.getContext('2d');const w=canvas.width=canvas.offsetWidth,h=canvas.height=canvas.offsetHeight;
+  const ps=[];const cols=[color,'#C9A227','#2E8B57','#2F6FB5','#E07A2F'];
+  for(let i=0;i<90;i++)ps.push({x:w/2,y:h*.35,vx:(Math.random()-.5)*12,vy:-Math.random()*10-3,g:.35,r:3+Math.random()*4,c:cols[i%cols.length],a:1,rot:Math.random()*6,vr:(Math.random()-.5)*.3});
+  let t=0;const step=()=>{ctx.clearRect(0,0,w,h);t++;let alive=false;for(const p of ps){p.x+=p.vx;p.vy+=p.g;p.y+=p.vy;p.vx*=.98;p.rot+=p.vr;p.a-=.012;if(p.a>0)alive=true;ctx.save();ctx.globalAlpha=Math.max(0,p.a);ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore()}if(alive&&t<160)raf=requestAnimationFrame(step)};step()}
+
+/* ===================== HOME ===================== */
+let tab='dojo';
+function dailyPick(){const d=today();let seed=0;for(const ch of d)seed=(seed*31+ch.charCodeAt(0))>>>0;const m=MODES[seed%MODES.length];let lv=0;for(let i=2;i>=0;i--)if(unlocked(m.id,i)){lv=i;break}return {m,lv}}
+function reviewList(){const now=Date.now();return MODES.map(m=>{const st=starsOf(m.id),played=S.last[m.id];const days=played?(now-played)/864e5:99;const weak=3-Math.max(...st)+(st.filter(x=>x>=2).length<3?1:0);return {m,score:weak*2+Math.min(days,14)/3,played}}).filter(x=>x.played).sort((a,b)=>b.score-a.score).slice(0,4)}
+function home(t){if(t)tab=t;
+  const done=MODES.filter(m=>bestStar(m.id)>0).length;const mastered=MODES.filter(m=>starsOf(m.id).every(x=>x>=2)).length;
+  let body='';
+  if(tab==='dojo'){
+    const dp=dailyPick();const dd=S.dailyDone===today();
+    const rev=reviewList();
+    const groups=[...new Set(MODES.map(m=>m.group))];
+    body=`<div class="daily ${dd?'done':''}"><div><h3>${dd?'ภารกิจวันนี้สำเร็จแล้ว':'ภารกิจประจำวัน'}</h3><p>${ic(dp.m)} ${dp.m.en} — ระดับ${LV[dp.lv]} • โบนัส +50 XP${dd?' • กลับมาพรุ่งนี้เพื่อรักษาสตรีค':''}</p></div>${dd?'':`<button class="btn" onclick="drill('${dp.m.id}',${dp.lv},true)">เริ่มเลย</button>`}</div>
+    ${rev.length?`<div class="sec">แนะนำให้ทบทวน<span>เรียงตามจุดอ่อนและระยะเวลาที่ห่างจากการฝึก</span></div><div class="rev">${rev.map(r=>`<button style="--c:${r.m.c}" onclick="lesson('${r.m.id}')"><b>${ic(r.m)} ${r.m.en}</b><span>${starsOf(r.m.id).map((s,i)=>s>=2?'●':'○').join(' ')} • ${r.played?Math.floor((Date.now()-r.played)/864e5)+' วันก่อน':''}</span></button>`).join('')}</div>`:''}
+    ${groups.map(g=>`<div class="sec">${g}</div><div class="board">${MODES.filter(m=>m.group===g).map(m=>{const st=starsOf(m.id);return `<button class="tile ${m.isNew&&!bestStar(m.id)?'new':''}" style="--c:${m.c}" onclick="lesson('${m.id}')">
+      <div><span class="ic">${ic(m)}</span><div class="num">${m.num} / 18</div><div class="nm">${m.en}</div><div class="th">${m.th}</div></div>
+      <div class="lv">${st.map(s=>`<i><b data-w="${Math.round(s/3*100)}"></b></i>`).join('')}</div>
+      ${m.isNew&&!bestStar(m.id)?'<span class="tag">ใหม่</span>':''}${st.every(x=>x>=2)?'<span class="crown">👑</span>':'<div class="dot"></div>'}</button>`}).join('')}</div>`).join('')}
+    <div class="sec">เหรียญรางวัล<span>${S.badges.length}/${BADGES.length}</span></div><div class="badges">${BADGES.map(b=>`<div class="bdg ${S.badges.includes(b.id)?'':'lock'}"><span class="bi">${b.i}</span><b>${b.n}</b><span>${b.d}</span></div>`).join('')}</div>`;
+  } else if(tab==='blitz'){
+    body=`<div class="card in blitz bzhero"><div class="bolt">⚡</div><h3 style="font-size:22px">Blitz 60 วินาที</h3><p>คำถามสุ่มจากทั้ง 18 โหมด ตอบให้ได้มากที่สุดก่อนหมดเวลา<br>ตอบถูก <b>+2 วินาที</b> • ตอบผิดเสีย ❤️ • มี 3 ชีวิต</p>
+      <div class="score"><div><b>${S.blitz.best}</b><span>สถิติสูงสุด</span></div><div><b>${S.blitz.played}</b><span>รอบที่เล่น</span></div><div><b>${S.maxCombo}</b><span>คอมโบสูงสุด</span></div></div>
+      <div class="row" style="justify-content:center"><button class="btn" onclick="startBlitz()">เริ่มเลย ⚡</button></div></div>`;
+  } else if(tab==='clinic'){
+    const c=S.clinic;
+    body=`<div class="card in"><h3>Case Clinic</h3><p>อ่านสถานการณ์ แล้วเลือกว่าควรใช้วิธีคิดแบบไหนก่อน เคสยากต้องเลือก 2 โหมดเรียงลำดับ จากนั้นลงมือคิดตามคำถามนำ</p>
+      <div class="score"><div><b>${c.played}</b><span>เคสที่เล่น</span></div><div><b>${c.correct}</b><span>ตรงเป๊ะ</span></div><div><b>${c.near}</b><span>ใกล้เคียง</span></div></div>
+      <div class="row"><button class="btn" onclick="startClinic()">เริ่มรอบใหม่ 5 เคส</button></div></div>`;
+  } else {
+    body=`<div class="card in"><h3>โจทย์ของฉัน</h3><p>เอาปัญหาจริงที่คุณกำลังเจอ มาเดินผ่านคำถามนำของวิธีคิดที่เลือก แล้วเก็บเป็นบันทึกไว้ดูย้อนหลัง</p>
+      <div class="row"><button class="btn" onclick="myProblem()">เริ่มโจทย์ใหม่</button></div></div>
+      ${S.journal.length?`<div class="sec">บันทึกที่ผ่านมา<span>${S.journal.length} รายการ</span></div>`+S.journal.slice().reverse().map((j,i)=>{const m=M(j.mode);return `<div class="journal" style="--c:${m.c}"><div class="d">${j.date} • ${m.en}</div><p><b>${esc(j.problem)}</b></p>${j.answers.map((a,k)=>a?`<p class="muted">${esc(m.ask[k])}</p><p>${esc(a)}</p>`:'').join('')}<button class="back" style="font-size:13px;text-decoration:underline" onclick="delJournal(${S.journal.length-1-i})">ลบ</button></div>`}).join(''):'<p class="muted">ยังไม่มีบันทึก</p>'}`;
+  }
+  const bi=beltIdx(S.xp),B=BELTS[bi],NB=BELTS[bi+1];const bp=NB?Math.round((S.xp-B.xp)/(NB.xp-B.xp)*100):100;
+  render(`${topbar()}<div class="hero"><canvas id="hc"></canvas><div class="in"><h1>คิดให้คมขึ้น ทีละหนึ่งวิธี 🥋</h1><p>เริ่มแล้ว ${done}/18 โหมด • เชี่ยวชาญ ${mastered}/18 • ได้ 2 ดาวเพื่อปลดล็อกระดับถัดไป</p>
+  <div class="beltrow"><div class="beltico" style="--b:${B.c}"></div><div class="beltbar"><i id="bbar" data-w="${bp}"></i></div></div>
+  <div class="beltlbl"><b>สาย${B.n}</b> ${NB?`• อีก ${NB.xp-S.xp} XP ถึงสาย${NB.n}`:'• ขั้นสูงสุดแล้ว'}</div>
+  <div class="quick"><button onclick="randomDrill()">🎲 สุ่มฝึก</button><button onclick="startBlitz()">⚡ Blitz 60 วิ</button></div></div></div>
+  <div class="tabs"><button class="${tab==='dojo'?'on':''}" onclick="home('dojo')">🥋 Dojo</button><button class="${tab==='blitz'?'on':''}" onclick="home('blitz')">⚡ Blitz</button><button class="${tab==='clinic'?'on':''}" onclick="home('clinic')">🩺 Case Clinic</button><button class="${tab==='mine'?'on':''}" onclick="home('mine')">📓 โจทย์ของฉัน</button></div>${body}
+  <p class="muted" style="margin-top:20px">ความคืบหน้าถูกจำไว้ในเบราว์เซอร์นี้ <button class="back" style="text-decoration:underline" onclick="resetAll()">ล้างข้อมูล</button></p>`);
+  heroCanvas();
+  requestAnimationFrame(()=>document.querySelectorAll('.lv b,#bbar').forEach(b=>b.style.width=b.dataset.w+'%'));
+}
+function resetAll(){if(confirm('ล้างความคืบหน้าทั้งหมด?')){S=DEF();save();shownXP=0;home()}}
+function delJournal(i){if(confirm('ลบบันทึกนี้?')){S.journal.splice(i,1);save();home('mine')}}
+
+/* ===================== LESSON ===================== */
+function head(m,lv){return `<div class="head" style="--c:${m.c}"><div class="k">โหมดที่ ${m.num} จาก 18${lv!==undefined?` • ระดับ${LV[lv]}`:''}</div><h2><span class="ic">${ic(m)}</span>${m.en}</h2><div class="d">${m.th} — ${m.def}</div></div>`}
+function lesson(id){const m=M(id);const st=starsOf(id);
+  render(`${topbar("home('dojo')")}${head(m)}
+  <div class="card in"><h3>ตัวอย่างจริง</h3><p>${m.ex}</p><div class="take">${m.take}</div></div>
+  <div class="card in"><h3>คำถามที่ควรถาม</h3><ul class="qs">${m.ask.map(q=>`<li>${q}</li>`).join('')}</ul></div>
+  <div class="card in"><h3>เลือกระดับ</h3><div class="levels" style="--c:${m.c}">${m.levels.map((l,i)=>{const u=unlocked(id,i);return `<button class="lvl ${u?'':'lock'}" ${u?`onclick="drill('${id}',${i})"`:''}><b>ระดับ ${i+1}: ${LV[i]}</b><span>${{quiz:'ควิซ',brainstorm:'ระดมไอเดียจับเวลา',sequence:'เรียงลำดับ',match:'จับคู่',chain:'เขียนตอบเป็นขั้น + ตรวจสอบตัวเอง',reflect:'สมุดสะท้อน'}[l.type]}</span><span class="st">${st[i]?'★'.repeat(st[i])+'☆'.repeat(3-st[i]):(u?'ยังไม่ได้ฝึก':'ต้องได้ 2 ดาวจากระดับก่อนหน้า')}</span></button>`}).join('')}</div></div>
+  <div class="row"><button class="btn ghost" onclick="myProblem('${id}')">ใช้กับโจทย์ของฉัน</button></div>`);
+}
+
+/* ===================== DRILL ENGINE ===================== */
+let CUR={};
+function drill(id,lv,isDaily){const m=M(id);if(!unlocked(id,lv)){toast('ยังไม่ปลดล็อก');return}const d=m.levels[lv];CUR={id,lv,isDaily,bonus:0};
+  ({brainstorm:dBrain,quiz:dQuiz,sequence:dSeq,match:dMatch,chain:dChain,reflect:dChain})[d.type](m,d,lv);
+}
+function finish(m,stars,note){
+  const lv=CUR.lv;const st=starsOf(m.id).slice();const prev=st[lv];let gain=Math.max(0,stars-prev)*40*(lv+1)+10+(CUR.bonus||0);
+  st[lv]=Math.max(prev,stars);S.stars[m.id]=st;S.last[m.id]=Date.now();S.xp+=gain;
+  let dailyMsg='';
+  if(CUR.isDaily&&S.dailyDone!==today()){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);S.streak=(S.lastDaily===y||S.lastDaily===today())?S.streak+1:1;S.lastDaily=today();S.dailyDone=today();S.xp+=50;gain+=50;dailyMsg=`<div class="pill">🔥 ภารกิจประจำวันสำเร็จ สตรีค ${S.streak} วัน</div>`}
+  save();
+  const nextUnlocked=lv<2&&stars>=2;
+  render(`${topbar("lesson('"+m.id+"')")}<div class="card result" style="--c:${m.c}"><canvas id="cf"></canvas><h2>${m.en} — ระดับ${LV[lv]}</h2><div class="big">${starHTML(stars)}</div>${sensei(pickOne(SAY.res[stars]))}<p>${note}</p><p style="font-size:22px;font-weight:800;color:var(--ok);margin:4px 0">+<span id="gx">0</span> XP</p>${CUR.bonus?`<p class="muted" style="margin-top:0">รวมโบนัสคอมโบ/ความเร็ว +${CUR.bonus}</p>`:''}${dailyMsg}${nextUnlocked?`<div class="pill">ปลดล็อกระดับ${LV[lv+1]}แล้ว</div>`:''}
+  <div class="row" style="justify-content:center"><button class="btn ghost" onclick="drill('${m.id}',${lv})">ฝึกอีกครั้ง (โจทย์อาจเปลี่ยน)</button>${nextUnlocked?`<button class="btn" onclick="drill('${m.id}',${lv+1})">ไประดับถัดไป</button>`:`<button class="btn" onclick="home('dojo')">กลับ Dojo</button>`}</div></div>`);
+  countUp('gx',gain);for(let k=0;k<stars;k++)setTimeout(()=>sfx('pop'),250+k*150);if(stars>=2){confetti(document.getElementById('cf'),m.c);setTimeout(()=>sfx('star'),700)}
+  const sv=document.querySelector('.result .sensei');if(sv)sv.style.justifyContent='center';
+}
+function ring(sec,total,c){const r=46,C=2*Math.PI*r;return `<div class="ring" id="ring" style="--c:${c}"><svg viewBox="0 0 110 110"><circle class="bg" cx="55" cy="55" r="${r}"/><circle class="fg" id="rf" cx="55" cy="55" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="t" id="tm">${sec}</div></div>`}
+
+const HUES=['#FFE3D3','#DCEBFF','#E8DDFB','#D6F3E6','#FFF0C2','#FBDDE6'];
+function dBrain(m,d,lv){const prompt=sample(d.prompts,1)[0];let left=d.seconds,ideas=[],running=true;const C=2*Math.PI*46;
+  render(`${topbar("lesson('"+m.id+"')")}${head(m,lv)}
+  <div class="card"><h3>${prompt}</h3><p class="muted">พิมพ์ทีละไอเดียแล้วกด Enter ห้ามหยุดคิดว่าดีหรือไม่ดี</p>${ring(left,d.seconds,m.c)}
+  ${sensei(pickOne(SAY.start))}<input id="in" placeholder="พิมพ์ไอเดีย แล้วกด Enter" autocomplete="off">
+  <p style="margin:10px 0 0">ได้แล้ว <span class="count" style="--c:${m.c}" id="cnt">0</span> ไอเดีย <span class="muted">(เป้า ${d.targets.join(' / ')} = ★ / ★★ / ★★★)</span></p><div class="goal" id="goal"><span>★</span><span>★</span><span>★</span></div>
+  <ul class="ideas" id="list"></ul><div class="row"><button class="btn ghost" id="stop">หมดมุกแล้ว จบเลย</button></div></div>`);
+  const inp=document.getElementById('in'),tm=document.getElementById('tm'),list=document.getElementById('list'),cnt=document.getElementById('cnt'),rf=document.getElementById('rf');
+  inp.focus();
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&running){const v=inp.value.trim();if(!v)return;if(ideas.includes(v)){toast('ซ้ำแล้ว');return}ideas.push(v);inp.value='';idle=0;const li=document.createElement('li');li.textContent=v;li.style.setProperty('--h',HUES[ideas.length%HUES.length]);list.appendChild(li);cnt.textContent=ideas.length;cnt.classList.remove('bump');void cnt.offsetWidth;cnt.classList.add('bump');
+    const g=d.targets.indexOf(ideas.length);if(g>=0){document.querySelectorAll('#goal span')[g].classList.add('on');sfx('star');say(['ได้ดาวแรกแล้ว! ต่อเลย','สองดาว! อีกนิด','สามดาวเต็ม! ยังไปต่อได้นะ 🚀'][g])}else{sfx('pop');if(ideas.length%3===0)say(pickOne(SAY.ok))}}});
+  let idle=0;const end=()=>{running=false;clearInterval(timerHandle);const n=ideas.length;S.ideasMax=Math.max(S.ideasMax,n);const st=n>=d.targets[2]?3:n>=d.targets[1]?2:n>=d.targets[0]?1:0;
+    if(d.flip&&n>0)flip(m,ideas,st);else finish(m,st,n?`คุณคิดได้ ${n} ไอเดียใน ${d.seconds} วินาที ${st===3?'ไหลลื่นมาก':st>=1?'ครั้งหน้าอย่าหยุดคิดว่าดีไหม แค่พิมพ์':'ครั้งหน้าลองตั้งใจว่า "ไม่มีไอเดียไหนโง่"'}`:'ไม่มีไอเดียเลย ลองใหม่อีกรอบ')};
+  document.getElementById('stop').onclick=end;
+  timerHandle=setInterval(()=>{left--;idle++;tm.textContent=left;rf.style.strokeDashoffset=C*(1-left/d.seconds);if(left<=10)document.getElementById('ring').classList.add('low');if(left<=5&&left>0)sfx('tick');if(idle>=8&&idle%8===0)say(pickOne(SAY.idle));if(left===10)say('อีก 10 วิ! ระเบิดพลังออกมา 💥');if(left<=0)end()},1000);
+}
+function flip(m,ideas,st){
+  render(`${topbar("lesson('"+m.id+"')")}${head(m,CUR.lv)}<div class="card in"><h3>ตอนนี้พลิกกลับ</h3><p class="muted">แต่ละ "วิธีทำให้พัง" ให้เขียนว่าจะป้องกันอย่างไร</p>
+  ${ideas.map((x,i)=>`<div class="flip"><div class="f">${esc(x)}</div><input id="f${i}" placeholder="ป้องกันโดย..."></div>`).join('')}
+  <div class="row"><button class="btn" onclick="flipDone('${m.id}',${ideas.length},${st})">เสร็จแล้ว</button></div></div>`);
+}
+function flipDone(id,n,st){const m=M(id);let f=0;for(let i=0;i<n;i++)if(document.getElementById('f'+i).value.trim())f++;
+  const s=Math.max(st===0?0:1,Math.min(3,Math.round((f/n)*3)));
+  finish(m,s,`เจอ ${n} วิธีที่จะทำให้พัง และพลิกเป็นแผนป้องกันได้ ${f} ข้อ ${f===n?'นี่คือ checklist ความเสี่ยงของคุณแล้ว':'ข้อที่พลิกไม่ได้ คือความเสี่ยงที่ควรจับตาที่สุด'}`);
+}
+
+function dQuiz(m,d,lv){const qs=d.pick?sample(d.qs,d.pick):d.qs;let i=0,score=0,combo=0,t0=0,line=pickOne(SAY.start);
+  const table=d.table?`<table class="tb"><tr>${d.table.cols.map(c=>`<th>${c}</th>`).join('')}</tr>${d.table.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`:'';
+  const show=()=>{const q=qs[i];
+    render(`${topbar("lesson('"+m.id+"')")}${head(m,lv)}<div class="prog" style="--c:${m.c}">${qs.map((_,k)=>`<i class="${k<=i?'on':''}"></i>`).join('')}</div>${sensei(line)}
+    <div class="card in"><div style="display:flex;justify-content:space-between;align-items:center"><p class="muted" style="margin:0">${d.intro}</p><span class="combo" id="combo">${combo>=2?'🔥 x'+combo:''}</span></div>${table}<h3>${q.q}</h3>
+    <div id="opts">${q.o.map((o,k)=>`<button class="opt" onclick="pick(${k})">${o}</button>`).join('')}</div><div id="why"></div><div class="row" id="nx"></div></div>`);
+    t0=performance.now();
+    window.pick=k=>{const btns=document.querySelectorAll('.opt');btns.forEach(b=>b.onclick=null);btns[q.a].classList.add('right');
+      if(k!==q.a){btns[k].classList.add('wrong');combo=0;sfx('bad');buzz();line=pickOne(SAY.bad);say(line);document.getElementById('combo').textContent=''}
+      else{score++;combo++;S.maxCombo=Math.max(S.maxCombo,combo);const fast=performance.now()-t0<12000;const b=5+(combo>=2?combo*3:0)+(fast?5:0);CUR.bonus+=b;sfx('ok');floatAt(btns[k],`+${b}${fast?' ⚡':''}`);
+        line=combo>=3?pickOne(SAY.combo):pickOne(SAY.ok);say(line);const ce=document.getElementById('combo');if(combo>=2){ce.textContent='🔥 x'+combo;ce.classList.remove('hot');void ce.offsetWidth;ce.classList.add('hot')}}
+      document.getElementById('why').innerHTML=`<div class="why ${k===q.a?'ok':'bad'}"><b>${k===q.a?'ถูกต้อง':'ยังไม่ใช่'}</b> — ${q.why}</div>`;
+      document.getElementById('nx').innerHTML=`<button class="btn" onclick="nextQ()">${i<qs.length-1?'ข้อถัดไป':'ดูผล'}</button>`;};
+    window.nextQ=()=>{i++;if(i<qs.length)show();else{const st=score===qs.length?3:score>=Math.ceil(qs.length/2)?2:score>0?1:0;finish(m,st,`ตอบถูก ${score} จาก ${qs.length} ข้อ`)}};
+  };show();
+}
+
+function dSeq(m,d,lv){const ch=sample(d.chains,1)[0];const pool=shuffle(ch.items.map((t,i)=>({t,i})));let placed=[];
+  const show=()=>{render(`${topbar("lesson('"+m.id+"')")}${head(m,lv)}<div class="card in"><p class="muted">${d.intro}</p><h3>${ch.t}</h3>
+    <ol class="seq" style="--c:${m.c}">${ch.items.map((_,k)=>{const p=placed[k];return p!==undefined?`<li><span class="n">${k+1}</span><span>${pool.find(x=>x.i===p).t}</span></li>`:`<li class="empty"><span class="n" style="background:var(--line)">${k+1}</span><span>ว่าง</span></li>`}).join('')}</ol>
+    <div class="chips">${pool.map(x=>`<button class="chip ${placed.includes(x.i)?'used':''}" onclick="put(${x.i})">${x.t}</button>`).join('')}</div>
+    <div class="row"><button class="btn ghost" onclick="undo()">ย้อน</button><button class="btn" ${placed.length<ch.items.length?'disabled':''} onclick="checkSeq()">ตรวจ</button></div></div>`)};
+  window.put=i=>{if(placed.length<ch.items.length&&!placed.includes(i)){placed.push(i);sfx('pop');show()}};
+  window.undo=()=>{placed.pop();show()};
+  window.checkSeq=()=>{let ok=0;placed.forEach((p,k)=>{if(p===k)ok++});sfx(ok===ch.items.length?'star':ok>=ch.items.length-2?'ok':'bad');
+    document.querySelectorAll('.seq li').forEach((li,k)=>li.classList.add(placed[k]===k?'good':'badc'));
+    document.querySelector('.row').innerHTML=`<button class="btn" onclick="seqDone(${ok})">ดูผล</button>`;
+    document.querySelector('.chips').insertAdjacentHTML('beforebegin',`<div class="why ${ok===ch.items.length?'ok':'bad'}">ถูกตำแหน่ง ${ok}/${ch.items.length} ลำดับที่ถูกต้อง: ${ch.items.map((t,k)=>`${k+1}) ${t}`).join(' → ')}</div>`)};
+  window.seqDone=ok=>{const n=ch.items.length;const st=ok===n?3:ok>=n-2?2:ok>=1?1:0;finish(m,st,`ถูกตำแหน่ง ${ok} จาก ${n}`)};
+  show();
+}
+
+function dMatch(m,d,lv){const pairs=sample(d.pool,d.pick);const L=shuffle(pairs.map((p,i)=>({t:p[0],i}))),R=shuffle(pairs.map((p,i)=>({t:p[1],i})));let sel=null,got=[],wrong=0;
+  const show=()=>{render(`${topbar("lesson('"+m.id+"')")}${head(m,lv)}<div class="card in"><p class="muted">${d.intro}</p><p>แตะฝั่งซ้าย แล้วแตะคู่ของมันฝั่งขวา</p>
+    <div class="cols"><div><h4>${d.l}</h4>${L.map(x=>`<button class="chip ${got.includes(x.i)?'good':sel===x.i?'sel':''}" onclick="selL(${x.i})">${x.t}</button>`).join('')}</div>
+    <div><h4>${d.r}</h4>${R.map(x=>`<button class="chip ${got.includes(x.i)?'good':''}" onclick="selR(${x.i})">${x.t}</button>`).join('')}</div></div>
+    <p class="muted" style="margin-top:10px">จับคู่ได้ ${got.length}/${pairs.length} • ผิด ${wrong} ครั้ง</p></div>`)};
+  window.selL=i=>{if(got.includes(i))return;sel=i;show()};
+  window.selR=i=>{if(sel===null||got.includes(i))return;if(sel===i){got.push(i);sel=null;sfx('ok');if(got.length===pairs.length){const st=wrong===0?3:wrong<=2?2:1;setTimeout(()=>finish(m,st,`จับคู่ครบ ${pairs.length} คู่ ผิด ${wrong} ครั้ง`),300)}}else{wrong++;sfx('bad');buzz();toast('ยังไม่ใช่คู่กัน');sel=null}show()};
+  show();
+}
+
+function dChain(m,d,lv){const sc=d.scens?sample(d.scens,1)[0]:d;CUR.sc=sc;
+  render(`${topbar("lesson('"+m.id+"')")}${head(m,lv)}<div class="card in"><p class="muted">${sc.intro}</p>
+  ${sc.steps.map((s,i)=>`<div class="step"><label for="s${i}">${s.l}</label>${s.h?`<div class="hint">${s.h}</div>`:''}<textarea id="s${i}">${esc(S.reflect[m.id+lv+i]||'')}</textarea></div>`).join('')}
+  <div class="row"><button class="btn" onclick="chainNext('${m.id}')">${sc.check?'ต่อไป: ตรวจสอบตัวเอง':'บันทึกและดูผล'}</button></div></div>`);
+}
+function chainNext(id){const m=M(id);const sc=CUR.sc,lv=CUR.lv;let filled=0;
+  sc.steps.forEach((_,i)=>{const v=document.getElementById('s'+i).value.trim();S.reflect[m.id+lv+i]=v;if(v.length>=15)filled++});save();
+  if(filled<sc.steps.length){toast(`ยังมีช่องที่ตอบสั้นไป (${filled}/${sc.steps.length})`);return}
+  if(!sc.check){finish(m,3,'บันทึกการสะท้อนของคุณแล้ว กลับมาอ่านอีกครั้งหลังฝึกโหมดอื่นซ้ำ');return}
+  render(`${topbar("drill('"+m.id+"',"+lv+")")}${head(m,lv)}<div class="card in"><h3>ตรวจสอบตัวเองอย่างซื่อสัตย์</h3><p class="muted">อ่านคำตอบของคุณอีกครั้ง แล้วติ๊กเฉพาะข้อที่ทำได้จริง</p>
+  ${sc.steps.map((s,i)=>`<div class="why" style="margin-bottom:8px"><b>${s.l}</b><br>${esc(S.reflect[m.id+lv+i])}</div>`).join('')}
+  <div style="margin-top:12px">${sc.check.map((c,i)=>`<label class="chk"><input type="checkbox" id="c${i}"><span>${c}</span></label>`).join('')}</div>
+  <div class="row"><button class="btn" onclick="chainDone('${m.id}')">ดูผล</button></div></div>`);
+}
+function chainDone(id){const m=M(id);const n=CUR.sc.check.length;let k=0;for(let i=0;i<n;i++)if(document.getElementById('c'+i).checked)k++;
+  const st=k===n?3:k>=n-1?2:k>=1?1:0;finish(m,st,`ผ่านเกณฑ์ ${k} จาก ${n} ข้อ ${st===3?'คิดครบทุกมิติ':'ข้อที่ยังไม่ติ๊ก คือจุดที่ควรกลับไปคิดต่อ'}`);
+}
+
+/* ===================== BLITZ ===================== */
+let BZ=null;
+function blitzPool(){const p=[];MODES.forEach(m=>m.levels.forEach(l=>{if(l.type==='quiz'&&!l.table)l.qs.forEach(q=>p.push({m,q}))}));return shuffle(p)}
+function startBlitz(){BZ={pool:blitzPool(),i:0,score:0,lives:3,combo:0,max:0,left:60,lock:false,done:false,miss:[]};
+  render(`${topbar("home('blitz')")}<div class="card blitz"><div class="bzhud"><div class="hearts" id="bh"></div><div class="bzt" id="bt">60</div><div class="bzs">คะแนน <b id="bs">0</b></div></div>
+  <div class="bzbar"><i id="bb" style="width:100%"></i></div><div style="text-align:center"><span class="combo" id="bc"></span></div><div id="bq"></div></div>`);
+  sfx('level');bzHud();bzShow();
+  timerHandle=setInterval(()=>{if(BZ.done)return;BZ.left--;bzHud();if(BZ.left<=5&&BZ.left>0)sfx('tick');if(BZ.left<=0)bzEnd()},1000);
+}
+function bzHud(){const t=document.getElementById('bt');if(!t)return;t.textContent=Math.max(0,BZ.left);t.classList.toggle('low',BZ.left<=10);
+  document.getElementById('bh').textContent='❤️'.repeat(BZ.lives)+'🖤'.repeat(3-BZ.lives);document.getElementById('bs').textContent=BZ.score;
+  document.getElementById('bb').style.width=Math.min(100,BZ.left/60*100)+'%';const c=document.getElementById('bc');c.textContent=BZ.combo>=2?`🔥 คอมโบ x${BZ.combo}`:''}
+function bzShow(){const {m,q}=BZ.pool[BZ.i%BZ.pool.length];BZ.lock=false;
+  document.getElementById('bq').innerHTML=`<div class="bzq" style="--c:${m.c}"><span class="mtag">${ic(m)} ${m.en}</span><h3>${q.q}</h3>${q.o.map((o,k)=>`<button class="opt" onclick="bzPick(${k})">${o}</button>`).join('')}</div>`}
+function bzPick(k){if(BZ.lock||BZ.done)return;BZ.lock=true;const it=BZ.pool[BZ.i%BZ.pool.length],q=it.q;const btns=document.querySelectorAll('#bq .opt');btns[q.a].classList.add('right');
+  if(k===q.a){BZ.score++;BZ.combo++;BZ.max=Math.max(BZ.max,BZ.combo);BZ.left+=2;sfx('ok');floatAt(btns[k],BZ.combo>=3?`+1 🔥${BZ.combo}`:'+1 · +2วิ')}
+  else{btns[k].classList.add('wrong');BZ.lives--;BZ.combo=0;BZ.miss.push(it);sfx('bad');buzz();shakeCard()}
+  bzHud();BZ.i++;setTimeout(()=>{if(BZ.done)return;if(BZ.lives<=0)bzEnd();else bzShow()},k===q.a?420:1200)}
+function bzEnd(){if(BZ.done)return;BZ.done=true;clearInterval(timerHandle);
+  const rec=BZ.score>S.blitz.best&&BZ.score>0;const gain=BZ.score*5+BZ.max*2+10;S.xp+=gain;S.blitz.played++;if(rec)S.blitz.best=BZ.score;S.maxCombo=Math.max(S.maxCombo,BZ.max);save();
+  const why=BZ.lives<=0?'หมดชีวิต 💔':'หมดเวลา ⏰';
+  render(`${topbar("home('blitz')")}<div class="card result blitz"><canvas id="cf"></canvas><div class="muted">${why}</div><h2 style="font-size:48px;margin:4px 0">${BZ.score}</h2><div class="muted">คะแนน</div>
+  ${rec?'<div class="rec">🏆 สถิติใหม่!</div>':`<p class="muted">สถิติสูงสุด ${S.blitz.best}</p>`}
+  <div class="score" style="margin-top:12px"><div><b>${BZ.max}</b><span>คอมโบสูงสุด</span></div><div><b>${BZ.miss.length}</b><span>ตอบผิด</span></div><div><b>+<i id="gx" style="font-style:normal">0</i></b><span>XP</span></div></div>
+  ${sensei(BZ.score>=20?'เร็วดั่งสายฟ้า! ⚡':BZ.score>=10?'คมและไว ใช้ได้เลย':'อุ่นเครื่องแล้ว รอบหน้าไปให้ไกลกว่านี้!')}
+  <div class="row" style="justify-content:center"><button class="btn" onclick="startBlitz()">อีกรอบ ⚡</button><button class="btn ghost" onclick="home('blitz')">กลับ</button></div></div>
+  ${BZ.miss.length?`<div class="sec">ข้อที่พลาด เรียนรู้ไว้<span>${BZ.miss.length} ข้อ</span></div>`+BZ.miss.map(({m,q})=>`<div class="card" style="--c:${m.c};border-left:5px solid ${m.c}"><span class="mtag">${ic(m)} ${m.en}</span><p><b>${q.q}</b></p><div class="why ok">✔ ${q.o[q.a]}<br><span class="muted">${q.why}</span></div></div>`).join(''):''}`);
+  document.querySelector('.result .sensei').style.justifyContent='center';countUp('gx',gain);
+  if(rec){sfx('star');confetti(document.getElementById('cf'),'#FF8A5B')}
+}
+
+/* ===================== CASE CLINIC ===================== */
+let CQ=[],ci=0,cs={c:0,n:0},picks=[];
+function startClinic(){const basic=CASES.filter(c=>!c.seq),hard=CASES.filter(c=>c.seq);CQ=shuffle([...sample(basic,3),...sample(hard,2)]);ci=0;cs={c:0,n:0};showCase()}
+function modeGrid(dis){return `<div class="modegrid">${MODES.map(m=>`<button class="mbtn ${dis&&dis.includes(m.id)?'dis':''}" style="--c:${m.c}" onclick="chooseMode('${m.id}')"><b>${m.en}</b><span>${m.th}</span></button>`).join('')}</div>`}
+function showCase(){const c=CQ[ci];picks=[];
+  render(`${topbar("home('clinic')")}<div class="prog" style="--c:var(--ink)">${CQ.map((_,k)=>`<i class="${k<=ci?'on':''}"></i>`).join('')}</div>
+  <div class="card in"><div class="muted">เคสที่ ${ci+1} จาก ${CQ.length}${c.seq?' • เคสยาก: เลือก 2 โหมดเรียงลำดับ':''}</div><p class="scen">${c.s}</p><p class="muted" id="ask">${c.seq?'ควรเริ่มด้วยวิธีคิดแบบไหน "ก่อน"?':'ควรเริ่มด้วยวิธีคิดแบบไหน?'}</p>
+  <div id="grid">${modeGrid()}</div><div id="fb"></div></div>`);
+}
+function chooseMode(id){const c=CQ[ci];picks.push(id);
+  if(c.seq&&picks.length<2){document.getElementById('ask').textContent=`เลือก ${M(id).en} ก่อน แล้วต่อด้วยวิธีคิดแบบไหน?`;document.getElementById('grid').innerHTML=modeGrid([id]);return}
+  let level,useIds;
+  if(c.seq){const exact=picks[0]===c.seq[0]&&picks[1]===c.seq[1];const near=!exact&&(picks.includes(c.seq[0])&&picks.includes(c.seq[1])||c.ok.includes(picks[0])&&picks[1]===c.seq[1]||picks[0]===c.seq[0]);level=exact?2:near?1:0;useIds=level?picks:c.seq}
+  else{const best=c.best.includes(id),near=c.ok.includes(id);level=best?2:near?1:0;useIds=level?[id]:c.best}
+  if(level===2){cs.c++;sfx('star')}else if(level===1){cs.n++;sfx('ok')}else{sfx('bad');buzz()}
+  document.getElementById('grid').querySelectorAll('.mbtn').forEach(b=>b.onclick=null);
+  const label=c.seq?c.seq.map(x=>M(x).en).join(' → '):M(c.best[0]).en;
+  const use=M(useIds[0]);const qs=use.ask.slice(0,3);
+  document.getElementById('fb').innerHTML=`<div class="why ${level===2?'ok':level===1?'':'bad'}" style="margin-top:12px"><b>${level===2?'ตรงเป๊ะ':level===1?'ใกล้เคียง แต่มีลำดับหรือโหมดที่ตรงกว่า':'ยังไม่ใช่'}</b> — ${level===2?'':`คำตอบที่เหมาะที่สุดคือ <b>${label}</b> `}${c.why}</div>
+  <div class="card" style="margin-top:12px;border-left:5px solid ${use.c}"><h3>ลงมือคิดด้วย ${use.en}</h3>${qs.map((q,i)=>`<div class="step"><label>${q}</label><textarea id="ca${i}"></textarea></div>`).join('')}
+  <div class="row"><button class="btn" onclick="caseNext()">${ci<CQ.length-1?'เคสถัดไป':'สรุปผล'}</button></div></div>`;
+  document.getElementById('fb').scrollIntoView({behavior:'smooth'});
+}
+function caseNext(){let f=0;for(let i=0;i<3;i++){const el=document.getElementById('ca'+i);if(el&&el.value.trim().length>=10)f++}
+  if(f<2){toast('ตอบคำถามนำอย่างน้อย 2 ข้อก่อน');return}
+  ci++;if(ci<CQ.length)showCase();else{const gain=cs.c*30+cs.n*15+20;S.xp+=gain;S.clinic.played+=CQ.length;S.clinic.correct+=cs.c;S.clinic.near+=cs.n;save();
+    render(`${topbar("home('clinic')")}<div class="card result"><canvas id="cf"></canvas><h2>จบรอบ Case Clinic</h2><div class="score" style="margin-top:14px"><div><b>${cs.c}</b><span>ตรงเป๊ะ</span></div><div><b>${cs.n}</b><span>ใกล้เคียง</span></div><div><b>${CQ.length-cs.c-cs.n}</b><span>พลาด</span></div></div>
+    <p>${cs.c===CQ.length?'คุณอ่านโจทย์แล้วรู้ทันทีว่าต้องใช้เครื่องมือไหน':cs.c+cs.n>=3?'เริ่มจับสัญญาณของโจทย์ได้แล้ว สังเกตคำสำคัญ เช่น "ต้องเลือก" "ทำไม่ได้" "แล้วจะเกิดอะไร" "มันก็เป็นแบบนี้" "ไม่รู้ว่าอนาคตจะเป็นยังไง"':'กลับไปทบทวนบทเรียนใน Dojo แล้วดูว่าแต่ละโหมด "เหมาะกับโจทย์แบบไหน"'}</p><p class="muted">+${gain} XP</p>
+    <div class="row" style="justify-content:center"><button class="btn" onclick="startClinic()">เล่นอีกรอบ</button><button class="btn ghost" onclick="home('dojo')">กลับ Dojo</button></div></div>`);
+    if(cs.c>=3)confetti(document.getElementById('cf'),'#17233A')}
+}
+
+/* ===================== MY PROBLEM ===================== */
+function myProblem(pre){
+  render(`${topbar("home('mine')")}<div class="head" style="--c:var(--ink)"><div class="k">โจทย์ของฉัน</div><h2>เอาปัญหาจริงมาคิด</h2><div class="d">เขียนปัญหาสั้น ๆ แล้วเลือกวิธีคิด เกมจะพาเดินผ่านคำถามนำทีละข้อ</div></div>
+  <div class="card in"><label class="step" style="font-weight:600">ปัญหาหรือการตัดสินใจที่กำลังเจอ</label><textarea id="pb" placeholder="เช่น ต้องเลือกว่าจะรับงานใหม่ที่เงินดีแต่ไกลบ้านไหม"></textarea>
+  <p class="muted" style="margin-top:12px">เลือกวิธีคิด${pre?'':' (ไม่แน่ใจ? ลองเล่น Case Clinic เพื่อฝึกเลือก)'}</p><div id="pg">${MODES.map(m=>`<button class="mbtn ${pre===m.id?'pick':''}" style="--c:${m.c};margin:3px 0;width:100%" onclick="pickMy('${m.id}')"><b>${m.en}</b><span>${m.th}</span></button>`).join('')}</div></div>`);
+  CUR.my=pre||null;if(pre)document.querySelector('.mbtn.pick')?.scrollIntoView({block:'center'});
+  window.pickMy=id=>{CUR.my=id;document.querySelectorAll('#pg .mbtn').forEach(b=>b.classList.remove('pick'));[...document.querySelectorAll('#pg .mbtn')].find(b=>b.getAttribute('onclick').includes(id)).classList.add('pick');
+    const pb=document.getElementById('pb').value.trim();if(pb.length<8){toast('เขียนปัญหาก่อนสักหน่อย');return}myWalk(pb,id)};
+}
+function myWalk(problem,id){const m=M(id);let i=0;const ans=[];
+  const show=()=>{render(`${topbar("myProblem()")}${head(m)}<div class="prog" style="--c:${m.c}">${m.ask.map((_,k)=>`<i class="${k<=i?'on':''}"></i>`).join('')}</div>
+    <div class="card in"><div class="why" style="margin:0 0 12px"><b>โจทย์:</b> ${esc(problem)}</div>${ans.map((a,k)=>`<p class="muted" style="margin:0">${m.ask[k]}</p><p style="margin:2px 0 10px">${esc(a)}</p>`).join('')}
+    <div class="step"><label>${m.ask[i]}</label><textarea id="ma" autofocus></textarea></div>
+    <div class="row"><button class="btn" onclick="myNext()">${i<m.ask.length-1?'ข้อถัดไป':'บันทึก'}</button></div></div>`);document.getElementById('ma').focus()};
+  window.myNext=()=>{const v=document.getElementById('ma').value.trim();if(v.length<10){toast('ลองเขียนให้ละเอียดขึ้นอีกนิด');return}ans.push(v);i++;if(i<m.ask.length)show();else{S.journal.push({date:today(),mode:id,problem,answers:ans});S.xp+=60;S.last[id]=Date.now();save();
+    render(`${topbar("home('mine')")}<div class="card result" style="--c:${m.c}"><canvas id="cf"></canvas><h2>บันทึกแล้ว</h2><p>คุณเดินผ่าน ${m.ask.length} คำถามของ ${m.en} กับปัญหาจริง นี่คือการฝึกที่ติดที่สุด</p><p class="muted">+60 XP</p>
+    <div class="row" style="justify-content:center"><button class="btn ghost" onclick="myWalkOther(${JSON.stringify(problem).replace(/"/g,'&quot;')})">ลองโจทย์เดิมด้วยวิธีคิดอื่น</button><button class="btn" onclick="home('mine')">ดูบันทึก</button></div></div>`);confetti(document.getElementById('cf'),m.c)}};
+  show();
+}
+function myWalkOther(p){
+  render(`${topbar("home('mine')")}<div class="card in"><div class="why"><b>โจทย์:</b> ${esc(p)}</div><p class="muted" style="margin-top:12px">เลือกวิธีคิดอีกแบบ</p><div>${MODES.map(m=>`<button class="mbtn" style="--c:${m.c};margin:3px 0;width:100%" onclick="myWalk(${JSON.stringify(p).replace(/"/g,'&quot;')},'${m.id}')"><b>${m.en}</b><span>${m.th}</span></button>`).join('')}</div></div>`)}
+
+home();
+</script>
+</body>
+</html>
