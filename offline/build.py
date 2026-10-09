@@ -20,6 +20,8 @@ FONT_DIR = OUT_DIR / "fonts"
 OUT_HTML = OUT_DIR / "ABC-Contact-Center-360.html"
 README = OUT_DIR / "README.txt"
 OUT_ZIP = OUT_DIR / "ABC-Contact-Center-360-offline.zip"
+SITE_DIR = ROOT / "site"  # Netlify publish directory (see netlify.toml)
+SITE_ZIP = OUT_DIR / "netlify-site.zip"
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
@@ -79,6 +81,10 @@ def main():
         f"{body}\n</body>\n</html>\n"
     )
     OUT_HTML.write_text(html, encoding="utf-8")
+    SITE_DIR.mkdir(exist_ok=True)
+    (SITE_DIR / "index.html").write_text(html, encoding="utf-8")
+    with zipfile.ZipFile(SITE_ZIP, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(SITE_DIR / "index.html", "site/index.html")
 
     with zipfile.ZipFile(OUT_ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(OUT_HTML, OUT_HTML.name)
