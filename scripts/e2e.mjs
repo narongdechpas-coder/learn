@@ -718,8 +718,7 @@ log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, rene
 // ---- Products: edit, versions, commission, end date, Excel round trip ----
 const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')));
 const prod = (st, id) => st.products.find((p) => p.id === id);
-await office.locator('.nav-backoffice').click();
-await office.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+await office.locator('.nav-products').click();
 assert.equal(await office.locator('.pd-table tbody tr').count(), 11, 'catalogue starts with 11 products');
 const offered = (await state(office)).proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000');
 assert.ok(offered, 'the earlier quotation offered Class 2+ 200,000');
