@@ -539,13 +539,11 @@ await agent.getByText('ติ๊กยืนยันว่าลูกค้า
 await agent.getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
 await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
 const refE = (await agent.locator('.ag-case-detail .eyebrow').first().innerText()).match(/ABC-[\d-]+/)[0];
-const upE = agent.locator('.ag-case-detail .uploads input[type=file]');
-await upE.nth(0).setInputFiles(jpg('reg.jpg'));
-await agent.locator('.ag-case-detail .doc-tile.has').first().waitFor();
-await upE.nth(1).setInputFiles(jpg('id.jpg'));
-await agent.getByText('เอกสารครบแล้ว').waitFor();
+await agent.locator('.ag-case-detail .uploads').getByRole('button', { name: /ใช้ข้อมูลจำลอง/ }).click();
+await agent.getByText('เอกสารครบแล้ว').waitFor({ timeout: 15000 });
+assert.equal(await agent.locator('.ag-case-detail .doc-tile.has').count(), 2, 'sample files attached for every missing document');
 await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
-log(`agent sold 3+ on the spot with consent, attached documents and collected the money: ${refE}`);
+log(`agent sold 3+ on the spot with consent, attached sample documents in one click and collected the money: ${refE}`);
 
 await office.bringToFront();
 await office.locator('#bo-channel').selectOption('agent');

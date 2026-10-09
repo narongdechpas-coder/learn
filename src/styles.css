@@ -1345,3 +1345,6 @@ input[type='radio']:not(.sr-only) { width: auto; padding: 0; accent-color: var(-
 .ag-collect .check { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; }
 .ag-collect .check:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .ag-collect .check input { width: 18px; height: 18px; }
+.uploads-head { align-items: center; }
+.uploads-head .hint { margin-left: auto; }
+.sample-btn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }

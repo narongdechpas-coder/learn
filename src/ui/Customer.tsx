@@ -25,6 +25,7 @@ import { getFile } from '../files';
 import { Field, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
+import { attachSampleDocs } from './extras';
 import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
@@ -1410,6 +1411,7 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
   const allowed = canUpload(c);
   const missing = docsMissing(c);
   const [phone, setPhone] = useState(false);
+  const [busy, setBusy] = useState(false);
   if (c.status === 'CANCELLED' || c.status === 'ISSUED') return null;
   const needsPhotos = ANGLES.some((k) => required.includes(k) && !c.docs[k]);
 
@@ -1427,6 +1429,11 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
       <div className="uploads-head">
         {!bare && <h3>{t('uploadTitle')}</h3>}
         <span className="hint">{t('uploadRule')}</span>
+        {allowed && missing.length > 0 && (
+          <button type="button" className="btn small sample-btn" disabled={busy} onClick={async () => { setBusy(true); setErrs([]); try { await attachSampleDocs(c, missing, by); } finally { setBusy(false); } }}>
+            {busy ? t('sampleBusy') : `🧪 ${t('sampleDocs')}`}
+          </button>
+        )}
       </div>
       {!allowed && missing.length > 0 && c.source === 'quote' && ['NEW', 'ACCEPTED', 'QUOTED'].includes(c.status) && <p className="muted">{t('uploadWaitQuote')}</p>}
       {missing.length === 0 && <p className="ok-note">✓ {c.source === 'self' ? STAGE_LABEL[lang].docsComplete : t('uploadDone')}</p>}
