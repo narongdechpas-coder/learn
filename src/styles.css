@@ -1008,8 +1008,6 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .switch input:checked + .switch-track { background: var(--accent); }
 .switch input:checked + .switch-track::after { transform: translateX(18px); }
 .switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cust-mode-note { margin: 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--warm-soft); color: var(--warm-ink); font-size: 0.9rem; }
-.cust-mode .ag-int { display: none !important; }
 .callout.tone-bad { background: var(--bad-bg); color: var(--bad); }
 .callout.tone-info { background: var(--info-bg); }
 
@@ -1190,4 +1188,48 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
   .ag-tools .inline-field { flex: 1; min-width: 0; }
   .ag-tools select { max-width: none; width: 100%; }
   .ag-pkg-table td:nth-child(3), .ag-pkg-table th:nth-child(3) { display: none; }
+}
+
+/* Agent renewal report */
+.rr { display: grid; gap: 16px; }
+.rr > * { margin: 0; min-width: 0; }
+.rr-summary { display: grid; grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rr-tile { text-align: left; display: grid; gap: 6px; align-content: start; padding: 16px; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; min-width: 0; transition: border-color 0.15s, box-shadow 0.15s; }
+.rr-tile:hover { border-color: var(--accent); }
+.rr-tile.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.rr-all { background: var(--accent-soft); }
+.rr-big { font: 600 1.7rem var(--f-display); line-height: 1.1; }
+.rr-big .muted { font: 400 0.9rem var(--f-body); }
+.rr-split { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.86rem; }
+.rr-done { color: var(--good); font-weight: 600; }
+.rr-todo { color: var(--warn); font-weight: 600; }
+.rr-meter { height: 8px; border-radius: 4px; background: var(--warn-bg); overflow: hidden; }
+.rr-meter span { display: block; height: 100%; background: var(--good); border-radius: 4px; }
+.rr-money { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rr-money-tile { padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); display: grid; gap: 2px; min-width: 0; }
+.rr-money-tile.tone-good { border-left-color: var(--good); }
+.rr-money-tile.tone-wait { border-left-color: var(--warn); }
+.rr-money-v { font: 600 1.45rem var(--f-display); }
+.rr-table td { vertical-align: top; }
+.rr-table tr.rr-late td { background: var(--bad-bg); }
+.rr-rank { display: inline-grid; place-items: center; min-width: 28px; height: 28px; border-radius: 8px; font: 600 0.9rem var(--f-display); background: var(--surface-2); }
+.rr-rank.tone-bad { background: var(--bad-bg); color: var(--bad); }
+.rr-rank.tone-warn { background: var(--warn-bg); color: var(--warn); }
+.rr-pol { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 1000px) { .rr-summary { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .rr-money { grid-template-columns: 1fr; } }
+/* Phone: each renewal row becomes a small card so expiry, premium and the action stay on screen. */
+@media (max-width: 640px) {
+  .rr-table thead { display: none; }
+  .rr-table, .rr-table tbody { display: block; }
+  .rr-table tr { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .rr-table td { display: block; padding: 0 !important; border: 0 !important; }
+  .rr-table td:first-child { grid-row: span 2; }
+  .rr-table td:nth-child(3), .rr-table td:nth-child(4) { grid-column: 2 / -1; }
+  .rr-table td:nth-child(5) { display: none; }
+  .rr-table td:nth-child(6) { grid-column: 2; text-align: left; }
+  .rr-table td:nth-child(7) { grid-column: 3; grid-row: 1; }
+  .rr-table td:nth-child(8) { grid-column: 2 / -1; text-align: left; }
+  .rr-table tr.rr-late td { background: none; }
+  .rr-table tr.rr-late { background: var(--bad-bg); border-radius: var(--r-sm); padding: 12px 8px; }
 }

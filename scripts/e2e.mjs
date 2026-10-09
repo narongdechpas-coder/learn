@@ -428,10 +428,6 @@ for (const i of pickIdx) await rows.nth(i).click();
 assert.equal(await agent.locator('.ag-pkg-table tbody tr.on').count(), 3, 'three packages picked for the quotation');
 await agent.locator('#ag-disc').fill('5');
 await agent.getByText(/คอมฯ .* − ส่วนลด .* = เหลือ/).first().waitFor();
-await agent.getByText('หน้าจอลูกค้า', { exact: true }).click();
-assert.equal(await agent.locator('.ag-int:visible').count(), 0, 'customer screen hides commission');
-assert.equal(await agent.locator('#ag-disc').count(), 0, 'customer screen hides the discount control');
-await agent.getByText('หน้าจอลูกค้า', { exact: true }).click();
 await agent.getByRole('button', { name: 'ออกใบเสนอราคา 3 แบบ' }).click();
 const quoteId = (await agent.getByRole('heading', { name: /ออกใบเสนอราคา Q-/ }).innerText()).match(/Q-[\w-]+/)[0];
 await agent.getByRole('button', { name: 'คัดลอกลิงก์' }).click();
@@ -440,6 +436,25 @@ await agent.getByRole('button', { name: 'LINE' }).click();
 await agent.locator('.line-bubble', { hasText: quoteId }).waitFor();
 await agent.getByRole('button', { name: 'ส่งทาง LINE (จำลอง)' }).click();
 log(`agent quotation ${quoteId}: 3 packages, 5% discount out of commission, sent by link and LINE`);
+
+// Renewal report: 1/2/3-month summary, priority list, premium received vs expected.
+await agent.getByRole('tab', { name: /รายงานต่ออายุ/ }).click();
+assert.equal(await agent.locator('.rr-tile').count(), 4, 'summary tiles: total + 1, 2, 3 months');
+await agent.getByText('เบี้ยที่ได้รับจากงานต่ออายุแล้ว').waitFor();
+await agent.getByText('เบี้ยที่คาดว่าจะได้รับ').waitFor();
+const expiries = await agent.locator('.rr-table tbody tr').evaluateAll((rows) => rows.map((r) => r.querySelector('.pill')?.textContent ?? ''));
+const toDays = (x) => (x.startsWith('เลยมา') ? -1 : 1) * Number(x.replace(/\D/g, ''));
+const ds = expiries.map(toDays);
+assert.ok(ds.length > 0 && ds.every((d, i) => i === 0 || d >= ds[i - 1]), 'not-renewed list sorted by nearest expiry');
+await agent.locator('.rr-tile').nth(1).click();
+assert.ok((await agent.locator('.rr-table tbody tr').count()) <= ds.length, 'tile filters the list');
+const firstRow = agent.locator('.rr-table tbody tr', { has: agent.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }) }).first();
+const renewName = await firstRow.locator('td b').first().innerText();
+await firstRow.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }).click();
+await agent.getByText(/กรอกข้อมูลจากกรมธรรม์เดิมให้แล้ว/).waitFor();
+assert.equal(await agent.locator('#ag-c-firstName').inputValue(), renewName.split(' ')[0], 'renewal prefills the customer');
+await agent.getByRole('tab', { name: /ขาย/ }).click();
+log('renewal report: 1/2/3-month summary, list by priority, premium received and expected; renewal prefills a quotation');
 
 const buyer = await ctx.newPage();
 watch(buyer);
@@ -487,6 +502,8 @@ log('back office sees the agent, discount and payment; issued the policy');
 // Buy on the spot: agent confirms with consent and collects the money.
 await agent.bringToFront();
 await agent.getByRole('tab', { name: /ขาย/ }).click();
+await agent.locator('#ag-code').selectOption('110');
+await agent.getByRole('radio', { name: 'ซื้อเลย' }).click();
 await agent.locator('#ag-brand').selectOption('toyota');
 await agent.locator('#ag-model').selectOption('toyota-yaris-ativ');
 await agent.locator('#ag-year').selectOption('2024');

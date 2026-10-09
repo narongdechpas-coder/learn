@@ -213,6 +213,9 @@ export interface RenewalItem {
   premium: number;
   expiry: number;
   status: 'open' | 'quoted' | 'renewed' | 'lost';
+  /** Premium of the renewed policy, once renewed. */
+  renewedPremium?: number;
+  renewedAt?: number;
   proposalId?: string;
   nudgedAt?: number;
 }

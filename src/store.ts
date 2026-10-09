@@ -27,7 +27,7 @@ export interface State {
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 5;
+const VERSION = 6;
 
 function fresh(): State {
   const now = Date.now();
@@ -550,7 +550,7 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
   commit({
     ...after,
     proposals: after.proposals.map((p) => (p.id === id ? { ...p, status: 'accepted', acceptedAt: now, acceptedBy: by, chosen: choice, caseId } : p)),
-    renewals: pr.renewalOf ? after.renewals.map((r) => (r.id === pr.renewalOf ? { ...r, status: 'renewed' } : r)) : after.renewals,
+    renewals: pr.renewalOf ? after.renewals.map((r) => (r.id === pr.renewalOf ? { ...r, status: 'renewed', renewedPremium: price.price, renewedAt: now } : r)) : after.renewals,
   });
   return caseId;
 }

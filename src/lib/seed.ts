@@ -459,7 +459,7 @@ export function seedRenewals(now: number): RenewalItem[] {
   const out: RenewalItem[] = [];
   const pool = MODELS.filter((m) => !m.noPackage && m.body !== 'ev');
   const agents = AGENTS.map((a) => a.id);
-  for (let i = 0; i < 170; i++) {
+  for (let i = 0; i < 260; i++) {
     const expiry = startOfBkkDay(now) + Math.round(-30 + rnd() * 120) * DAY_MS;
     const md = pool[Math.floor(rnd() * pool.length)];
     const year = Math.max(md.yearFrom, md.yearTo - Math.floor(rnd() * 8));
@@ -471,7 +471,7 @@ export function seedRenewals(now: number): RenewalItem[] {
     const r = rnd();
     const status: RenewalItem['status'] =
       days < 0 ? (r < 0.7 ? 'renewed' : 'lost') : days < 30 ? (r < 0.38 ? 'renewed' : r < 0.68 ? 'quoted' : 'open') : days < 60 ? (r < 0.15 ? 'renewed' : r < 0.4 ? 'quoted' : 'open') : r < 0.05 ? 'renewed' : r < 0.15 ? 'quoted' : 'open';
-    const agentId = rnd() < 0.55 ? agents[Math.floor(rnd() * agents.length)] : undefined;
+    const agentId = rnd() < 0.7 ? agents[Math.floor(rnd() * agents.length)] : undefined;
     out.push({
       id: `R-${String(i + 1).padStart(4, '0')}`,
       agentId,
@@ -483,6 +483,8 @@ export function seedRenewals(now: number): RenewalItem[] {
       premium: pk.premium,
       expiry,
       status,
+      // Renewed at last year's price less the 5% no-claim discount, give or take a claim surcharge.
+      ...(status === 'renewed' ? { renewedPremium: Math.round(pk.premium * (rnd() < 0.85 ? 0.95 : 1.05)), renewedAt: Math.min(now, expiry - Math.round(rnd() * 25) * DAY_MS) } : {}),
     });
   }
   return out.sort((a, b) => a.expiry - b.expiry);

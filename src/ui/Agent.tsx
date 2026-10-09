@@ -10,8 +10,9 @@ import { Field, Segmented, StatusPill, TypeTag, useNow } from './common';
 import { SAMPLE_CUSTOMER, Uploads } from './Customer';
 import { BrandIcon } from './icons';
 import { ShareBox } from './Offer';
+import { RenewalReport } from './AgentRenewals';
 
-type Tab = 'sell' | 'offers' | 'cases' | 'perf';
+type Tab = 'sell' | 'offers' | 'cases' | 'renew' | 'perf';
 
 export const agentName = (a: Agent | undefined, lang: 'th' | 'en') => (a ? a[lang] : '—');
 
@@ -62,7 +63,6 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
   const { t, lang } = useT();
   const s = useStore();
   const [tab, setTab] = useState<Tab>('sell');
-  const [custMode, setCustMode] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [focusCase, setFocusCase] = useState<string | null>(null);
   const agent = s.agents.find((a) => a.id === agentId) ?? s.agents[0];
@@ -70,24 +70,34 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
   const myOffers = s.proposals.filter((p) => p.agentId === agent.id);
   const myCases = s.cases.filter((c) => c.agentId === agent.id);
   const now = useNow(30000);
+  const myRenewals = s.renewals.filter((r) => r.agentId === agent.id);
+  const renewTodo = myRenewals.filter((r) => r.status === 'open' && r.expiry - now <= 30 * DAY_MS && r.expiry > now - 30 * DAY_MS).length;
+  const startRenewal = (r: RenewalItem) => {
+    const md = modelById(r.vehicle.modelId);
+    const si = suggestedSumInsured(md, r.vehicle.year);
+    const [fn, ...ln] = r.customerName.split(' ');
+    setPrefill({ vehicle: { ...r.vehicle, sumInsured: si }, customer: { firstName: fn, lastName: ln.join(' '), phone: r.phone }, renewalOf: r.id });
+    setTab('sell');
+  };
   const todo = myCases.filter((c) => ['AWAITING_DOCS', 'QUOTED'].includes(c.status) || payInfo(c, now)?.state === 'overdue').length;
 
   const tabs: [Tab, TKey, number?][] = [
     ['sell', 'agTabSell'],
     ['offers', 'agTabOffers', myOffers.filter((p) => proposalState(p, now) === 'viewed').length || undefined],
     ['cases', 'agTabCases', todo || undefined],
+    ['renew', 'agTabRenew', renewTodo || undefined],
     ['perf', 'agTabPerf'],
   ];
 
   return (
-    <div className={`agent-app${custMode ? ' cust-mode' : ''}`}>
+    <div className="agent-app">
       <div className="ag-head">
         <div className="ag-who">
           <span className={`ag-avatar kind-${agent.kind}`} aria-hidden="true">{agent.kind === 'company' ? '🏢' : agent[lang].slice(0, 1)}</span>
           <div>
             <div className="eyebrow">{agent.code} · {t(agent.kind === 'company' ? 'agCompany' : 'agPerson')}</div>
             <h2>{agent[lang]}</h2>
-            <div className="muted">{t('agLicense')} {agent.license} · {agent.province}{mkt && !custMode ? ` · ${t('agMkt')}: ${mkt[lang]}` : ''}</div>
+            <div className="muted">{t('agLicense')} {agent.license} · {agent.province}{mkt ? ` · ${t('agMkt')}: ${mkt[lang]}` : ''}</div>
           </div>
         </div>
         <div className="ag-tools">
@@ -99,14 +109,8 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
               ))}
             </select>
           </label>
-          <label className="switch" htmlFor="ag-cust">
-            <input id="ag-cust" type="checkbox" checked={custMode} onChange={(e) => setCustMode(e.target.checked)} />
-            <span className="switch-track" aria-hidden="true" />
-            <span>{t('agCustMode')}</span>
-          </label>
         </div>
       </div>
-      {custMode && <p className="cust-mode-note">👁 {t('agCustModeNote')}</p>}
       {!agent.active && <p className="callout tone-bad">{t('agSuspended')}</p>}
 
       <div className="subtabs" role="tablist">
@@ -121,28 +125,22 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
         <Sell
           key={`${agent.id}-${prefill?.renewalOf ?? ''}`}
           agent={agent}
-          custMode={custMode}
           prefill={prefill}
           onOpenOffer={onOpenOffer}
           onCase={(id) => { setFocusCase(id); setTab('cases'); }}
         />
       )}
-      {tab === 'offers' && <Offers offers={myOffers} custMode={custMode} onOpenOffer={onOpenOffer} />}
-      {tab === 'cases' && <MyCases agent={agent} cases={myCases} custMode={custMode} focus={focusCase} setFocus={setFocusCase} />}
+      {tab === 'offers' && <Offers offers={myOffers} onOpenOffer={onOpenOffer} />}
+      {tab === 'cases' && <MyCases agent={agent} cases={myCases} focus={focusCase} setFocus={setFocusCase} />}
+      {tab === 'renew' && <RenewalReport renewals={myRenewals} proposals={myOffers} onRenew={startRenewal} onOpenOffer={(id) => onOpenOffer(id, true)} />}
       {tab === 'perf' && (
         <Perf
           agent={agent}
           cases={myCases}
           offers={myOffers}
-          renewals={s.renewals.filter((r) => r.agentId === agent.id)}
-          custMode={custMode}
-          onRenew={(r) => {
-            const md = modelById(r.vehicle.modelId);
-            const si = suggestedSumInsured(md, r.vehicle.year);
-            const [fn, ...ln] = r.customerName.split(' ');
-            setPrefill({ vehicle: { ...r.vehicle, sumInsured: si }, customer: { firstName: fn, lastName: ln.join(' '), phone: r.phone }, renewalOf: r.id });
-            setTab('sell');
-          }}
+          renewals={myRenewals}
+          onRenew={startRenewal}
+          onReport={() => setTab('renew')}
         />
       )}
     </div>
@@ -151,7 +149,7 @@ export function AgentApp({ agentId, setAgentId, onOpenOffer }: { agentId: string
 
 // ---------------------------------------------------------------- sell
 
-function Sell({ agent, custMode, prefill, onOpenOffer, onCase }: { agent: Agent; custMode: boolean; prefill: Prefill | null; onOpenOffer: (id: string, asAgent: boolean) => void; onCase: (id: string) => void }) {
+function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: Prefill | null; onOpenOffer: (id: string, asAgent: boolean) => void; onCase: (id: string) => void }) {
   const { t, lang } = useT();
   const pv = prefill?.vehicle;
   const [code, setCode] = useState<UsageCode>(pv?.usage ?? '110');
@@ -324,7 +322,7 @@ function Sell({ agent, custMode, prefill, onOpenOffer, onCase }: { agent: Agent;
                     <th>{t('filterType')}</th>
                     <th>{t('agCover')}</th>
                     <th className="r">{t('premium')}</th>
-                    {!custMode && <th className="r ag-int">{t('agCommission')}</th>}
+                    <th className="r ag-int">{t('agCommission')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,7 +337,7 @@ function Sell({ agent, custMode, prefill, onOpenOffer, onCase }: { agent: Agent;
                         <td><TypeTag type={p.type} /></td>
                         <td className="muted">{coverText(p, t, lang)}</td>
                         <td className="r num">{fmtBaht(p.premium, lang)}</td>
-                        {!custMode && <td className="r num ag-int">{fmtBaht(Math.round(pr.commission), lang)} <span className="muted">({Math.round(COMMISSION_RATE[p.type] * 100)}%)</span></td>}
+                        <td className="r num ag-int">{fmtBaht(Math.round(pr.commission), lang)} <span className="muted">({Math.round(COMMISSION_RATE[p.type] * 100)}%)</span></td>
                       </tr>
                     );
                   })}
@@ -365,13 +363,11 @@ function Sell({ agent, custMode, prefill, onOpenOffer, onCase }: { agent: Agent;
             </div>
             <div>
               <h3>{t('agPrice')}</h3>
-              {!custMode && (
                 <div className="field ag-disc">
                   <label htmlFor="ag-disc">{t('agDiscount')} <b className="num">{disc}%</b></label>
                   <input id="ag-disc" type="range" min={0} max={maxDisc} step={1} value={disc} disabled={!chosen.length} onChange={(e) => setDisc(Number(e.target.value))} />
                   <div className="hint">{t('agDiscountHint', { max: maxDisc })}</div>
                 </div>
-              )}
               {chosen.length === 0 ? (
                 <p className="muted">{t('agPickPkg')}</p>
               ) : (
@@ -385,11 +381,9 @@ function Sell({ agent, custMode, prefill, onOpenOffer, onCase }: { agent: Agent;
                           {pr.discount > 0 && <s className="muted num">{fmtBaht(pr.full, lang)}</s>}
                           <b className="num">{fmtBaht(pr.price, lang)}</b>
                         </span>
-                        {!custMode && (
                           <span className="ag-int hint num">
                             {t('agComNet', { gross: fmtBaht(Math.round(pr.commission), lang), disc: fmtBaht(pr.discount, lang), net: fmtBaht(Math.round(pr.net), lang) })}
                           </span>
-                        )}
                       </li>
                     );
                   })}
@@ -447,7 +441,7 @@ export function coverText(p: Package, t: (k: TKey, v?: Record<string, string | n
 
 // ---------------------------------------------------------------- offers
 
-function Offers({ offers, custMode, onOpenOffer }: { offers: Proposal[]; custMode: boolean; onOpenOffer: (id: string, asAgent: boolean) => void }) {
+function Offers({ offers, onOpenOffer }: { offers: Proposal[]; onOpenOffer: (id: string, asAgent: boolean) => void }) {
   const { t, lang } = useT();
   const now = useNow(30000);
   const [filter, setFilter] = useState<'open' | 'all'>('open');
@@ -490,7 +484,7 @@ function Offers({ offers, custMode, onOpenOffer }: { offers: Proposal[]; custMod
                     <td className="num">{p.id}</td>
                     <td>{p.customer.firstName} {p.customer.lastName}</td>
                     <td className="muted">{vehicleText(p.vehicle)}</td>
-                    <td className="r num">{p.options.length}{!custMode && p.discountPct ? <span className="muted"> · −{p.discountPct}%</span> : null}</td>
+                    <td className="r num">{p.options.length}{p.discountPct ? <span className="muted"> · −{p.discountPct}%</span> : null}</td>
                     <td className="num">{fmtDate(p.expiresAt, lang)}</td>
                     <td>
                       <span className={`pill tone-${PROPOSAL_STATE_TONE[st]}`}>{t(PROPOSAL_STATE_KEY[st])}</span>
@@ -524,7 +518,7 @@ function Offers({ offers, custMode, onOpenOffer }: { offers: Proposal[]; custMod
 
 // ---------------------------------------------------------------- my cases
 
-function MyCases({ agent, cases, custMode, focus, setFocus }: { agent: Agent; cases: Case[]; custMode: boolean; focus: string | null; setFocus: (id: string | null) => void }) {
+function MyCases({ agent, cases, focus, setFocus }: { agent: Agent; cases: Case[]; focus: string | null; setFocus: (id: string | null) => void }) {
   const { t, lang } = useT();
   const now = useNow(30000);
   const [filter, setFilter] = useState<'todo' | 'all'>('todo');
@@ -571,13 +565,13 @@ function MyCases({ agent, cases, custMode, focus, setFocus }: { agent: Agent; ca
         )}
       </section>
       <div className="ag-case-detail">
-        {c ? <AgentCase key={c.id} c={c} agent={agent} custMode={custMode} now={now} /> : <p className="muted pad center-text">{t('selectCase')}</p>}
+        {c ? <AgentCase key={c.id} c={c} agent={agent} now={now} /> : <p className="muted pad center-text">{t('selectCase')}</p>}
       </div>
     </div>
   );
 }
 
-function AgentCase({ c, agent, custMode, now }: { c: Case; agent: Agent; custMode: boolean; now: number }) {
+function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
   const { t, lang } = useT();
   const [collect, setCollect] = useState<'link' | 'agent'>(c.collect ?? 'link');
   const pay = payInfo(c, now);
@@ -600,7 +594,7 @@ function AgentCase({ c, agent, custMode, now }: { c: Case; agent: Agent; custMod
       <dl className="ag-kv">
         <div><dt>{t('agCar')}</dt><dd>{vehicleText(c.vehicle)} · {fmtBaht(c.vehicle.sumInsured, lang)}</dd></div>
         <div><dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('agWaitQuote')}{c.discount ? <span className="muted"> ({t('agInclDisc', { v: fmtBaht(c.discount, lang) })})</span> : null}</dd></div>
-        {!custMode && total !== undefined && (
+        {total !== undefined && (
           <div className="ag-int"><dt>{t('agCommission')}</dt><dd className="num">{fmtBaht(Math.round(com.net), lang)} <span className="muted">{commissionReceived(c) ? t('comReceived') : t('comPending')}</span></dd></div>
         )}
         {c.policyNo && <div><dt>{t('agPolicyNo')}</dt><dd className="num">{c.policyNo}</dd></div>}
@@ -643,7 +637,7 @@ function AgentCase({ c, agent, custMode, now }: { c: Case; agent: Agent; custMod
 
 // ---------------------------------------------------------------- performance
 
-function Perf({ agent, cases, offers, renewals, custMode, onRenew }: { agent: Agent; cases: Case[]; offers: Proposal[]; renewals: RenewalItem[]; custMode: boolean; onRenew: (r: RenewalItem) => void }) {
+function Perf({ agent, cases, offers, renewals, onRenew, onReport }: { agent: Agent; cases: Case[]; offers: Proposal[]; renewals: RenewalItem[]; onRenew: (r: RenewalItem) => void; onReport: () => void }) {
   const { t, lang } = useT();
   const now = useNow(60000);
   const p = bkkParts(now);
@@ -676,8 +670,6 @@ function Perf({ agent, cases, offers, renewals, custMode, onRenew }: { agent: Ag
           <div className="kpi-value num">{fmtBaht(Math.round(gwp), lang)}</div>
           <div className="kpi-foot muted">{t('agThisMonth')}</div>
         </div>
-        {!custMode && (
-          <>
             <div className="kpi ag-int">
               <div className="eyebrow">{t('comReceived')}</div>
               <div className="kpi-value num">{fmtBaht(Math.round(comIn), lang)}</div>
@@ -688,8 +680,6 @@ function Perf({ agent, cases, offers, renewals, custMode, onRenew }: { agent: Ag
               <div className="kpi-value num">{fmtBaht(Math.round(comWait), lang)}</div>
               <div className="kpi-foot muted">{t('agComPendingNote')}</div>
             </div>
-          </>
-        )}
       </div>
 
       <section className="card ag-target">
@@ -718,21 +708,26 @@ function Perf({ agent, cases, offers, renewals, custMode, onRenew }: { agent: Ag
           </ul>
         </section>
         <section className="card">
-          <h3>{t('agRenewals')}</h3>
-          <p className="hint">{t('agRenewalsLead')}</p>
+          <div className="card-head">
+            <div>
+              <h3>{t('agRenewals')}</h3>
+              <p className="hint">{t('agRenewalsLead')}</p>
+            </div>
+            <button type="button" className="btn small" onClick={onReport}>{t('agOpenReport')}</button>
+          </div>
           {due.length === 0 ? (
             <p className="muted">{t('agNoRenewals')}</p>
           ) : (
             <ul className="ag-renew">
-              {due.slice(0, 8).map((r) => {
-                const days = Math.round((r.expiry - now) / DAY_MS);
+              {due.slice(0, 4).map((r) => {
+                const days = Math.ceil((r.expiry - now) / DAY_MS);
                 return (
                   <li key={r.id}>
                     <div>
                       <b>{r.customerName}</b> <span className="muted">· {vehicleText(r.vehicle)}</span>
                       <div className="hint num">{r.policyNo} · {COVERAGE_LABEL[lang][r.coverage]} · {fmtBaht(r.premium, lang)}</div>
                     </div>
-                    <span className={`pill tone-${days < 0 ? 'bad' : days <= 30 ? 'warn' : 'neutral'}`}>{days < 0 ? t('agExpired', { n: -days }) : t('agExpiresIn', { n: days })}</span>
+                    <span className={`pill tone-${days <= 0 ? 'bad' : days <= 30 ? 'warn' : 'neutral'}`}>{days <= 0 ? t('agExpired', { n: -days }) : t('agExpiresIn', { n: days })}</span>
                     {r.status === 'quoted' ? (
                       <span className="pill tone-info">{t('renQuoted')}</span>
                     ) : (
@@ -743,6 +738,7 @@ function Perf({ agent, cases, offers, renewals, custMode, onRenew }: { agent: Ag
               })}
             </ul>
           )}
+          {due.length > 4 && <p className="hint">{t('mktMore', { n: due.length - 4 })}</p>}
         </section>
       </div>
     </div>
