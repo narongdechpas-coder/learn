@@ -1544,3 +1544,39 @@ table.data.pd-table th { text-transform: none; letter-spacing: 0; font-size: 0.8
 .pd-table .pd-name { min-height: 22px; }
 .pd-table .pd-row-actions { justify-content: flex-end; margin-top: -4px; }
 .pd-table .chip.tone-bad { margin-top: 4px; }
+
+/* ---------- quotation: cover and limits table, A4 portrait print ---------- */
+.offer-opt-no { font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+.offer-opt-name { font-weight: 600; }
+.offer-cover { display: grid; gap: 8px; }
+.offer-cover-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.offer-cover-table th, .offer-cover-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: top; }
+.offer-cover-table thead th { vertical-align: bottom; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+.offer-cover-table thead th:first-child, .offer-cover-table tbody th { text-align: left; font-weight: 500; color: var(--ink-2); width: 34%; }
+.offer-cover-table .oc-no { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.offer-cover-table .oc-name { font-weight: 600; margin-top: 4px; font-size: 0.82rem; }
+.offer-cover-table tr.oc-group th { background: var(--surface-2); color: var(--ink); font-weight: 700; padding-top: 7px; padding-bottom: 7px; width: auto; }
+.offer-cover-table td.oc-off { color: var(--muted); }
+.offer-cover-table tr.oc-strong td { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+.offer-cover-table tr.oc-strong th { font-weight: 700; color: var(--ink); }
+@page { size: A4 portrait; margin: 10mm 11mm; }
+@media print {
+  html, body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .offer-wrap { max-width: none; gap: 0; }
+  .offer.card { padding: 0; }
+  /* Block layout: Chrome splits grid containers badly across pages. */
+  .offer { font-size: 9.5pt; display: block; }
+  .offer > * + * { margin-top: 8px; }
+  .offer-head { padding-bottom: 6px; }
+  .offer-head .logo svg { width: 26px; height: 26px; }
+  .offer-parties { gap: 8px; }
+  .offer-parties > div { padding: 6px 10px; gap: 1px; }
+  .offer-h { font-size: 11pt; }
+  .offer-cover-table { font-size: 9pt; }
+  .offer-cover-table th, .offer-cover-table td { padding: 3.5px 8px; }
+  .offer-cover-table thead th { padding-bottom: 6px; }
+  .offer-cover-table tr.oc-group th { padding-top: 5px; padding-bottom: 5px; }
+  .offer-cover-table tr.oc-strong td { font-size: 11pt; }
+  .offer-cover { gap: 6px; margin-top: 12px; }
+  .offer .hint { font-size: 8pt; }
+}

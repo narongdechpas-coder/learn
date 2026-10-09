@@ -6,6 +6,9 @@ import { fmtBaht, fmtDate, fmtDateTime, useT } from '../i18n';
 import { acceptProposal, declineProposal, markProposalSent, payByLink, totalPremium, useStore, viewProposal } from '../store';
 import { StatusPill, TypeTag } from './common';
 import { coverText } from './Agent';
+import { EXTRA_KEY, productName } from './Products';
+import { getCatalog } from '../data/products';
+import type { Proposal } from '../types';
 import { Uploads } from './Customer';
 import { FakeQr } from './icons';
 import { SubmitDocsHost } from './SubmitDocs';
@@ -148,8 +151,9 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
           </div>
         </div>
 
-        <h3 className="offer-h">{t('offerOptions', { n: pr.options.length })}</h3>
-        <div className="offer-options">
+        {/* On paper the cover table below already lists every option and price. */}
+        <h3 className="offer-h no-print">{t('offerOptions', { n: pr.options.length })}</h3>
+        <div className="offer-options no-print">
           {pr.options.map((o, i) => {
             const p = optionPrice(o, pr.discountPct, pr.vehicle.usage);
             const inst = installmentPlan(p.price);
@@ -159,7 +163,9 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
                 {open && <input type="radio" name="offer-opt" className="sr-only" checked={choice === i} onChange={() => setChoice(i)} />}
                 <span className="radio-dot no-print" aria-hidden="true" />
                 <span className="offer-opt-main">
+                  <span className="offer-opt-no">{t('ofOption', { n: i + 1 })}</span>
                   <TypeTag type={o.pkg.type} />
+                  {o.pkg.nameTh && <b className="offer-opt-name">{productName(o.pkg, lang)}</b>}
                   <span className="muted">{coverText(o.pkg, t, lang)}</span>
                   {o.addCmi && <span className="chip">{t('plusCmi')}</span>}
                 </span>
@@ -173,6 +179,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             );
           })}
         </div>
+        <CoverTable pr={pr} />
         <p className="hint">{t('offerNote')}</p>
 
         {expired && <p className="callout tone-bad">{t('offerExpired')}</p>}
@@ -249,5 +256,85 @@ function PayBox({ caseId, amount }: { caseId: string; amount: number }) {
       )}
       <button type="button" className="btn primary" onClick={() => payByLink(caseId, method, method === 'card' ? '4242' : undefined)}>{t('offerPaySim')}</button>
     </div>
+  );
+}
+
+/** Side-by-side cover and limits for every option on the quotation (prints on A4 portrait). */
+function CoverTable({ pr }: { pr: Proposal }) {
+  const { t, lang } = useT();
+  const cmiStd = getCatalog().find((p) => p.type === 'CMI');
+  const cmiMed = cmiStd?.medical ?? 80_000;
+  const cmiDeath = cmiStd?.pa ?? 500_000;
+  const money = (n: number) => (n ? fmtBaht(n, lang) : t('ofNo'));
+  const prices = pr.options.map((o) => optionPrice(o, pr.discountPct, pr.vehicle.usage));
+  type Row = { label: string; cell: (i: number) => string; strong?: boolean };
+  const opt = (i: number) => pr.options[i];
+  const vol = (i: number, fn: () => string) => (opt(i).pkg.type === 'CMI' ? '—' : fn());
+  const hasCmi = (i: number) => opt(i).pkg.type === 'CMI' || opt(i).addCmi;
+  const groups: [string, Row[]][] = [
+    [t('ofGroupCar'), [
+      { label: t('repairType'), cell: (i) => vol(i, () => (opt(i).pkg.repair ? t(opt(i).pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')) },
+      { label: t('ownDamage'), cell: (i) => vol(i, () => money(opt(i).pkg.ownDamage)) },
+      { label: t('deductible'), cell: (i) => vol(i, () => (opt(i).pkg.deductible ? fmtBaht(opt(i).pkg.deductible, lang) : t('none'))) },
+      { label: t('fireTheft'), cell: (i) => vol(i, () => money(opt(i).pkg.fireTheft)) },
+      { label: t('flood'), cell: (i) => vol(i, () => (opt(i).pkg.flood ? t('covered') : t('ofNo'))) },
+    ]],
+    [t('ofGroupTp'), [
+      { label: t('ofTpbiPerson'), cell: (i) => vol(i, () => money(opt(i).pkg.tpbiPerson)) },
+      { label: t('ofTpbiAccident'), cell: (i) => vol(i, () => money(opt(i).pkg.tpbiAccident)) },
+      { label: t('ofTppd'), cell: (i) => vol(i, () => money(opt(i).pkg.tppd)) },
+    ]],
+    [t('ofGroupRider'), [
+      { label: t('ofPa'), cell: (i) => vol(i, () => money(opt(i).pkg.pa)) },
+      { label: t('ofMedical'), cell: (i) => vol(i, () => money(opt(i).pkg.medical)) },
+      { label: t('ofBail'), cell: (i) => vol(i, () => money(opt(i).pkg.bail)) },
+      { label: t('ofExtras'), cell: (i) => vol(i, () => (opt(i).pkg.extras ?? []).filter((x) => x !== 'flood').map((x) => t(EXTRA_KEY[x])).join(', ') || '—') },
+    ]],
+    [t('ofGroupCmi'), [
+      { label: t('ofCmiIncl'), cell: (i) => (hasCmi(i) ? t('ofIncl') : t('ofNotIncl')) },
+      { label: t('ofCmiMedical'), cell: (i) => (hasCmi(i) ? fmtBaht(cmiMed, lang) : '—') },
+      { label: t('ofCmiDeath'), cell: (i) => (hasCmi(i) ? fmtBaht(cmiDeath, lang) : '—') },
+    ]],
+    [t('ofGroupPrice'), [
+      { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang) },
+      ...(prices.some((p) => p.discount > 0) ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? `−${fmtBaht(prices[i].discount, lang)}` : '—') }] : []),
+      { label: t('ofPay'), cell: (i) => fmtBaht(prices[i].price, lang), strong: true },
+      { label: t('ofInst'), cell: (i) => { const pl = installmentPlan(prices[i].price); return pl ? `${fmtBaht(pl.monthly, lang)} × ${pl.months}` : '—'; } },
+    ]],
+  ];
+  return (
+    <section className="offer-cover">
+      <h3 className="offer-h">{t('ofCoverTitle')}</h3>
+      <div className="table-wrap">
+        <table className="offer-cover-table">
+          <thead>
+            <tr>
+              <th scope="col" />
+              {pr.options.map((o, i) => (
+                <th key={i} scope="col">
+                  <div className="oc-no">{t('ofOption', { n: i + 1 })}</div>
+                  <TypeTag type={o.pkg.type} />
+                  {o.pkg.nameTh && <div className="oc-name">{productName(o.pkg, lang)}</div>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {groups.map(([g, rows]) => (
+            <tbody key={g}>
+              <tr className="oc-group"><th scope="rowgroup" colSpan={pr.options.length + 1}>{g}</th></tr>
+              {rows.map((r) => (
+                <tr key={r.label} className={r.strong ? 'oc-strong' : ''}>
+                  <th scope="row">{r.label}</th>
+                  {pr.options.map((_, i) => {
+                    const v = r.cell(i);
+                    return <td key={i} className={`num${v === t('ofNo') || v === '—' || v === t('ofNotIncl') ? ' oc-off' : ''}`}>{v}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </section>
   );
 }
