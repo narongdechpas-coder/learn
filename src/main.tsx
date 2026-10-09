@@ -14,9 +14,10 @@ import { OfferPage, openOffer } from './ui/Offer';
 import { AGENTS, MARKETING } from './data/agents';
 import { Toasts, type Toast } from './ui/common';
 import { STAFF } from './data/vehicles';
+import { ProductsAdmin } from './ui/Products';
 
-type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'dashboard' | 'mail' | 'split' | 'offer';
-const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'dashboard', 'mail', 'split'];
+type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'products' | 'dashboard' | 'mail' | 'split' | 'offer';
+const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'products', 'dashboard', 'mail', 'split'];
 type OfferView = { id: string; asAgent: boolean; print: boolean };
 const hashOffer = (): OfferView | null => {
   const m = typeof location !== 'undefined' ? /^#offer\/([\w-]+)/.exec(location.hash) : null;
@@ -154,6 +155,7 @@ function App() {
     ['marketing', 'navMkt'],
     ['vp', 'navVp'],
     ['backoffice', 'navBack'],
+    ['products', 'navProducts'],
     ['dashboard', 'navDash'],
     ['mail', 'navMail'],
     ['split', 'navSplit'],
@@ -206,6 +208,7 @@ function App() {
         {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
         {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
         {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}
+        {view === 'products' && <ProductsAdmin staffId={staffId} />}
         {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
         {view === 'mail' && <Mail onOpenCase={openCase} />}
         {view === 'split' && (

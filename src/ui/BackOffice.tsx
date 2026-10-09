@@ -21,7 +21,6 @@ import {
 import { SLA_KEYS, slaFor } from '../lib/sla';
 import { BizClock, CaseSla, Field, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
 import { useFileUrl } from './Customer';
-import { ProductsAdmin } from './Products';
 import { AGENTS, caseCommission, mktById, payInfo, settled } from '../data/agents';
 import { PAY_TONE, payKey } from './Agent';
 import { recordRemit } from '../store';
@@ -54,7 +53,7 @@ export function BackOffice({
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(30);
   const [bellOpen, setBellOpen] = useState(false);
-  const [tab, setTab] = useState<'cases' | 'leads' | 'remit' | 'products'>('cases');
+  const [tab, setTab] = useState<'cases' | 'leads' | 'remit'>('cases');
   const [channel, setChannel] = useState('all');
   const openLeads = s.leads.filter((l) => !l.caseId && !l.contacted).length;
   const remitDue = s.cases.filter((c) => c.collect === 'agent' && c.stamps.issued && !c.remittedAt && payInfo(c, now)?.state === 'overdue').length;
@@ -158,10 +157,9 @@ export function BackOffice({
         <button role="tab" aria-selected={tab === 'remit'} className={tab === 'remit' ? 'on' : ''} onClick={() => setTab('remit')}>
           {t('tabRemit')} {remitDue > 0 && <span className="nav-badge num">{remitDue}</span>}
         </button>
-        <button role="tab" aria-selected={tab === 'products'} className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>{t('tabProducts')}</button>
       </div>
 
-      {tab === 'products' ? <ProductsAdmin staffId={staffId} /> : tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
+      {tab === 'leads' ? <LeadsList /> : tab === 'remit' ? <RemitList staffId={staffId} now={now} onOpen={(id) => { setTab('cases'); setFocusId(id); }} /> : (<>
       <div className="filters">
         <label htmlFor="bo-q" className="sr-only">{t('searchCase')}</label>
         <input id="bo-q" className="search" placeholder={t('searchCase')} value={q} onChange={(e) => { setQ(e.target.value); setLimit(30); }} />

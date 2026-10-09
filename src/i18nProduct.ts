@@ -1,6 +1,7 @@
 /** Strings for the product module (back-office catalogue, Excel import, catalogue pages, dashboard). */
 export const productTh = {
   tabProducts: 'ผลิตภัณฑ์',
+  navProducts: 'ผลิตภัณฑ์',
   pdLead: 'ตั้งค่าแพ็กเกจที่ขายบนหน้าลูกค้าและ Business Partner ทุกครั้งที่บันทึกจะเป็นเวอร์ชันใหม่ ใบเสนอราคาและเคสที่ค้างอยู่ใช้ราคาเดิมต่อ',
   pdExport: 'Export Excel',
   pdImport: 'Import Excel',
@@ -178,6 +179,7 @@ export const productTh = {
 
 export const productEn: typeof productTh = {
   tabProducts: 'Products',
+  navProducts: 'Products',
   pdLead: 'Set up the packages sold on the customer site and to Business Partners. Every save is a new version; quotations and open cases keep their price.',
   pdExport: 'Export Excel',
   pdImport: 'Import Excel',

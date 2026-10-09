@@ -114,7 +114,7 @@ export function ProductsAdmin({ staffId }: { staffId: string }) {
     <section className="leads products-admin">
       <div className="list-head">
         <div>
-          <h3>{t('tabProducts')}</h3>
+          <h2>{t('tabProducts')}</h2>
           <p className="hint">{t('pdLead')}</p>
         </div>
         <div className="pd-tools">
