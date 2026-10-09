@@ -579,6 +579,8 @@ await mkt.getByRole('tab', { name: /ตั้งเป้า/ }).click();
 const target = mkt.getByRole('spinbutton', { name: /AG-1002/ });
 await target.fill('40000');
 await target.blur();
+assert.equal(await mkt.locator('.agent-manage select').count(), 0, 'marketing cannot reassign partners');
+await mkt.locator('.agent-manage tr', { hasText: 'AG-1002' }).getByText('%').first().waitFor();
 await mkt.locator('tr', { hasText: 'อดิศร ทองมา' }).getByRole('button', { name: 'ระงับ' }).click();
 await agent.bringToFront();
 const probe = await ctx.newPage();
@@ -637,10 +639,16 @@ await office.getByRole('button', { name: 'ดูเป็นตาราง' }).
 assert.equal(await office.locator('.vp-app table.data').first().locator('tbody tr').count(), 12, '12 monthly rows');
 await office.locator('#vp-mkt').selectOption('m1');
 assert.equal(await office.locator('.vp-agents tbody tr').count(), 2, 'marketing filter narrows partners');
+await office.locator('#vp-mkt').selectOption('all');
+await office.getByRole('combobox', { name: /AG-1004/ }).selectOption('m1');
+await office.locator('#vp-mkt').selectOption('m1');
+assert.equal(await office.locator('.vp-agents tbody tr').count(), 3, 'VP reassigned a partner to another officer');
+await office.getByRole('combobox', { name: /AG-1004/ }).selectOption('m3');
+await office.locator('#vp-mkt').selectOption('m1');
 await office.getByRole('radio', { name: 'เดือนนี้' }).click();
 await office.getByText(/ยอดถึงวันนี้/).first().waitFor();
 assert.ok((await office.locator('.vp-agents .pill').first().innerText()).match(/%/), 'loss ratio shown per partner');
-log('VP sees marketing targets and ranking, rolling 12 months, and partner GWP, renewal and loss ratio');
+log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, renewal and loss ratio, and assigns partners to officers');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });

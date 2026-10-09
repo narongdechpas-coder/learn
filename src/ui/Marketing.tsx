@@ -251,6 +251,13 @@ export function AgentTable({ rows, showTarget }: { rows: { a: Agent; st: ReturnT
 
 function MktManage({ agents }: { agents: Agent[] }) {
   const { t, lang } = useT();
+  const s = useStore();
+  const now = useNow(60000);
+  const p = bkkParts(now);
+  const monthStart = bkkTime(p.y, p.mo, 1);
+  const pace = p.d / new Date(Date.UTC(p.y, p.mo + 1, 0)).getUTCDate();
+  // Production this month: policies issued since the 1st through each partner.
+  const actual = (a: Agent) => s.cases.filter((c) => c.agentId === a.id && (c.stamps.issued ?? 0) >= monthStart).reduce((x, c) => x + (c.premium ?? 0), 0);
   return (
     <section className="card">
       <h3>{t('mktTabManage')}</h3>
@@ -261,8 +268,9 @@ function MktManage({ agents }: { agents: Agent[] }) {
             <tr>
               <th>{t('agAgent')}</th>
               <th>{t('agContact')}</th>
-              <th>{t('agMkt')}</th>
               <th>{t('mktTargetMonth')}</th>
+              <th className="r">{t('mktActualMtd')}</th>
+              <th className="mkt-ach-col">{t('vpAch')}</th>
               <th>{t('filterStatus')}</th>
             </tr>
           </thead>
@@ -274,13 +282,6 @@ function MktManage({ agents }: { agents: Agent[] }) {
                   <div className="hint">{a.code} · {t(a.kind === 'company' ? 'agCompany' : 'agPerson')} · {t('agLicense')} {a.license}</div>
                 </td>
                 <td className="hint">{a.kind === 'company' ? `${lang === 'th' ? a.contactTh : a.contactEn} · ` : ''}{a.phone} · {a.province}</td>
-                <td>
-                  <select aria-label={`${t('agMkt')} ${a.code}`} value={a.mktId} onChange={(e) => updateAgent(a.id, { mktId: e.target.value })}>
-                    {MARKETING.map((m) => (
-                      <option key={m.id} value={m.id}>{m[lang]}</option>
-                    ))}
-                  </select>
-                </td>
                 <td>
                   <input
                     className="num target-input"
@@ -294,6 +295,21 @@ function MktManage({ agents }: { agents: Agent[] }) {
                       if (v !== a.target) updateAgent(a.id, { target: v });
                     }}
                   />
+                </td>
+                <td className="r num">{fmtBaht(Math.round(actual(a)), lang)}</td>
+                <td className="mkt-ach-col">
+                  {(() => {
+                    const v = a.target ? actual(a) / a.target : 0;
+                    return (
+                      <div className="vp-ach">
+                        <div className="mini-meter ach-pace" aria-hidden="true">
+                          <span className={v >= 1 ? 'good' : ''} style={{ width: `${Math.min(100, v * 100)}%` }} />
+                          <i style={{ left: `${pace * 100}%` }} />
+                        </div>
+                        <span className={`num${v < pace * 0.8 ? ' bad-text' : ''}`}>{fmtNum(v * 100, lang, 0)}%</span>
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td>
                   <button type="button" className={`btn small ${a.active ? 'ghost' : ''}`} onClick={() => updateAgent(a.id, { active: !a.active })}>

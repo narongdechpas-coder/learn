@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Agent, Case } from '../types';
 import { MARKETING } from '../data/agents';
 import { fmtBaht, fmtCompactBaht, fmtDate, fmtNum, useT, type TKey } from '../i18n';
-import { useStore } from '../store';
+import { updateAgent, useStore } from '../store';
 import { firstLiveMonth, rolling12 } from '../lib/history';
 import { bkkParts, bkkTime, monthKey } from '../lib/time';
 import { ClusteredBarChart } from './charts';
@@ -339,7 +339,7 @@ export function VPApp() {
               <tr>
                 <th>#</th>
                 <th>Business Partner</th>
-                <th>Marketing</th>
+                <th>{t('vpAssign')}</th>
                 <th className="r">{t('vpTarget')}</th>
                 <th className="r">{t('vpActual')}</th>
                 <th className="vp-ach-col">{t('vpAch')}</th>
@@ -353,7 +353,16 @@ export function VPApp() {
                 <tr key={a.id} className={a.active ? '' : 'inactive'}>
                   <td className="num">{i + 1}</td>
                   <td><b>{a[lang]}</b><div className="hint">{a.code} · {t(a.kind === 'company' ? 'agCompany' : 'agPerson')}</div></td>
-                  <td><span className="dot" style={{ background: MKT_COLOR[a.mktId] }} />{MARKETING.find((m) => m.id === a.mktId)?.[lang]}</td>
+                  <td>
+                    <div className="vp-assign">
+                      <span className="dot" style={{ background: MKT_COLOR[a.mktId] }} />
+                      <select aria-label={`${t('vpAssign')} ${a.code}`} value={a.mktId} onChange={(e) => updateAgent(a.id, { mktId: e.target.value })}>
+                        {MARKETING.map((m) => (
+                          <option key={m.id} value={m.id}>{m[lang]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </td>
                   <td className="r num">{fmtBaht(r.target, lang)}</td>
                   <td className="r num">{fmtBaht(Math.round(r.gwp), lang)}</td>
                   <td className="vp-ach-col"><Ach v={ach(r)} /></td>
