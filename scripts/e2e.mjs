@@ -33,6 +33,15 @@ const watch = (p) => {
 
 let step = 0;
 const log = (s) => console.log(`  ${++step}. ${s}`);
+// ABC screens live under the "ABC system" top menu, in its side menu.
+const abc = async (p, view) => {
+  if (!(await p.locator('.abc-side').count())) await p.locator('.mainnav .nav-abc').click();
+  await p.locator(`.abc-side .nav-${view}`).click();
+};
+const tools = async (p, item) => {
+  await p.locator('.nav-tools').click();
+  await p.getByRole('menuitem', { name: item }).click();
+};
 
 const customer = await ctx.newPage();
 watch(customer);
@@ -169,9 +178,9 @@ log(`package case submitted: ${refA}`);
 // back office tab gets a realtime toast + bell
 await office.locator('.toast', { hasText: refA }).waitFor({ timeout: 5000 });
 log('back office received realtime toast');
-await office.getByRole('tab', { name: /ผู้สนใจ/ }).click();
+await abc(office, 'leads');
 await office.locator('.leads-table tr', { hasText: '0812345678' }).first().getByText(refA).waitFor();
-await office.getByRole('tab', { name: 'งาน', exact: true }).click();
+await abc(office, 'backoffice');
 log('lead marked as converted once the same customer submitted');
 
 // email to customer and staff
@@ -333,7 +342,7 @@ await office.locator('.case-detail .pill', { hasText: 'ออกกรมธร�
 log('quote case confirmed, paid and issued');
 
 // ---- Dashboard + language ----
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 await office.getByRole('heading', { name: 'Performance Report' }).waitFor();
 const kpi = await office.locator('.kpi-value').first().innerText();
 assert.ok(Number(kpi.replace(/\D/g, '')) > 0, 'dashboard shows issued policies');
@@ -349,7 +358,7 @@ await office.getByText('Policies issued', { exact: true }).waitFor();
 await office.getByRole('button', { name: 'Customer', exact: true }).waitFor();
 log('dashboard renders and switches to English');
 
-await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
+await tools(office, /Mail outbox/);
 await office.locator('.mail-row', { hasText: refB }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Time to renew|ใกล้ถึงเวลาต่ออายุ/ }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Claim CL-|รับเรื่องแจ้งเคลม/ }).first().waitFor();
@@ -375,7 +384,7 @@ await customer.getByText('Volvo XC60 2021').waitFor();
 await customer.getByRole('button', { name: 'ส่งคำขอเสนอราคา', exact: true }).click();
 const refC = (await customer.locator('.ref-big').innerText()).trim();
 await office.bringToFront();
-await office.locator('.mainnav .nav-backoffice').click();
+await abc(office, 'backoffice');
 await office.locator('#bo-q').fill(refC);
 await office.locator('.case-row', { hasText: 'Volvo XC60 2021' }).click();
 await office.getByText('Not in catalogue').waitFor();
@@ -574,7 +583,7 @@ await buyer.getByRole('dialog', { name: 'ยืนยันการส่งข
 log(`customer chose option 2 with OTP, paid through the link and attached documents: ${refD}`);
 
 await office.bringToFront();
-await office.locator('.nav-backoffice').click();
+await abc(office, 'backoffice');
 await office.locator('#bo-channel').selectOption('a3');
 await office.locator('#bo-q').fill(refD);
 await office.locator('.case-row', { hasText: refD }).locator('.src-agent').waitFor();
@@ -623,7 +632,7 @@ await agent.bringToFront();
 await agent.getByRole('button', { name: 'แจ้งว่านำส่งเบี้ยแล้ว' }).click();
 await office.bringToFront();
 await office.locator('.toast', { hasText: /แจ้งนำส่งเบี้ยงาน/ }).first().waitFor({ timeout: 5000 });
-await office.getByRole('tab', { name: /นำส่งเบี้ย/ }).click();
+await abc(office, 'remit');
 await office.locator('tr', { hasText: refE }).getByText('ตัวแทนแจ้งว่าโอนแล้ว').waitFor();
 await office.locator('tr', { hasText: refE }).getByRole('button', { name: 'บันทึกรับเงินนำส่ง' }).click();
 await office.locator('#bo-remit-show').selectOption('all');
@@ -672,7 +681,7 @@ await mkt.getByText('✓ ทวงแล้ว').first().waitFor();
 log('marketing sees own partners, renewal rate overall and per partner, changed a target, suspended/reactivated a partner, sent reminders');
 
 await office.bringToFront();
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 await office.getByRole('heading', { name: 'อันดับ Business Partner' }).waitFor();
 await office.getByRole('heading', { name: 'Funnel ตัวแทน' }).waitFor();
 await office.getByRole('heading', { name: 'Performance งานต่ออายุ' }).waitFor();
@@ -683,7 +692,8 @@ await office.locator('#d-mkt').selectOption('m2');
 assert.equal(await office.locator('.agent-table tbody tr').count(), 2, 'marketing filter narrows the ranking');
 await office.locator('#d-mkt').selectOption('all');
 await office.locator('#d-channel').selectOption('all');
-await office.getByRole('button', { name: 'อีเมลจำลอง', exact: true }).click();
+await tools(office, /อีเมลจำลอง/);
+assert.equal(await office.locator('.abc-side').count(), 0, 'demo tools sit outside the ABC menu');
 await office.getByRole('radio', { name: 'ถึงตัวแทน' }).click();
 await office.locator('.mail-row').first().waitFor();
 await office.getByRole('radio', { name: 'ทั้งหมด' }).click();
@@ -691,7 +701,7 @@ await office.locator('.mail-row', { hasText: quoteId }).first().waitFor();
 log('dashboard shows agent ranking, funnel, payments and renewals; emails to agents and the quotation email');
 
 // VP: marketing targets, ranking, rolling 12 months, partner performance.
-await office.locator('.nav-vp').click();
+await abc(office, 'vp');
 await office.getByRole('heading', { name: 'ภาพรวมช่องทาง Business Partner' }).waitFor();
 assert.equal(await office.locator('.vp-mkt').count(), 3, 'three marketing officers under the VP');
 assert.equal(await office.locator('.vp-agents tbody tr').count(), 6, 'all six partners');
@@ -718,7 +728,7 @@ log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, rene
 // ---- Products: edit, versions, commission, end date, Excel round trip ----
 const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('abc-motor-demo-v1')));
 const prod = (st, id) => st.products.find((p) => p.id === id);
-await office.locator('.nav-products').click();
+await abc(office, 'products');
 assert.equal(await office.locator('.pd-table tbody tr').count(), 11, 'catalogue starts with 11 products');
 const offered = (await state(office)).proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000');
 assert.ok(offered, 'the earlier quotation offered Class 2+ 200,000');
@@ -877,13 +887,13 @@ assert.equal(prod(st, 'T2').channels.self, true, 'sheet with an error skipped');
 assert.equal(st.productLog[0].note, 'import');
 log('Excel export (13 sheets) edited and re-imported: review shows the price change and the bad sheet; only the good one saved');
 
-await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+await abc(office, 'dashboard');
 assert.ok((await office.locator('.dash-products tbody tr').count()) > 3, 'dashboard sales by product');
 log('dashboard shows sales by product with partner share, commission and win rate');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });
-  await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await abc(office, 'dashboard');
   await office.screenshot({ path: `${shots}/5-dashboard-dark.png`, fullPage: true });
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await phone.goto(url + '#customer');

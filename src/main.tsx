@@ -11,13 +11,23 @@ import { AgentApp } from './ui/Agent';
 import { MarketingApp } from './ui/Marketing';
 import { VPApp } from './ui/VP';
 import { OfferPage, openOffer } from './ui/Offer';
-import { AGENTS, MARKETING } from './data/agents';
+import { AGENTS, MARKETING, payInfo } from './data/agents';
 import { Toasts, type Toast } from './ui/common';
 import { STAFF } from './data/vehicles';
 import { ProductsAdmin } from './ui/Products';
 
-type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'products' | 'dashboard' | 'mail' | 'split' | 'offer';
-const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'products', 'dashboard', 'mail', 'split'];
+type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'leads' | 'remit' | 'products' | 'dashboard' | 'mail' | 'split' | 'offer';
+const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'leads', 'remit', 'products', 'dashboard', 'mail', 'split'];
+type NavKey = Parameters<typeof translate>[1];
+/** ABC's own screens, grouped by the work they are for (left-hand menu). */
+const ABC_GROUPS: [NavKey, [View, NavKey][]][] = [
+  ['navGroupOps', [['backoffice', 'inbox'], ['leads', 'tabLeads'], ['remit', 'tabRemit']]],
+  ['navGroupProduct', [['products', 'navPackages']]],
+  ['navGroupPartner', [['marketing', 'navMkt'], ['vp', 'navVp']]],
+  ['navGroupReport', [['dashboard', 'navDash']]],
+];
+const ABC_VIEWS = ABC_GROUPS.flatMap(([, items]) => items.map(([v]) => v));
+const isAbc = (v: View) => ABC_VIEWS.includes(v);
 type OfferView = { id: string; asAgent: boolean; print: boolean };
 const hashOffer = (): OfferView | null => {
   const m = typeof location !== 'undefined' ? /^#offer\/([\w-]+)/.exec(location.hash) : null;
@@ -71,6 +81,8 @@ function App() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [trackId, setTrackId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [lastAbc, setLastAbc] = useState<View>(() => (isAbc(view) ? view : 'backoffice'));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const s = useStore();
   const seen = useRef<Set<string>>(new Set(getState().notifications.map((n) => n.id)));
@@ -83,6 +95,8 @@ function App() {
   };
   const setView = (v: View) => {
     setViewState(v);
+    if (isAbc(v)) setLastAbc(v);
+    setToolsOpen(false);
     try {
       history.replaceState(null, '', `#${v}`);
     } catch {
@@ -100,6 +114,18 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  // The demo tools menu closes on any click outside it, or Escape.
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const onDown = (e: MouseEvent) => !(e.target as Element).closest('.tools-wrap') && setToolsOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setToolsOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [toolsOpen]);
   useEffect(() => write('abc-staff', staffId), [staffId]);
   useEffect(() => write('abc-mkt', mktId), [mktId]);
   // Quotations open from anywhere (agent screens, share box) as their own page.
@@ -150,16 +176,24 @@ function App() {
   }, []);
 
   const unread = s.notifications.filter((n) => !n.read).length;
-  const nav: [View, Parameters<typeof translate>[1]][] = [
-    ['customer', 'navCustomer'],
-    ['marketing', 'navMkt'],
-    ['vp', 'navVp'],
-    ['backoffice', 'navBack'],
-    ['products', 'navProducts'],
-    ['dashboard', 'navDash'],
-    ['mail', 'navMail'],
-    ['split', 'navSplit'],
-  ];
+  const now = Date.now();
+  const badges: Partial<Record<View, number>> = {
+    backoffice: unread,
+    leads: s.leads.filter((l) => !l.caseId && !l.contacted).length,
+    remit: s.cases.filter((c) => c.collect === 'agent' && c.stamps.issued && !c.remittedAt && payInfo(c, now)?.state === 'overdue').length,
+  };
+  const badge = (n?: number) => (n ? <span className="nav-badge num">{n > 99 ? '99+' : n}</span> : null);
+  const boTab = view === 'leads' ? 'leads' : view === 'remit' ? 'remit' : 'cases';
+  const backOffice = (
+    <BackOffice
+      staffId={staffId}
+      setStaffId={setStaffId}
+      focusId={focusId}
+      setFocusId={setFocusId}
+      tab={boTab}
+      onTab={(tb) => setView(tb === 'cases' ? 'backoffice' : tb)}
+    />
+  );
 
   return (
     <LangContext.Provider value={{ lang, setLang }}>
@@ -174,12 +208,13 @@ function App() {
           </span>
         </div>
         <nav className="mainnav" aria-label="main">
-          {nav.map(([v, k]) => (
-            <button key={v} type="button" className={`${view === v ? 'on' : ''} nav-${v}`} aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
-              {t(k)}
-              {v === 'backoffice' && unread > 0 && <span className="nav-badge num">{unread > 99 ? '99+' : unread}</span>}
-            </button>
-          ))}
+          <button type="button" className={`${view === 'customer' || view === 'agent' ? 'on' : ''} nav-customer`} aria-current={view === 'customer' ? 'page' : undefined} onClick={() => setView('customer')}>
+            {t('navCustomer')}
+          </button>
+          <button type="button" className={`${isAbc(view) ? 'on' : ''} nav-abc`} aria-current={isAbc(view) ? 'page' : undefined} onClick={() => setView(lastAbc)}>
+            {t('navAbc')}
+            {badge(unread)}
+          </button>
         </nav>
         <div className="top-tools">
           <div className="lang-switch" role="radiogroup" aria-label="language">
@@ -189,7 +224,18 @@ function App() {
               </button>
             ))}
           </div>
-          <button type="button" className="btn small ghost" onClick={() => setConfirmReset((v) => !v)}>{t('reset')}</button>
+          <div className="tools-wrap">
+            <button type="button" className={`btn small ghost nav-tools${toolsOpen || view === 'mail' || view === 'split' ? ' on' : ''}`} aria-expanded={toolsOpen} aria-haspopup="menu" onClick={() => setToolsOpen((v) => !v)}>
+              <span aria-hidden="true">⚙</span> <span className="tools-label">{t('navTools')}</span> ▾
+            </button>
+            {toolsOpen && (
+              <div className="tools-menu" role="menu">
+                <button type="button" role="menuitem" className="nav-mail" onClick={() => setView('mail')}>✉ {t('navMail')}</button>
+                <button type="button" role="menuitem" className="nav-split" onClick={() => setView('split')}>◫ {t('navSplit')}</button>
+                <button type="button" role="menuitem" className="nav-reset" onClick={() => { setToolsOpen(false); setConfirmReset(true); }}>↺ {t('reset')}</button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       {confirmReset && (
@@ -204,12 +250,32 @@ function App() {
         {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
         {view === 'agent' && partnerId && <AgentApp agentId={partnerId} onLogout={() => { setPartnerId(null); setView('customer'); }} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
         {view === 'agent' && !partnerId && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={null} openLogin onPartner={(id) => setPartnerId(id)} />}
-        {view === 'vp' && <VPApp />}
-        {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
+
         {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
-        {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}
-        {view === 'products' && <ProductsAdmin staffId={staffId} />}
-        {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
+        {isAbc(view) && (
+          <div className="abc-shell">
+            <aside className="abc-side" aria-label={t('navAbc')}>
+              {ABC_GROUPS.map(([g, items]) => (
+                <div key={g} className="abc-group">
+                  <div className="abc-group-label">{t(g)}</div>
+                  {items.map(([v, k]) => (
+                    <button key={v} type="button" className={`abc-item nav-${v}${view === v ? ' on' : ''}`} aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
+                      <span>{t(k)}</span>
+                      {badge(badges[v])}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </aside>
+            <div className="abc-main">
+              {(view === 'backoffice' || view === 'leads' || view === 'remit') && backOffice}
+              {view === 'products' && <ProductsAdmin staffId={staffId} />}
+              {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
+              {view === 'vp' && <VPApp />}
+              {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}
+            </div>
+          </div>
+        )}
         {view === 'mail' && <Mail onOpenCase={openCase} />}
         {view === 'split' && (
           <div className="split">

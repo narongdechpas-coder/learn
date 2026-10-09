@@ -1470,3 +1470,27 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
 .pkg-name { margin: 2px 0 0; font-size: 1rem; }
 .cmp-name { font-weight: 600; font-size: 0.8rem; }
 .dash-products .dp-grid { margin-top: 12px; align-items: start; }
+
+/* ---------- navigation: customer site / ABC system / demo tools ---------- */
+.tools-wrap { position: relative; }
+.nav-tools.on { background: var(--accent-soft); color: var(--accent); }
+.tools-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 200px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14); padding: 6px; display: grid; gap: 2px; }
+.tools-menu button { text-align: left; border: 0; background: none; padding: 9px 12px; border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink); white-space: nowrap; }
+.tools-menu button:hover { background: var(--surface-2); }
+.abc-shell { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 24px; align-items: start; }
+.abc-side { position: sticky; top: 84px; display: grid; gap: 14px; }
+.abc-group { display: grid; gap: 2px; }
+.abc-group-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 0 12px 4px; }
+.abc-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 500; color: var(--ink-2); text-align: left; }
+.abc-item:hover { background: var(--surface-2); color: var(--ink); }
+.abc-item.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.abc-main { min-width: 0; }
+@media (max-width: 900px) {
+  .abc-shell { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .abc-side { position: static; display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .abc-group { display: flex; gap: 2px; align-items: center; }
+  .abc-group + .abc-group { border-left: 1px solid var(--line); padding-left: 4px; }
+  .abc-group-label { display: none; }
+  .abc-item { white-space: nowrap; }
+}
+@media (max-width: 520px) { .tools-label { display: none; } }
