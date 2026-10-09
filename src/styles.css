@@ -1260,3 +1260,44 @@ input.ocr-filled, textarea.ocr-filled { background: var(--accent-soft); animatio
 .pl-demo { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--warn-bg); color: var(--warn); font-size: 0.86rem; }
 .pl-demo b { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .pl-demo .chip { background: var(--surface); }
+
+/* VP view. Marketing colours: validated categorical slots 1-3, stepped for each theme. */
+:root { --mk-1: #2a78d6; --mk-2: #eb6834; --mk-3: #1baf7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { --mk-1: #3987e5; --mk-2: #d95926; --mk-3: #199e70; } }
+:root[data-theme='dark'] { --mk-1: #3987e5; --mk-2: #d95926; --mk-3: #199e70; }
+.vp-app .dash-head { align-items: flex-end; }
+.vp-meter { color: var(--accent); margin: 4px 0; }
+.vp-org { display: grid; gap: 0; }
+.vp-org-top { display: flex; justify-content: center; padding-bottom: 18px; position: relative; }
+.vp-org-top::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 2px; height: 18px; background: var(--line); }
+.vp-node { padding: 10px 22px; border-radius: var(--r-sm); background: var(--ink); color: var(--bg); font: 600 1rem var(--f-display); }
+.vp-org-mkts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding-top: 18px; border-top: 2px solid var(--line); }
+.vp-mkt { border: 1px solid var(--line); border-top: 5px solid var(--mk); border-radius: var(--r-sm); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; background: var(--surface); }
+.vp-mkt .vp-meter { color: var(--mk); }
+.vp-mkt-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.vp-rank { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--mk); color: #fff; font: 600 0.95rem var(--f-display); }
+.vp-mkt-pct { font: 600 1.5rem var(--f-display); }
+.vp-mkt-agents { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.vp-mkt-agents li { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; padding-left: 12px; border-left: 2px solid var(--mk); }
+.vp-agent-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.86rem; color: var(--ink-2); margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.line-chart .series-line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.line-chart .series-dot { fill: currentColor; stroke: var(--surface); stroke-width: 2; }
+.line-chart .end-label { fill: var(--ink-2); font-size: 12px; }
+.line-chart .crosshair { stroke: var(--muted); stroke-dasharray: 3 3; }
+.line-chart .ref-line line { stroke: var(--muted); stroke-dasharray: 5 4; }
+.tooltip .tt-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; font-size: 0.85rem; }
+.tooltip .tt-row i { width: 10px; height: 10px; border-radius: 3px; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+.vp-ach-col { min-width: 130px; }
+.vp-ach { display: grid; gap: 3px; }
+.vp-table tr.inactive { opacity: 0.55; }
+@media (max-width: 900px) { .vp-org-mkts { grid-template-columns: 1fr; } }
+select.auto-w { width: auto; flex: none; }
+.vp-org-mkts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.vp-agent-name { flex: 1; }
+@media (max-width: 900px) { .vp-org-mkts { grid-template-columns: minmax(0, 1fr); } }
+.vp-org, .vp-mkt, .vp-mkt-agents { grid-template-columns: minmax(0, 1fr); }
+.vp-mkt-agents li > .num { flex: none; }

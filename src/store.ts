@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
+import type { Agent, AgentMonth, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
 import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
+import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { CURRENT_YEAR } from './data/vehicles';
@@ -24,10 +25,11 @@ export interface State {
   agents: Agent[];
   proposals: Proposal[];
   renewals: RenewalItem[];
+  monthly: AgentMonth[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 6;
+const VERSION = 7;
 
 function fresh(): State {
   const now = Date.now();
@@ -46,6 +48,7 @@ function fresh(): State {
     agents: AGENTS.map((a) => ({ ...a })),
     proposals,
     renewals: seedRenewals(now),
+    monthly: seedMonthly(cases, now),
   };
 }
 

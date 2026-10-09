@@ -9,13 +9,14 @@ import { Dashboard } from './ui/Dashboard';
 import { Mail } from './ui/Mail';
 import { AgentApp } from './ui/Agent';
 import { MarketingApp } from './ui/Marketing';
+import { VPApp } from './ui/VP';
 import { OfferPage, openOffer } from './ui/Offer';
 import { AGENTS, MARKETING } from './data/agents';
 import { Toasts, type Toast } from './ui/common';
 import { STAFF } from './data/vehicles';
 
-type View = 'customer' | 'agent' | 'marketing' | 'backoffice' | 'dashboard' | 'mail' | 'split' | 'offer';
-const VIEWS: View[] = ['customer', 'agent', 'marketing', 'backoffice', 'dashboard', 'mail', 'split'];
+type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'dashboard' | 'mail' | 'split' | 'offer';
+const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'dashboard', 'mail', 'split'];
 type OfferView = { id: string; asAgent: boolean; print: boolean };
 const hashOffer = (): OfferView | null => {
   const m = typeof location !== 'undefined' ? /^#offer\/([\w-]+)/.exec(location.hash) : null;
@@ -151,6 +152,7 @@ function App() {
   const nav: [View, Parameters<typeof translate>[1]][] = [
     ['customer', 'navCustomer'],
     ['marketing', 'navMkt'],
+    ['vp', 'navVp'],
     ['backoffice', 'navBack'],
     ['dashboard', 'navDash'],
     ['mail', 'navMail'],
@@ -200,6 +202,7 @@ function App() {
         {view === 'offer' && offer && <OfferPage key={`${offer.id}-${offer.asAgent}`} id={offer.id} asAgent={offer.asAgent} print={offer.print} onBack={() => setView(beforeOffer === 'offer' ? 'customer' : beforeOffer)} />}
         {view === 'agent' && partnerId && <AgentApp agentId={partnerId} onLogout={() => { setPartnerId(null); setView('customer'); }} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
         {view === 'agent' && !partnerId && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={null} openLogin onPartner={(id) => setPartnerId(id)} />}
+        {view === 'vp' && <VPApp />}
         {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
         {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
         {view === 'backoffice' && <BackOffice staffId={staffId} setStaffId={setStaffId} focusId={focusId} setFocusId={setFocusId} />}

@@ -201,6 +201,20 @@ export interface Proposal {
   seeded?: boolean;
 }
 
+/** One partner's month: production (history only), loss ratio and renewal results. */
+export interface AgentMonth {
+  agentId: string;
+  month: string;
+  /** GWP and policies for months before the seeded cases; later months are counted from the cases. */
+  gwp: number;
+  policies: number;
+  /** Claims incurred ÷ earned premium. */
+  lossRatio: number;
+  renewDue: number;
+  renewed: number;
+  renewGwp: number;
+}
+
 /** A policy coming up for renewal (the in-force book, simplified). */
 export interface RenewalItem {
   id: string;

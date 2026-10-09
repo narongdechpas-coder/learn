@@ -621,6 +621,23 @@ await office.getByRole('radio', { name: 'ทั้งหมด' }).click();
 await office.locator('.mail-row', { hasText: quoteId }).first().waitFor();
 log('dashboard shows agent ranking, funnel, payments and renewals; emails to agents and the quotation email');
 
+// VP: marketing targets, ranking, rolling 12 months, partner performance.
+await office.locator('.nav-vp').click();
+await office.getByRole('heading', { name: 'ภาพรวมช่องทาง Business Partner' }).waitFor();
+assert.equal(await office.locator('.vp-mkt').count(), 3, 'three marketing officers under the VP');
+assert.equal(await office.locator('.vp-agents tbody tr').count(), 6, 'all six partners');
+assert.equal(await office.locator('.line-chart .series-line').count(), 3, 'one line per marketing officer');
+const pts = await office.locator('.line-chart .tick').allInnerTexts();
+assert.ok(pts.length >= 12, 'rolling 12 months on the axis');
+await office.getByRole('button', { name: 'ดูเป็นตาราง' }).last().click();
+assert.equal(await office.locator('.vp-app table.data').first().locator('tbody tr').count(), 12, '12 monthly rows');
+await office.locator('#vp-mkt').selectOption('m1');
+assert.equal(await office.locator('.vp-agents tbody tr').count(), 2, 'marketing filter narrows partners');
+await office.getByRole('radio', { name: 'เดือนนี้' }).click();
+await office.getByText(/ยอดถึงวันนี้/).first().waitFor();
+assert.ok((await office.locator('.vp-agents .pill').first().innerText()).match(/%/), 'loss ratio shown per partner');
+log('VP sees marketing targets and ranking, rolling 12 months, and partner GWP, renewal and loss ratio');
+
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });
   await office.getByRole('button', { name: 'Dashboard', exact: true }).click();
