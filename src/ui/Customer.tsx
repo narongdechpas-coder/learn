@@ -1449,7 +1449,7 @@ export function Uploads({ c, bare = false, by }: { c: Case; bare?: boolean; by?:
           <button type="button" className="btn primary small" onClick={() => setPhone(true)}>📱 {t('phoneBtn')}</button>
         </div>
       )}
-      {phone && <PhoneCapture c={c} onClose={() => setPhone(false)} />}
+      {phone && <PhoneCapture c={c} by={by} onClose={() => setPhone(false)} />}
       <div className="doc-grid">
         {required.map((k) => (
           <DocTile key={k} caseId={c.id} k={k} meta={c.docs[k]} label={DOC_LABEL[lang][k]} disabled={!allowed} onFile={(f) => onFile(k, f)} />

@@ -218,6 +218,8 @@ export function submitCase(input: SubmitInput, mine = true): string {
     return id;
   }
   s.emails = mail(s, 'custReceived', c);
+  // Package sales can attach documents straight away, so say which ones (quotes get this after accepting).
+  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: needsDocConfirm(c) ? 1 : 0 });
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
@@ -267,7 +269,7 @@ export function customerConfirm(id: string, by = 'customer', collect?: Case['col
     if (collect) c.collect = collect;
     c.log.push({ at: now, by, action: 'confirm' });
     s.emails = mail(s, 'staffConfirmed', c);
-    return { emails: mail(s, 'custDocsNeeded', c), notifications: notify(s, 'confirmed', id) };
+    return { emails: mail(s, 'custDocsNeeded', c, { docs: REQUIRED_DOCS[c.coverage].join(','), confirm: 0 }), notifications: notify(s, 'confirmed', id) };
   });
 }
 
@@ -350,7 +352,11 @@ export function requestReupload(id: string, keys: DocKey[], note: string, staffI
     delete c.stamps.docsComplete;
     c.status = 'AWAITING_DOCS';
     c.log.push({ at: now, by: staffId, action: 'reupload', text: note });
-    return { emails: mail(s, 'custReupload', c, { docs: keys.join(','), note }) };
+    s.emails = mail(s, 'custReupload', c, { docs: keys.join(','), note });
+    // The partner who sold it handles the documents too, so they hear about it as well.
+    const ag = c.agentId ? s.agents.find((a) => a.id === c.agentId) : undefined;
+    if (ag) s.emails = mail(s, 'custReupload', c, { docs: keys.join(','), note }, `${ag.code.toLowerCase()}@agents.abc.example`);
+    return { emails: s.emails };
   });
 }
 

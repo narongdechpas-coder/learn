@@ -31,6 +31,7 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
     if (e.params.sla) p.sla = SLA_LABEL[lang][e.params.sla as 'accept'];
     if (e.template === 'custSelfIssued')
       p.delivery = e.params.deliveryMethod === 'paper' ? translate(lang, 'paidPaper', { no: e.params.trackingNo }) : translate(lang, 'paidPdf', { email: e.params.sendTo });
+    if (e.template === 'custDocsNeeded') p.next = translate(lang, e.params.confirm ? 'mailNextConfirm' : 'mailNextAuto');
     if (e.params.docs) p.docs = String(e.params.docs).split(',').map((k) => DOC_LABEL[lang][k as DocKey]).join(', ');
     const tpl = EMAIL_TEXT[lang][e.template];
     const fill = (x: string) => Object.entries(p).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), x);

@@ -187,7 +187,7 @@ export async function attachSampleDocs(c: Case, missing: DocKey[], by?: string) 
   }
 }
 
-export function PhoneCapture({ c, onClose }: { c: Case; onClose: () => void }) {
+export function PhoneCapture({ c, onClose, by }: { c: Case; onClose: () => void; by?: string }) {
   const { t, lang } = useT();
   const todo = ANGLES.filter((k) => !c.docs[k]);
   const [phone, setPhone] = useState(false);
@@ -202,7 +202,7 @@ export function PhoneCapture({ c, onClose }: { c: Case; onClose: () => void }) {
     if (!current) return;
     setBusy(true);
     const file = await fakePhoto(current);
-    await uploadDoc(c.id, current, file);
+    await uploadDoc(c.id, current, file, by);
     setBusy(false);
   };
   return (

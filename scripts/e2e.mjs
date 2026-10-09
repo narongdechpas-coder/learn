@@ -245,6 +245,18 @@ await office.getByText(/ลูกค้าปรับ \+2\.7% จากทุ�
 await office.getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
 await office.locator('.case-detail .pill', { hasText: 'ตรวจเอกสาร' }).waitFor();
 assert.equal(await office.locator('.case-detail .doc-thumb img').count(), 6, 'staff sees uploaded images');
+// Staff asks for the ID card again: the customer re-attaches it and confirms again.
+await office.getByRole('button', { name: 'ขอเอกสารใหม่', exact: true }).click();
+await office.locator('.inline-confirm').getByText('สำเนาบัตรประชาชน').click();
+await office.locator('.inline-confirm').getByRole('button', { name: /ส่ง/ }).click();
+await office.locator('.case-detail .pill', { hasText: 'รอเอกสาร' }).waitFor();
+await customer.bringToFront();
+await customer.locator('.uploads .doc-tile').nth(5).locator('input[type=file]').setInputFiles(jpg('id-again.jpg'));
+await customer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
+await customer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByRole('button', { name: 'ตกลง' }).click();
+await office.bringToFront();
+await office.locator('.case-detail .pill', { hasText: 'ตรวจเอกสาร' }).waitFor({ timeout: 5000 });
+log('re-upload request: the customer replaced the ID card and confirmed again');
 await office.getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
 await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor();
 log('back office accepted and issued the policy');
@@ -336,6 +348,7 @@ await office.getByRole('button', { name: 'Mail outbox', exact: true }).click();
 await office.locator('.mail-row', { hasText: refB }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Time to renew|ใกล้ถึงเวลาต่ออายุ/ }).first().waitFor();
 await office.locator('.mail-row', { hasText: /Claim CL-|รับเรื่องแจ้งเคลม/ }).first().waitFor();
+await office.locator('.mail-row', { hasText: `แนบเอกสารสำหรับ ${refA}` }).first().waitFor().catch(async () => office.locator('.mail-row', { hasText: `Documents needed for ${refA}` }).first().waitFor());
 log('mailbox lists the emails (incl. renewal reminder and claim receipt)');
 
 // ---- Path C: car not in the list → typed in → quote request ----
