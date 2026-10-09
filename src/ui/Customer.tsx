@@ -18,7 +18,8 @@ import {
   vehicleText,
   yearsOf,
 } from '../data/vehicles';
-import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, packagesFor, type Scenario } from '../data/packages';
+import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, type Scenario } from '../data/packages';
+import { packagesFor } from '../data/products';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
@@ -122,6 +123,7 @@ function Steps({ step, self }: { step: Step; self: boolean }) {
 
 function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const { t, lang } = useT();
+  const s = useStore();
   const [step, setStep] = useState<Step>('car');
   const [code, setCode] = useState<UsageCode | ''>('');
   const [brandId, setBrandId] = useState('');
@@ -170,11 +172,12 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
   const si = ready && siPick?.key === carKey ? Math.min(range.max, Math.max(range.min, siPick.v)) : suggested;
   const setSi = (v: number) => setSiPick({ key: carKey, v: Math.min(range.max, Math.max(range.min, Math.round(v / 1000) * 1000)) });
   const siPct = suggested ? ((si - suggested) / suggested) * 100 : 0;
-  const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si) : []), [ready, model, usage, year, si]);
+  const pkgs = useMemo(() => (ready ? packagesFor(model, usage, year, si, { channel: 'self' }) : []), [ready, model, usage, year, si, s.products]);
   const types = COVERAGE_TYPES.filter((x) => pkgs.some((p) => p.type === x));
   const shown = pkgs.filter((p) => filter === 'all' || p.type === filter);
   const badges = useMemo(() => packageBadges(pkgs), [pkgs]);
   const coverage: CoverageType = pkg ? pkg.type : quoteType;
+  const docsNeeded = pkg?.docs ?? REQUIRED_DOCS[coverage];
   const self = !!pkg && isSelfType(pkg.type);
   const source = pkg ? (self ? 'self' : 'package') : 'quote';
   const vehicle: Vehicle = custom
@@ -279,7 +282,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
       callback: source === 'quote' ? callback : undefined,
     });
     // Photos used to fill the form double as the ID card / registration book documents.
-    for (const [k, f] of Object.entries(ocrFiles) as [DocKey, File][]) if (REQUIRED_DOCS[coverage].includes(k)) void uploadDoc(id, k, f);
+    for (const [k, f] of Object.entries(ocrFiles) as [DocKey, File][]) if (docsNeeded.includes(k)) void uploadDoc(id, k, f);
     setOcrFiles({});
     setDoneAt(Date.now());
     setDoneId(id);
@@ -696,7 +699,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
             <div className="docs-later">
               <div className="eyebrow">{t('docsLaterTitle')} · {COVERAGE_LABEL[lang][coverage]}</div>
               <ul>
-                {REQUIRED_DOCS[coverage].map((k) => (
+                {docsNeeded.map((k) => (
                   <li key={k}>{DOC_LABEL[lang][k]}</li>
                 ))}
               </ul>

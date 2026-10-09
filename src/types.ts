@@ -74,6 +74,97 @@ export interface Package {
   bail: number;
   /** Gross premium incl. tax and stamp duty, THB. */
   premium: number;
+  /** Snapshot of the product it came from, so later edits never change a price already offered. */
+  nameTh?: string;
+  nameEn?: string;
+  ver?: number;
+  extras?: ProductExtra[];
+  docs?: DocKey[];
+  badge?: Product['badge'];
+  /** Commission as a share of net premium for whoever sells it (standard, product or partner rate). */
+  comRate?: number;
+  /** CMI price for this car when the package was offered (used when CMI is added). */
+  cmi?: number;
+}
+
+/** Extra benefits a product includes in its premium. */
+export type ProductExtra = 'flood' | 'roadside' | 'towing' | 'courtesyCar' | 'evBattery' | 'glass';
+
+/** How a sum is worked out: the car's sum insured, a fixed amount, or a share of it (capped). */
+export interface CoverRule {
+  mode: 'none' | 'si' | 'fixed' | 'pct';
+  value: number;
+  cap?: number;
+}
+
+/** One sum-insured band of a rate table: gross premium by vehicle code. */
+export interface RateRow {
+  siFrom: number;
+  siTo: number;
+  prices: Partial<Record<UsageCode, number>>;
+}
+
+/** A product (package) the back office sets up; the customer and partner screens are built from these. */
+export interface Product {
+  id: string;
+  type: CoverageType;
+  ver: number;
+  updatedAt: number;
+  updatedBy: string;
+  nameTh: string;
+  nameEn: string;
+  tagTh: string;
+  tagEn: string;
+  highlightsTh: string[];
+  highlightsEn: string[];
+  badge?: 'recommended' | 'new';
+  /** Where it is on sale: the customer website and/or Business Partners. */
+  channels: { self: boolean; partner: boolean };
+  /** Partners who may sell it. */
+  partners: 'all' | string[];
+  /** Last day on sale (YYYY-MM-DD); hidden from customers and partners afterwards. */
+  saleUntil?: string;
+  repair: 'dealer' | 'garage' | null;
+  deductible: number;
+  ownDamage: CoverRule;
+  fireTheft: CoverRule;
+  tpbiPerson: number;
+  tpbiAccident: number;
+  tppd: number;
+  pa: number;
+  medical: number;
+  bail: number;
+  extras: ProductExtra[];
+  /** Underwriting: oldest car accepted (years), vehicle codes, electric cars, models refused. */
+  maxAge?: number;
+  codes: 'all' | UsageCode[];
+  ev: 'allow' | 'deny' | 'only';
+  evLoading: number;
+  excludeModels: string[];
+  rates: RateRow[];
+  docs: DocKey[];
+  /** Product commission in % of net premium; absent = the standard rate for its class. */
+  commission?: number;
+  /** Per-partner commission in %, which wins over the product rate. */
+  partnerCommission: Record<string, number>;
+  termsTh: string;
+  termsEn: string;
+  exclusionsTh: string[];
+  exclusionsEn: string[];
+  /** Policy wording PDF uploaded by the back office (file kept in IndexedDB). */
+  pdf?: { name: string; key: string };
+  archived?: boolean;
+}
+
+/** One saved version of a product, kept for the change history and rollback. */
+export interface ProductVersion {
+  id: string;
+  ver: number;
+  at: number;
+  by: string;
+  note: string;
+  changes: string[];
+  snapshot: Product;
 }
 
 export interface Customer {

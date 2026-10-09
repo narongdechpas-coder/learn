@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
-import { COVERAGE_TYPES, REQUIRED_DOCS, estimateQuote } from '../data/packages';
+import { COVERAGE_TYPES, estimateQuote } from '../data/packages';
 import { COVERAGE_LABEL, DOC_LABEL, SLA_LABEL, STATUS_LABEL, fmtBaht, fmtDate, fmtDateTime, usageText, useT, type TKey } from '../i18n';
 import {
   acceptCase,
@@ -397,7 +397,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
         <div className="inline-confirm">
           <div className="eyebrow">{t('reuploadPick')}</div>
           <div className="chips-row">
-            {REQUIRED_DOCS[c.coverage].map((k) => (
+            {requiredDocs(c).map((k) => (
               <label key={k} className="check">
                 <input id={`ru-${c.id}-${k}`} type="checkbox" checked={pick.includes(k)} onChange={(e) => setPick((p) => (e.target.checked ? [...p, k] : p.filter((x) => x !== k)))} />
                 {DOC_LABEL[lang][k]}

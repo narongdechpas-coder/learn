@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Agent, Case, CoverageType, Customer, Package, Proposal, RenewalItem, UsageCode, Vehicle } from '../types';
 import { CATALOGUE_CODES, brandsFor, modelById, modelsOf, siRange, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
-import { QUOTE_TYPES, cmiPremium, packagesFor } from '../data/packages';
-import { COMMISSION_RATE, caseCommission, commissionReceived, mktById, optionPrice, payInfo, settled, type PayState } from '../data/agents';
+import { QUOTE_TYPES, cmiPremium } from '../data/packages';
+import { packagesFor } from '../data/products';
+import { caseCommission, rateOf, commissionReceived, mktById, optionPrice, payInfo, settled, type PayState } from '../data/agents';
 import { COVERAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtNum, usageText, useT, type TKey } from '../i18n';
 import { acceptProposal, agentCollected, agentRemitNotice, createProposal, customerConfirm, submitCase, totalPremium, useStore } from '../store';
 import { DAY_MS, bkkParts, bkkTime } from '../lib/time';
@@ -147,6 +148,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
 
 function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: Prefill | null; onOpenOffer: (id: string, asAgent: boolean) => void; onCase: (id: string) => void }) {
   const { t, lang } = useT();
+  const { products } = useStore();
   const pv = prefill?.vehicle;
   const [code, setCode] = useState<UsageCode>(pv?.usage ?? '110');
   const [brandId, setBrandId] = useState(pv?.brandId ?? '');
@@ -171,12 +173,12 @@ function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: 
   const suggested = model && year ? suggestedSumInsured(model, year) : 0;
   const range = suggested ? siRange(suggested) : null;
   const sumInsured = si ?? suggested;
-  const pkgs = useMemo(() => (model && year ? packagesFor(model, code, year, sumInsured).filter((p) => p.type !== 'CMI') : []), [model, code, year, sumInsured]);
+  const pkgs = useMemo(() => (model && year ? packagesFor(model, code, year, sumInsured, { channel: 'partner', agentId: agent.id }).filter((p) => p.type !== 'CMI') : []), [model, code, year, sumInsured, agent.id, products]);
   const cmiPrice = cmiPremium(code);
-  const cmiOnly = useMemo(() => (model && year ? packagesFor(model, code, year, sumInsured).find((p) => p.type === 'CMI') : undefined), [model, code, year, sumInsured]);
+  const cmiOnly = useMemo(() => (model && year ? packagesFor(model, code, year, sumInsured, { channel: 'partner', agentId: agent.id }).find((p) => p.type === 'CMI') : undefined), [model, code, year, sumInsured, agent.id, products]);
   const all: Package[] = cmiOnly ? [...pkgs, cmiOnly] : pkgs;
   const chosen = all.filter((p) => picked.includes(p.id));
-  const maxDisc = Math.round(Math.max(0, ...chosen.filter((p) => p.type !== 'CMI').map((p) => COMMISSION_RATE[p.type] * 100)));
+  const maxDisc = Math.round(Math.max(0, ...chosen.filter((p) => p.type !== 'CMI').map((p) => rateOf(p) * 100)));
   const vehicle: Vehicle | null = model && year ? { brandId, modelId, year, sumInsured, usage: code, ...(sumInsured !== suggested ? { suggestedSI: suggested } : {}) } : null;
 
   useEffect(() => {
@@ -335,7 +337,7 @@ function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: 
                         <td><TypeTag type={p.type} /></td>
                         <td className="muted">{coverText(p, t, lang)}</td>
                         <td className="r num">{fmtBaht(p.premium, lang)}</td>
-                        <td className="r num ag-int">{fmtBaht(Math.round(pr.commission), lang)} <span className="muted">({Math.round(COMMISSION_RATE[p.type] * 100)}%)</span></td>
+                        <td className="r num ag-int">{fmtBaht(Math.round(pr.commission), lang)} <span className="muted">({Math.round(rateOf(p) * 100)}%)</span></td>
                       </tr>
                     );
                   })}
