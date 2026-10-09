@@ -5,7 +5,6 @@ import { vehicleText } from '../data/vehicles';
 import { fmtBaht, fmtDate, fmtDateTime, useT } from '../i18n';
 import { acceptProposal, declineProposal, markProposalSent, payByLink, totalPremium, useStore, viewProposal } from '../store';
 import { StatusPill, TypeTag } from './common';
-import { coverText } from './Agent';
 import { EXTRA_KEY, productName } from './Products';
 import { getCatalog } from '../data/products';
 import type { Proposal } from '../types';
@@ -151,35 +150,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
           </div>
         </div>
 
-        {/* On paper the cover table below already lists every option and price. */}
-        <h3 className="offer-h no-print">{t('offerOptions', { n: pr.options.length })}</h3>
-        <div className="offer-options no-print">
-          {pr.options.map((o, i) => {
-            const p = optionPrice(o, pr.discountPct, pr.vehicle.usage);
-            const inst = installmentPlan(p.price);
-            const picked = pr.status === 'accepted' ? pr.chosen === i : choice === i;
-            return (
-              <label key={i} className={`offer-opt${picked ? ' on' : ''}${pr.status === 'accepted' && !picked ? ' dim' : ''}`}>
-                {open && <input type="radio" name="offer-opt" className="sr-only" checked={choice === i} onChange={() => setChoice(i)} />}
-                <span className="radio-dot no-print" aria-hidden="true" />
-                <span className="offer-opt-main">
-                  <span className="offer-opt-no">{t('ofOption', { n: i + 1 })}</span>
-                  <TypeTag type={o.pkg.type} />
-                  {o.pkg.nameTh && <b className="offer-opt-name">{productName(o.pkg, lang)}</b>}
-                  <span className="muted">{coverText(o.pkg, t, lang)}</span>
-                  {o.addCmi && <span className="chip">{t('plusCmi')}</span>}
-                </span>
-                <span className="offer-opt-price">
-                  {p.discount > 0 && <s className="muted num">{fmtBaht(p.full, lang)}</s>}
-                  <b className="num">{fmtBaht(p.price, lang)}</b>
-                  {p.discount > 0 && <span className="pill tone-good">{t('offerSave', { v: fmtBaht(p.discount, lang) })}</span>}
-                  {inst && <span className="hint num">{t('offerInst', { m: inst.months, v: fmtBaht(inst.monthly, lang) })}</span>}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-        <CoverTable pr={pr} />
+        <CoverTable pr={pr} picked={pr.status === 'accepted' ? pr.chosen : choice} onPick={open ? setChoice : undefined} />
         <p className="hint">{t('offerNote')}</p>
 
         {expired && <p className="callout tone-bad">{t('offerExpired')}</p>}
@@ -259,15 +230,18 @@ function PayBox({ caseId, amount }: { caseId: string; amount: number }) {
   );
 }
 
-/** Side-by-side cover and limits for every option on the quotation (prints on A4 portrait). */
-function CoverTable({ pr }: { pr: Proposal }) {
+/**
+ * Every option side by side with its cover, limits and price. While the quotation is open the customer
+ * (or the agent) picks an option from the column headers; prints on one A4 portrait page.
+ */
+function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onPick?: (i: number) => void }) {
   const { t, lang } = useT();
   const cmiStd = getCatalog().find((p) => p.type === 'CMI');
   const cmiMed = cmiStd?.medical ?? 80_000;
   const cmiDeath = cmiStd?.pa ?? 500_000;
   const money = (n: number) => (n ? fmtBaht(n, lang) : t('ofNo'));
   const prices = pr.options.map((o) => optionPrice(o, pr.discountPct, pr.vehicle.usage));
-  type Row = { label: string; cell: (i: number) => string; strong?: boolean };
+  type Row = { label: string; cell: (i: number) => string; strong?: boolean; render?: (i: number, v: string) => React.ReactNode };
   const opt = (i: number) => pr.options[i];
   const vol = (i: number, fn: () => string) => (opt(i).pkg.type === 'CMI' ? '—' : fn());
   const hasCmi = (i: number) => opt(i).pkg.type === 'CMI' || opt(i).addCmi;
@@ -296,38 +270,58 @@ function CoverTable({ pr }: { pr: Proposal }) {
       { label: t('ofCmiDeath'), cell: (i) => (hasCmi(i) ? fmtBaht(cmiDeath, lang) : '—') },
     ]],
     [t('ofGroupPrice'), [
-      { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang) },
-      ...(prices.some((p) => p.discount > 0) ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? `−${fmtBaht(prices[i].discount, lang)}` : '—') }] : []),
+      { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang), render: (i, v) => (prices[i].discount ? <s>{v}</s> : v) },
+      ...(prices.some((p) => p.discount > 0)
+        ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? t('offerSave', { v: fmtBaht(prices[i].discount, lang) }) : '—'), render: (i: number, v: string) => (prices[i].discount ? <span className="pill tone-good">{v}</span> : v) }]
+        : []),
       { label: t('ofPay'), cell: (i) => fmtBaht(prices[i].price, lang), strong: true },
       { label: t('ofInst'), cell: (i) => { const pl = installmentPlan(prices[i].price); return pl ? `${fmtBaht(pl.monthly, lang)} × ${pl.months}` : '—'; } },
     ]],
   ];
   return (
     <section className="offer-cover">
-      <h3 className="offer-h">{t('ofCoverTitle')}</h3>
+      <h3 className="offer-h">
+        <span className="no-print">{onPick ? t('ofPickTitle', { n: pr.options.length }) : t('ofCoverTitle')}</span>
+        <span className="print-only">{t('ofCoverTitle')}</span>
+      </h3>
       <div className="table-wrap">
-        <table className="offer-cover-table">
+        <table className={`offer-cover-table${onPick ? ' pickable' : ''}`}>
           <thead>
             <tr>
               <th scope="col" />
               {pr.options.map((o, i) => (
-                <th key={i} scope="col">
+                <th key={i} scope="col" className={`oc-opt${picked === i ? ' pick' : ''}`} aria-selected={picked === i}>
                   <div className="oc-no">{t('ofOption', { n: i + 1 })}</div>
                   <TypeTag type={o.pkg.type} />
                   {o.pkg.nameTh && <div className="oc-name">{productName(o.pkg, lang)}</div>}
+                  {onPick ? (
+                    <label className={`oc-pick no-print${picked === i ? ' on' : ''}`}>
+                      <input type="radio" name="offer-opt" className="sr-only" checked={picked === i} onChange={() => onPick(i)} />
+                      <span className="radio-dot" aria-hidden="true" />
+                      {t('ofPick')}
+                      <span className="sr-only"> {t('ofOption', { n: i + 1 })}</span>
+                    </label>
+                  ) : (
+                    pr.status === 'accepted' && picked === i && <span className="pill tone-good oc-chosen">✓ {t('ofChosen')}</span>
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           {groups.map(([g, rows]) => (
             <tbody key={g}>
-              <tr className="oc-group"><th scope="rowgroup" colSpan={pr.options.length + 1}>{g}</th></tr>
+              <tr className="oc-group"><th scope="rowgroup" colSpan={pr.options.length + 1}><span>{g}</span></th></tr>
               {rows.map((r) => (
                 <tr key={r.label} className={r.strong ? 'oc-strong' : ''}>
                   <th scope="row">{r.label}</th>
                   {pr.options.map((_, i) => {
                     const v = r.cell(i);
-                    return <td key={i} className={`num${v === t('ofNo') || v === '—' || v === t('ofNotIncl') ? ' oc-off' : ''}`}>{v}</td>;
+                    const off = v === t('ofNo') || v === '—' || v === t('ofNotIncl');
+                    return (
+                      <td key={i} className={`num${off ? ' oc-off' : ''}${picked === i ? ' pick' : ''}`} onClick={onPick ? () => onPick(i) : undefined}>
+                        {r.render ? r.render(i, v) : v}
+                      </td>
+                    );
                   })}
                 </tr>
               ))}

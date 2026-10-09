@@ -1580,3 +1580,29 @@ table.data.pd-table th { text-transform: none; letter-spacing: 0; font-size: 0.8
   .offer-cover { gap: 6px; margin-top: 12px; }
   .offer .hint { font-size: 8pt; }
 }
+/* Picking an option from the cover table: the chosen column is tinted top to bottom. */
+.offer-cover-table th.pick, .offer-cover-table td.pick { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.offer-cover-table thead th.pick { box-shadow: inset 0 3px 0 var(--accent); }
+.offer-cover-table.pickable td { cursor: pointer; }
+.offer-cover-table .oc-pick { position: relative; margin-top: 8px; display: inline-flex; gap: 6px; align-items: center; border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; background: var(--surface); cursor: pointer; white-space: nowrap; }
+.offer-cover-table .oc-pick .radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); }
+.offer-cover-table .oc-pick.on { border-color: var(--accent); color: var(--accent); }
+.offer-cover-table .oc-pick.on .radio-dot { border: 4px solid var(--accent); }
+.offer-cover-table .oc-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.offer-cover-table .oc-chosen { margin-top: 8px; display: inline-block; }
+.offer-cover-table .pill { white-space: nowrap; }
+.offer-cover-table s { color: var(--muted); }
+@media (max-width: 640px) {
+  .offer-cover-table { min-width: 560px; }
+  .offer-cover .table-wrap { position: relative; }
+  .offer-cover-table tbody th, .offer-cover-table thead th:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); min-width: 150px; }
+  .offer-cover-table tr.oc-group th { position: static; background: var(--surface-2); }
+  .offer-cover-table tr.oc-group th span { position: sticky; left: 10px; }
+}
+@media print {
+  .offer-cover-table th.pick, .offer-cover-table td.pick { background: none; }
+  .offer-cover-table thead th.pick { box-shadow: none; }
+  .offer-cover-table .oc-chosen { display: none; }
+}
+
+.offer > *, .offer-cover { min-width: 0; }

@@ -555,8 +555,9 @@ watch(buyer);
 await buyer.goto(url + `?c=1#offer/${quoteId}`);
 await thai(buyer);
 await buyer.getByText('หน้าที่ลูกค้าเห็นเมื่อเปิดลิงก์').waitFor();
-assert.equal(await buyer.locator('.offer-opt').count(), 3);
-assert.ok((await buyer.locator('.offer-opt s').count()) >= 2, 'full price shown struck through next to the discounted price');
+assert.equal(await buyer.locator('.offer-cover-table thead .oc-opt').count(), 3, 'three options side by side in the cover table');
+assert.equal(await buyer.locator('.offer-opt').count(), 0, 'no separate option cards');
+assert.ok((await buyer.locator('.offer-cover-table s').count()) >= 2, 'full price shown struck through next to the discounted price');
 assert.equal(await buyer.getByText(/คอมมิชชัน|คอมฯ/).count(), 0, 'customer never sees commission');
 await agent.bringToFront();
 await agent.getByRole('tab', { name: /ใบเสนอราคา/ }).click();
@@ -564,7 +565,8 @@ await agent.locator('tr', { hasText: quoteId }).getByText('ลูกค้าเ
 log('customer opened the link; the agent sees it opened');
 
 await buyer.bringToFront();
-await buyer.locator('.offer-opt').nth(1).click();
+await buyer.locator('.oc-pick').nth(1).click();
+assert.equal(await buyer.locator('.offer-cover-table thead th.pick').innerText().then((x) => x.includes('แบบที่ 2')), true, 'picked column highlighted');
 await buyer.getByRole('button', { name: 'เลือกแบบนี้และยืนยัน' }).click();
 await buyer.getByRole('button', { name: /ยืนยันซื้อ/ }).click();
 await buyer.getByText('กรอกรหัส OTP 6 หลัก').waitFor();
