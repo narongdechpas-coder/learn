@@ -24,7 +24,7 @@ import { EXTRA_KEY, productName } from './Products';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
-import { Field, StatusPill, TypeTag } from './common';
+import { Field, NumberInput, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
 import { attachSampleDocs } from './extras';
@@ -613,7 +613,7 @@ function Buy({ onTrack }: { onTrack: (id: string) => void }) {
               </select>
             </Field>
             <Field htmlFor="q-si" label={t('desiredSI')} hint={custom ? t('customSIHint') : t('suggestedSI', { year: CURRENT_YEAR }) + ' ' + fmtBaht(si, lang)}>
-              <input id="q-si" type="number" min={0} step={10000} value={quoteSI || ''} onChange={(e) => setQuoteSI(Number(e.target.value))} />
+              <NumberInput id="q-si" decimals={false} value={quoteSI || undefined} onChange={(v) => setQuoteSI(v ?? 0)} />
             </Field>
           </div>
           {cmiToggle('q-cmi')}

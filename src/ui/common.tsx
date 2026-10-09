@@ -127,3 +127,67 @@ export function Toasts({ items, dismiss }: { items: Toast[]; dismiss: (id: strin
 }
 
 export const SOURCE_KEY = { package: 'srcPackage', quote: 'srcQuote', self: 'srcSelf' } as const;
+
+const groupDigits = (s: string) => {
+  const [int, frac] = s.split('.');
+  const g = int.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return frac === undefined ? g : `${g}.${frac}`;
+};
+const fmtGrouped = (v: number | undefined) => (v === undefined || Number.isNaN(v) ? '' : groupDigits(String(v)));
+
+/**
+ * Number field shown with thousands separators (1,000,000) while typing.
+ * Accepts pasted values with commas or spaces; reports undefined when empty.
+ */
+export function NumberInput({
+  value,
+  onChange,
+  onBlur,
+  decimals = true,
+  ...rest
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'onBlur'> & {
+  value: number | undefined;
+  onChange?: (v: number | undefined) => void;
+  onBlur?: (v: number | undefined) => void;
+  decimals?: boolean;
+}) {
+  const [text, setText] = useState(() => fmtGrouped(value));
+  // Follow changes made elsewhere (standard cover button, rollback) without fighting the user's typing.
+  useEffect(() => {
+    const cur = text.replace(/,/g, '');
+    if ((cur === '' ? undefined : Number(cur)) !== value) setText(fmtGrouped(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const parse = (s: string) => (s === '' || s === '.' ? undefined : Number(s));
+  return (
+    <input
+      {...rest}
+      type="text"
+      inputMode={decimals ? 'decimal' : 'numeric'}
+      value={text}
+      onChange={(e) => {
+        const el = e.target;
+        const caret = el.selectionStart ?? el.value.length;
+        const digitsBefore = el.value.slice(0, caret).replace(/[^\d.]/g, '').length;
+        let clean = el.value.replace(/[^\d.]/g, '');
+        if (!decimals) clean = clean.replace(/\./g, '');
+        const dot = clean.indexOf('.');
+        if (dot >= 0) clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+        const next = groupDigits(clean);
+        setText(next);
+        onChange?.(parse(clean));
+        // Keep the caret after the same digit once commas move around.
+        requestAnimationFrame(() => {
+          let seen = 0;
+          let pos = 0;
+          while (pos < next.length && seen < digitsBefore) {
+            if (/[\d.]/.test(next[pos])) seen++;
+            pos++;
+          }
+          if (document.activeElement === el) el.setSelectionRange(pos, pos);
+        });
+      }}
+      onBlur={() => onBlur?.(parse(text.replace(/,/g, '')))}
+    />
+  );
+}
