@@ -275,7 +275,7 @@ await customer.bringToFront();
 await customer.getByText(/ออกกรมธรรม์แล้ว เลขที่/).waitFor({ timeout: 5000 });
 log('customer tab updated to issued');
 // after issue: digital card, claim, renewal, referral
-await customer.locator('.digital-card', { hasText: refA === '' ? 'x' : 'ABC' }).waitFor();
+await customer.locator('.digital-card', { hasText: refA === '' ? 'x' : 'Jacky' }).waitFor();
 await customer.getByRole('button', { name: 'แจ้งเคลม' }).click();
 await customer.getByRole('button', { name: 'ส่งเรื่องแจ้งเคลม' }).click();
 await customer.getByText('กรุณาระบุสถานที่เกิดเหตุ').waitFor();

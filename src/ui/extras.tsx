@@ -291,7 +291,7 @@ export function IssuedExtras({ c }: { c: Case }) {
     <div className="issued-extras">
       <div className="digital-card">
         <div className="dc-top">
-          <span className="dc-brand">ABC ประกันภัย</span>
+          <span className="dc-brand">Jacky ประกันภัย</span>
           <span className="dc-type">{COVERAGE_LABEL[lang][c.coverage]}{c.addCmi ? ` ${t('plusCmi')}` : ''}</span>
         </div>
         <div className="dc-car">

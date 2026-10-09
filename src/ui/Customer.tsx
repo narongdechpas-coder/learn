@@ -1221,7 +1221,7 @@ function PolicyDoc({ c }: { c: Case }) {
     <div className="policy-doc reveal">
       <div className="pd-head">
         <div>
-          <b>ABC ประกันภัย · ABC Insurance</b>
+          <b>Jacky ประกันภัย · Jacky Insurance</b>
           <div className="muted">{t('policyDoc')}</div>
         </div>
         <div className="pd-no num">{c.policyNo}</div>
