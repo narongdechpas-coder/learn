@@ -162,6 +162,51 @@ export async function fakeDoc(kind: 'regbook' | 'idcard' | 'passport', c: Pick<C
   return fakeDocSync(kind, c);
 }
 
+const canvasFile = (canvas: HTMLCanvasElement, name: string) => {
+  const bin = atob(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], name, { type: 'image/jpeg' });
+};
+
+/** A sample "photo" of a house front (fire insurance), marked as a sample. */
+export function fakeHousePhoto(): File {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 800;
+  const g = canvas.getContext('2d')!;
+  const sky = g.createLinearGradient(0, 0, 0, 520);
+  sky.addColorStop(0, '#bcdcf5');
+  sky.addColorStop(1, '#eef6fb');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, 1200, 800);
+  g.fillStyle = '#9cc79a';
+  g.fillRect(0, 560, 1200, 240);
+  g.fillStyle = '#f3ede1';
+  g.fillRect(330, 330, 540, 260);
+  g.fillStyle = '#b5523b';
+  g.beginPath();
+  g.moveTo(290, 340);
+  g.lineTo(600, 150);
+  g.lineTo(910, 340);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#6d4c3d';
+  g.fillRect(560, 450, 90, 140);
+  g.fillStyle = '#8fc1e3';
+  g.fillRect(400, 400, 110, 90);
+  g.fillRect(700, 400, 110, 90);
+  g.save();
+  g.translate(600, 420);
+  g.rotate(-0.3);
+  g.fillStyle = 'rgba(200, 40, 40, 0.28)';
+  g.font = 'bold 110px sans-serif';
+  g.textAlign = 'center';
+  g.fillText('ตัวอย่าง SAMPLE', 0, 0);
+  g.restore();
+  return canvasFile(canvas, 'house-sample.jpg');
+}
+
 /** Same sample document, made synchronously (sample buttons attach it straight away). */
 export function fakeDocSync(kind: 'regbook' | 'idcard' | 'passport', c: Pick<Case, 'customer' | 'vehicle'>): File {
   const canvas = document.createElement('canvas');

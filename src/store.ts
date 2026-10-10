@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, DocMeta, Email, EmailTemplate, Lead, Notification, Package, PaProduct, PaProductVersion, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
-import { seedAgentWork, seedCases, seedLeads, seedPa, seedPaRenewals, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, DocMeta, Email, EmailTemplate, Lead, FireProduct, FireProductVersion, FireSettings, Notification, Package, PaProduct, PaProductVersion, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
+import { seedAgentWork, seedCases, seedFire, seedFireRenewals, seedLeads, seedPa, seedPaRenewals, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
@@ -8,6 +8,7 @@ import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { defaultProducts, setCatalog } from './data/products';
 import { defaultTravelProducts, defaultZones, setTravelCatalog } from './data/travel';
 import { defaultPaProducts, paEnd, setPaCatalog } from './data/pa';
+import { defaultFireProducts, defaultFireSettings, fireEnd, setFireCatalog } from './data/fire';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, getFile, putFile } from './files';
@@ -43,10 +44,14 @@ export interface State {
   /** Personal accident plans (current version of each) and every saved version. */
   paProducts: PaProduct[];
   paLog: PaProductVersion[];
+  /** Fire products (rate-based and ready-made plans), every saved version, and the line's settings. */
+  fireProducts: FireProduct[];
+  fireLog: FireProductVersion[];
+  fireSettings: FireSettings;
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 13;
+const VERSION = 14;
 
 function fresh(): State {
   const now = Date.now();
@@ -58,13 +63,17 @@ function fresh(): State {
   setTravelCatalog(travelProducts, travelZones);
   const paProducts = defaultPaProducts(now);
   setPaCatalog(paProducts);
+  const fireProducts = defaultFireProducts(now);
+  const fireSettings = defaultFireSettings();
+  setFireCatalog(fireProducts, fireSettings);
   const motor = seedCases(now);
   const motorProposals = seedAgentWork(motor.cases, now);
   const travel = seedTravel(now, motor.seq);
   const pa = seedPa(now, travel.seq);
-  const cases = [...motor.cases, ...travel.cases, ...pa.cases].sort((a, b) => a.createdAt - b.createdAt);
-  const proposals = [...motorProposals, ...travel.proposals, ...pa.proposals];
-  const seq = pa.seq;
+  const fire = seedFire(now, pa.seq);
+  const cases = [...motor.cases, ...travel.cases, ...pa.cases, ...fire.cases].sort((a, b) => a.createdAt - b.createdAt);
+  const proposals = [...motorProposals, ...travel.proposals, ...pa.proposals, ...fire.proposals];
+  const seq = fire.seq;
   return {
     version: VERSION,
     seededAt: now,
@@ -77,7 +86,7 @@ function fresh(): State {
     traffic: seedTraffic(cases, now),
     agents: AGENTS.map((a) => ({ ...a })),
     proposals,
-    renewals: [...seedRenewals(now), ...seedPaRenewals(now)].sort((a, b) => a.expiry - b.expiry),
+    renewals: [...seedRenewals(now), ...seedPaRenewals(now), ...seedFireRenewals(now)].sort((a, b) => a.expiry - b.expiry),
     monthly: seedMonthly(cases, now),
     products,
     productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
@@ -87,6 +96,9 @@ function fresh(): State {
     travelZones,
     paProducts,
     paLog: paProducts.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
+    fireProducts,
+    fireLog: fireProducts.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
+    fireSettings,
   };
 }
 
@@ -95,6 +107,7 @@ function applyCatalogs(s: State) {
   setCatalog(s.products);
   setTravelCatalog(s.travelProducts, s.travelZones);
   setPaCatalog(s.paProducts);
+  setFireCatalog(s.fireProducts, s.fireSettings);
 }
 
 function load(): State | null {
@@ -220,7 +233,7 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 }
 
 /** Policy number: P (motor), TR (travel) or PA (personal accident), year, running number. */
-const POLICY_PREFIX: Partial<Record<CoverageType, string>> = { TRV: 'TR', PA: 'PA' };
+const POLICY_PREFIX: Partial<Record<CoverageType, string>> = { TRV: 'TR', PA: 'PA', FIRE: 'FI' };
 const policyNoFor = (c: Case, s: State) => `${POLICY_PREFIX[c.coverage] ?? 'P'}${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
 
 /**
@@ -232,6 +245,11 @@ function keepStartCurrent(c: Pick<Case, 'pkg' | 'customer'>) {
   const plus = (d: string, n: number) => dayKey(new Date(`${d}T12:00:00+07:00`).getTime() + n * 86_400_000);
   const tr = c.pkg?.travel;
   const pa = c.pkg?.accident;
+  const fi = c.pkg?.fire;
+  if (fi && fi.start < today) {
+    c.pkg = { ...c.pkg!, fire: { ...fi, start: today, end: fireEnd(today) } };
+    c.customer = { ...c.customer, startDate: today };
+  }
   if (tr && tr.trip.start < today) {
     const end = tr.trip.type === 'annual' ? paEnd(today) : plus(today, tr.trip.days - 1);
     c.pkg = { ...c.pkg!, travel: { ...tr, trip: { ...tr.trip, start: today, end } } };
@@ -735,7 +753,7 @@ export function payByLink(id: string, method: 'qr' | 'card', last4?: string, mon
  * has the money). A referred PA application waits for the back office instead.
  */
 export const issuesOnPayment = (c: Pick<Case, 'renewalOf' | 'coverage' | 'pkg'>) =>
-  !!c.renewalOf || c.coverage === 'TRV' || (c.coverage === 'PA' && !c.pkg?.accident?.referral);
+  !!c.renewalOf || c.coverage === 'TRV' || (c.coverage === 'PA' && !c.pkg?.accident?.referral) || (c.coverage === 'FIRE' && !c.pkg?.fire?.referral.length);
 
 /** A renewal is issued the moment it is paid (or the partner has the money): nothing to check. */
 function issueRenewal(c: Case, s: State, now: number): Partial<State> | void {
@@ -929,4 +947,33 @@ export function savePaProduct(p: PaProduct, by: string, note = ''): boolean {
 export function rollbackPaProduct(id: string, ver: number, by: string) {
   const old = latest().paLog.find((v) => v.id === id && v.ver === ver);
   if (old) savePaProduct({ ...old.snapshot }, by, `rollback:${ver}`);
+}
+
+// ---- Fire products and settings ----
+
+/** Save a fire product as a new version. Quotations and policies keep the version they were priced on. */
+export function saveFireProduct(p: FireProduct, by: string, note = ''): boolean {
+  const base = latest();
+  const prev = base.fireProducts.find((x) => x.id === p.id);
+  const changes = travelChanges(prev, p);
+  if (!changes.length) return false;
+  const now = Date.now();
+  const next: FireProduct = { ...p, ver: (prev?.ver ?? 0) + 1, updatedAt: now, updatedBy: by };
+  commit({
+    ...base,
+    fireProducts: prev ? base.fireProducts.map((x) => (x.id === p.id ? next : x)) : [...base.fireProducts, next],
+    fireLog: [{ id: p.id, ver: next.ver, at: now, by, note, changes, snapshot: next }, ...base.fireLog],
+  });
+  return true;
+}
+
+export function rollbackFireProduct(id: string, ver: number, by: string) {
+  const old = latest().fireLog.find((v) => v.id === id && v.ver === ver);
+  if (old) saveFireProduct({ ...old.snapshot }, by, `rollback:${ver}`);
+}
+
+/** Sales mode (rate or plan), review threshold, flood provinces and rebuild costs. */
+export function saveFireSettings(patch: Partial<FireSettings>) {
+  const base = latest();
+  commit({ ...base, fireSettings: { ...base.fireSettings, ...patch } });
 }

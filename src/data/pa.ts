@@ -1,6 +1,7 @@
 import type { Lang, OccClass, Package, PaCover, PaProduct } from '../types';
 import { ageOn } from './travel';
 import { vehicleText } from './vehicles';
+import { fireText } from './fire';
 
 const DAY = 86_400_000;
 
@@ -209,8 +210,9 @@ export function paPriceRange(p: PaProduct): [number, number] | null {
 }
 
 /** What a renewal is for: the car, or the PA plan and the insured's occupation. */
-export function renewalText(r: { vehicle?: import('../types').Vehicle; pa?: { productId: string; occupation: string; occupationText?: string } }, lang: Lang) {
+export function renewalText(r: { vehicle?: import('../types').Vehicle; pa?: { productId: string; occupation: string; occupationText?: string }; fire?: Parameters<typeof fireText>[0] }, lang: Lang) {
   if (r.vehicle) return vehicleText(r.vehicle);
+  if (r.fire) return fireText(r.fire, lang);
   const p = r.pa ? products.find((x) => x.id === r.pa!.productId) : undefined;
   return `${lang === 'th' ? 'ประกันอุบัติเหตุ' : 'Personal accident'}${p ? ` · ${lang === 'th' ? p.nameTh : p.nameEn || p.nameTh}` : ''}${r.pa ? ` · ${occName(r.pa.occupation, lang, r.pa.occupationText)}` : ''}`;
 }

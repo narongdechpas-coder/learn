@@ -3,6 +3,7 @@ import { renewalText } from '../data/pa';
 import { subjectText } from '../data/travel';
 import { TravelKv, TravelSell } from './Travel';
 import { PaKv, PaSell, paPrefillFrom, type PaPrefill } from './Pa';
+import { FireKv, FireSell, firePrefillFrom, type FirePrefill } from './Fire';
 import type { Agent, Case, CoverageType, Customer, Package, Proposal, RenewalItem, UsageCode, Vehicle } from '../types';
 import { CATALOGUE_CODES, brandsFor, modelById, modelsOf, siRange, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
 import { QUOTE_TYPES, cmiPremium } from '../data/packages';
@@ -72,10 +73,11 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const [tab, setTab] = useState<Tab>('sell');
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [focusCase, setFocusCase] = useState<string | null>(null);
-  const [sellLine, setSellLine] = useState<'motor' | 'travel' | 'pa'>('motor');
+  const [sellLine, setSellLine] = useState<'motor' | 'travel' | 'pa' | 'fire'>('motor');
   // Plan picked in the catalogue: the travel or PA sell screen opens with it selected.
   const [travelPick, setTravelPick] = useState<string | null>(null);
   const [paPrefill, setPaPrefill] = useState<PaPrefill | null>(null);
+  const [firePrefill, setFirePrefill] = useState<FirePrefill | null>(null);
   const agent = s.agents.find((a) => a.id === agentId) ?? s.agents[0];
   const mkt = mktById(agent.mktId);
   const myOffers = s.proposals.filter((p) => p.agentId === agent.id);
@@ -84,6 +86,13 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const myRenewals = s.renewals.filter((r) => r.agentId === agent.id);
   const renewTodo = myRenewals.filter((r) => r.status === 'open' && r.expiry - now <= 30 * DAY_MS && r.expiry > now - 30 * DAY_MS).length;
   const startRenewal = (r: RenewalItem) => {
+    if (r.fire) {
+      setFirePrefill(firePrefillFrom(r));
+      setTravelPick(null);
+      setSellLine('fire');
+      setTab('sell');
+      return;
+    }
     if (!r.vehicle) {
       setPaPrefill(paPrefillFrom(r));
       setTravelPick(null);
@@ -135,13 +144,14 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
         ))}
       </div>
 
-      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type, productId) => { setSellLine(type === 'TRV' ? 'travel' : type === 'PA' ? 'pa' : 'motor'); setTravelPick(type === 'TRV' || type === 'PA' ? productId ?? null : null); setPaPrefill(null); setTab('sell'); window.scrollTo({ top: 0 }); }} />}
+      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type, productId) => { setSellLine(type === 'TRV' ? 'travel' : type === 'PA' ? 'pa' : type === 'FIRE' ? 'fire' : 'motor'); setTravelPick(type === 'TRV' || type === 'PA' || type === 'FIRE' ? productId ?? null : null); setPaPrefill(null); setFirePrefill(null); setTab('sell'); window.scrollTo({ top: 0 }); }} />}
       {tab === 'sell' && (
         <div className="ag-line">
-          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={(v) => { setSellLine(v); setTravelPick(null); setPaPrefill(null); }} options={[
+          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={(v) => { setSellLine(v); setTravelPick(null); setPaPrefill(null); setFirePrefill(null); }} options={[
             { value: 'motor', label: `🚗 ${t('lineMotor')}` },
             { value: 'travel', label: `✈️ ${t('lineTravel')}` },
             { value: 'pa', label: `🩹 ${t('linePa')}` },
+            { value: 'fire', label: `🏠 ${t('lineFire')}` },
           ]} />
         </div>
       )}
@@ -162,6 +172,16 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
           prefill={paPrefill}
           onCase={(id) => { setFocusCase(id); setPaPrefill(null); setTab('cases'); }}
           renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={() => { setPaPrefill(null); again(); }} />}
+        />
+      )}
+      {tab === 'sell' && sellLine === 'fire' && (
+        <FireSell
+          key={`${travelPick ?? 'none'}-${firePrefill?.renewalOf ?? ''}`}
+          agent={agent}
+          initialPick={travelPick ?? undefined}
+          prefill={firePrefill}
+          onCase={(id) => { setFocusCase(id); setFirePrefill(null); setTab('cases'); }}
+          renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={() => { setFirePrefill(null); again(); }} />}
         />
       )}
       {tab === 'sell' && sellLine === 'motor' && (
@@ -685,6 +705,11 @@ function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
         <>
           <TravelKv c={c} />
           <p className="callout tone-info">✈️ {t('trInstant')}</p>
+        </>
+      ) : c.coverage === 'FIRE' ? (
+        <>
+          <FireKv c={c} />
+          {!c.pkg?.fire?.referral.length && <p className="callout tone-info">⚡ {t('paInstantNote')}</p>}
         </>
       ) : c.coverage === 'PA' ? (
         <>

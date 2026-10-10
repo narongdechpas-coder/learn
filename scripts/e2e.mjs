@@ -72,7 +72,7 @@ await customer.locator('.cb-msg.bot li b', { hasText: '50,000 บาท' }).wait
 assert.equal(chatCalls.length, 1);
 assert.deepEqual(chatCalls[0].messages, [{ role: 'user', content: 'PA 300,000 กับ 500,000 ต่างกันยังไง' }]);
 assert.equal(chatCalls[0].lang, 'th');
-for (const x of ['PA 300,000', 'เดินทาง Plus', 'ชั้น 1', 'ขั้น 3', 'เชงเก้น']) assert.ok(chatCalls[0].knowledge.includes(x), `knowledge has ${x}`);
+for (const x of ['PA 300,000', 'เดินทาง Plus', 'ชั้น 1', 'ขั้น 3', 'เชงเก้น', 'อัคคีภัยบ้านอยู่อาศัย', 'น้ำท่วมบ่อย']) assert.ok(chatCalls[0].knowledge.includes(x), `knowledge has ${x}`);
 assert.ok(!/ค่าคอม|commission/i.test(chatCalls[0].knowledge), 'no partner commission in the customer knowledge');
 await customer.locator('#cb-input').fill('เลขบัตร 1103700123457 ซื้อได้ไหม');
 await customer.locator('.cb-form').getByRole('button', { name: 'ส่ง' }).click();
@@ -97,10 +97,9 @@ log('chatbot: product question answered from the live catalogue (mocked API), ID
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
 assert.equal(await customer.locator('.line-card').count(), 4, 'home shows four lines of business');
-assert.equal(await customer.locator('.line-card.soon').count(), 1, 'only fire is still marked coming soon');
-await customer.locator('.line-card.soon .soon-mark', { hasText: 'Coming soon' }).first().waitFor();
+assert.equal(await customer.locator('.line-card.soon').count(), 0, 'every line is on sale');
 // The line bar on top reaches every line from any step; lines not on sale are disabled.
-assert.deepEqual(await customer.locator('.line-nav .ln-item.soon').evaluateAll((els) => els.map((e) => e.disabled)), [true], 'coming-soon line disabled in the bar');
+assert.equal(await customer.locator('.line-nav .ln-item.soon').count(), 0, 'no coming-soon lines left in the bar');
 await customer.locator('.line-nav').getByRole('button', { name: /ประกันเดินทาง/ }).click();
 await customer.locator('#tr-start').waitFor();
 await customer.locator('.line-nav').getByRole('button', { name: /หน้าแรก/ }).click();
@@ -1299,6 +1298,115 @@ await office.locator('.dash-lines').getByText('ประกันอุบัต
 await office.locator('#d-line').selectOption('pa');
 await office.locator('#d-line').selectOption('all');
 log('back office: PA price saved as v2 (policies keep their price); dashboard shows PA as its own line');
+
+// ---- Fire: sample scenarios for each rule, instant issue, review, partner sale and renewal, sales mode ----
+const home = await ctx.newPage();
+watch(home);
+await home.goto(url + '?fi=1#customer');
+await thai(home);
+await home.locator('.line-card.line-fire').click();
+await home.locator('.fi-samples').waitFor();
+// Instant: a concrete house in Bangkok under the review threshold.
+await home.locator('.fi-samples').getByRole('button', { name: 'ออกทันที' }).click();
+// The number field reformats after the sample fills it: wait for the value rather than read it once.
+await home.waitForFunction(() => document.querySelector('#fi-bsi')?.value === '2,400,000', null, { timeout: 5000 });
+await home.locator('.pa-instant-note').waitFor();
+await home.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+// 2,400,000 + 300,000 = 2.7M × (1.0 + storm 0.3)‰ = 3,510
+assert.equal((await home.locator('.fire-plan').first().locator('.tr-plan-price').innerText()).replace(/\D/g, ''), '3510', 'rate × total sum');
+await home.locator('.fire-plan').first().getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await home.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await home.getByText('กรุณาแนบสำเนาบัตรประชาชนและรูปบ้านด้านหน้า').waitFor();
+await home.locator('#ff-ocr-id').setInputFiles(jpg('fire-id.jpg'));
+await home.locator('.ocr-box').getByText(/กรอกชื่อ เลขบัตร และที่อยู่จากบัตรแล้ว/).waitFor();
+await home.locator('#ff-house').setInputFiles(jpg('house.jpg'));
+await home.getByText('แนบรูปบ้านแล้ว').waitFor();
+await home.locator('#ff-phone').fill('0861234567');
+await home.locator('#ff-email').fill('fire@example.com');
+await home.locator('#ff-declare').check();
+await home.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await home.locator('.pay-btn').click();
+const fiNo = (await home.locator('.ref-big').innerText()).trim();
+assert.match(fiNo, /^FI\d{2}-\d{5}$/, 'fire policy issued on payment');
+let st4 = await state(home);
+const fiCase = st4.cases.find((c) => c.policyNo === fiNo);
+assert.equal(fiCase.premium, 3510);
+assert.ok(fiCase.docs.idcard && fiCase.docs.house, 'ID card and house photo attached');
+log(`fire: house sample (2.7M, concrete, Bangkok, storm) priced at the rate and issued on payment: ${fiNo}`);
+
+// Each review rule, from its sample: high sum, wooden house, past claim, flood-prone province.
+const reasons = [['ทุนเกิน 5 ล้าน', 'ทุนประกันรวมเกิน'], ['บ้านไม้', 'อาคารโครงสร้างไม้'], ['เคยมีเคลม', 'เคยเกิดไฟไหม้หรือเคลม'], ['จังหวัดน้ำท่วมบ่อย', 'จังหวัดพื้นที่น้ำท่วมบ่อย']];
+await home.getByRole('button', { name: 'เริ่มคำขอใหม่' }).click();
+for (const [chip, why] of reasons) {
+  await home.locator('.fi-samples').getByRole('button', { name: chip }).click();
+  await home.locator('.pa-review-note').getByText(new RegExp(why)).waitFor();
+}
+await home.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await home.locator('.fire-plan').first().getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await home.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await home.locator('#ff-declare').check();
+await home.getByRole('button', { name: /ส่งใบคำขอให้เจ้าหน้าที่พิจารณา/ }).click();
+const fiRef = (await home.locator('.ref-big').innerText()).trim();
+st4 = await state(home);
+assert.equal(st4.cases.find((c) => c.id === fiRef).status, 'NEW', 'flood-zone application waits for the back office');
+assert.deepEqual(st4.cases.find((c) => c.id === fiRef).pkg.fire.referral, ['flood']);
+// A shop is a separate package.
+await home.locator('.line-nav').getByRole('button', { name: /ประกันอัคคีภัย/ }).click();
+await home.locator('.fi-samples').getByRole('button', { name: 'ร้านค้า' }).click();
+await home.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await home.locator('.fire-plan', { hasText: 'อัคคีภัยร้านค้า / สำนักงาน' }).waitFor();
+assert.equal(await home.locator('.fire-plan', { hasText: 'บ้านอยู่อาศัย' }).count(), 0, 'shops see shop packages only');
+log(`fire: each review rule shown from its sample (sum, wood, claim, flood province); flood-zone application ${fiRef} sent for review; shops get their own package`);
+
+// Back office: review the flood-zone application, then switch the line to ready-made plans.
+await office.bringToFront();
+await abc(office, 'backoffice');
+await office.locator('#bo-type').selectOption('FIRE');
+await office.locator('#bo-q').fill(fiRef);
+await office.locator('.case-row').first().click();
+await office.locator('.case-detail .pa-referral').getByText(/น้ำท่วมบ่อย/).waitFor();
+assert.equal(await office.locator('.case-detail .doc-tile.has').count(), 2, 'ID card and house photo in the back office');
+await office.locator('.case-detail').getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
+await office.locator('.case-detail').getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor();
+await office.locator('#bo-q').fill('');
+await office.locator('#bo-type').selectOption('all');
+await abc(office, 'fire');
+await office.getByRole('heading', { name: /ประกันอัคคีภัย/ }).first().waitFor();
+await office.locator('.fa-mode').getByRole('radio', { name: /แผนสำเร็จรูป/ }).click();
+await office.getByRole('button', { name: 'บันทึกการตั้งค่า' }).click();
+st4 = await state(office);
+assert.equal(st4.fireSettings.mode, 'plan', 'line switched to ready-made plans');
+await home.bringToFront();
+await home.locator('.line-nav').getByRole('button', { name: /ประกันอัคคีภัย/ }).click();
+await home.locator('.fi-samples').getByRole('button', { name: 'ออกทันที' }).click();
+await home.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+assert.equal(await home.locator('.fire-plan').count(), 3, 'three ready-made home plans');
+// Plan price 3,290 + storm 900, whatever the house's own sums.
+assert.equal((await home.locator('.fire-plan', { hasText: 'บ้านอุ่นใจ 3 ล้าน' }).locator('.tr-plan-price').innerText()).replace(/\D/g, ''), '4190', 'fixed plan price plus the add-on');
+await office.bringToFront();
+await office.locator('.fa-mode').getByRole('radio', { name: /กำหนดทุนเอง/ }).click();
+await office.getByRole('button', { name: 'บันทึกการตั้งค่า' }).click();
+log('fire: back office reviewed the flood-zone application and issued it; switching the sales mode to ready-made plans changes what customers see');
+
+// Partner: fire sale on the spot, and a fire renewal from the renewal report.
+await agent.bringToFront();
+await agent.getByRole('tab', { name: 'ขาย / เสนอราคา' }).click();
+await agent.locator('#ag-line').getByRole('radio', { name: /ประกันอัคคีภัย/ }).click();
+await agent.locator('.fire-sell .fi-samples').getByRole('button', { name: 'ออกทันที' }).click();
+await agent.locator('.tr-ag-table tbody tr').first().click();
+await agent.locator('.fire-sell').getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await agent.locator('.fire-sell').getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').click();
+await agent.locator('.fire-sell').getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
+await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
+await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
+await agent.locator('.ag-case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor({ timeout: 5000 });
+await agent.getByRole('tab', { name: /รายงานต่ออายุ/ }).click();
+await agent.locator('#rr-months').selectOption('3');
+await agent.locator('.rr-table tbody tr:has(.type-FIRE)', { has: agent.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }) }).first().getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }).click();
+await agent.getByText(/ต่ออายุประกันอัคคีภัย/).waitFor();
+assert.equal(await agent.locator('#ag-fi-loss-no').count(), 0, 'renewal asks no history question');
+log('fire: partner sold a house policy on the spot (issued on collection) and opened a fire renewal prefilled from the report');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });

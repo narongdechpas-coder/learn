@@ -24,6 +24,7 @@ import { subjectText, tripRange } from '../data/travel';
 import { LineNav, ProductHome, TravelBuy, TravelCertificate } from './Travel';
 import { ChatBot } from './ChatBot';
 import { PaBuy, PaCertificate, PaKv, PaRenewBox } from './Pa';
+import { FireBuy, FireCertificate, FireKv, FireRenewBox } from './Fire';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { EXTRA_KEY, productName } from './Products';
 import { riderRows } from './riders';
@@ -60,7 +61,7 @@ export const SAMPLE_CUSTOMER = (): CustomerT => ({
 });
 
 const isSelfType = (t: CoverageType) => SELF_SERVICE_TYPES.includes(t);
-const TYPE_DESC: Record<CoverageType, TKey> = { T1: 'descT1', T2P: 'descT2P', T3P: 'descT3P', T2: 'descT2', T3: 'descT3', CMI: 'descCMI', TRV: 'descTRV', PA: 'descPA' };
+const TYPE_DESC: Record<CoverageType, TKey> = { T1: 'descT1', T2P: 'descT2P', T3P: 'descT3P', T2: 'descT2', T3: 'descT3', CMI: 'descCMI', TRV: 'descTRV', PA: 'descPA', FIRE: 'descFIRE' };
 const CALLBACK_KEY: Record<CallbackSlot, TKey> = { none: 'cbNone', asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' };
 const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
@@ -112,6 +113,8 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
           <Buy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} onHome={() => setLine(null)} />
         ) : line === 'travel' ? (
           <TravelBuy key={flow} onHome={() => setLine(null)} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
+        ) : line === 'fire' ? (
+          <FireBuy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
         ) : line === 'pa' ? (
           <PaBuy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
         ) : (
@@ -1035,7 +1038,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
   const plan = installmentPlan(total);
   const missing = docsMissing(c);
   // Travel and PA documents were attached on the form; only what is still missing is asked for here.
-  const travel = c.coverage === 'TRV' || c.coverage === 'PA';
+  const travel = c.coverage === 'TRV' || c.coverage === 'PA' || c.coverage === 'FIRE';
   const n0 = travel && !missing.length ? 0 : 1;
   const shipTo = addrMode === 'id' ? c.customer.address.trim() : address.trim();
   useEffect(() => {
@@ -1163,7 +1166,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
         <aside className="order-summary">
           <div className="eyebrow">{t('orderSummary')}</div>
           <div className="os-car">{c.vehicle ? vehicleText(c.vehicle) : subjectText(c, lang)}</div>
-          <div className="muted os-sub">{c.vehicle ? usageText(c.vehicle.usage, lang) : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : ''}</div>
+          <div className="muted os-sub">{c.vehicle ? usageText(c.vehicle.usage, lang) : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : c.pkg?.fire ? tripRange(c.pkg.fire as never, lang) : ''}</div>
           <dl>
             {c.pkg && (
               <div>
@@ -1222,6 +1225,7 @@ function SelfDone({ c, onRestart }: { c: Case; onRestart?: () => void }) {
 function PolicyDoc({ c }: { c: Case }) {
   const { t, lang } = useT();
   if (c.pkg?.accident) return <PaCertificate c={c} />;
+  if (c.pkg?.fire) return <FireCertificate c={c} />;
   if (!c.vehicle) return <TravelCertificate c={c} />;
   const start = new Date(`${c.customer.startDate}T00:00:00+07:00`).getTime();
   const end = start + 365 * 86400000;
@@ -1352,13 +1356,13 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
         <div>
           <div className="eyebrow num">{c.id}</div>
           <h2>{subjectText(c, lang)}</h2>
-          <div className="muted">{c.vehicle ? `${usageText(c.vehicle.usage, lang)} · ${c.customer.plate}` : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : ''}</div>
+          <div className="muted">{c.vehicle ? `${usageText(c.vehicle.usage, lang)} · ${c.customer.plate}` : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : c.pkg?.fire ? tripRange(c.pkg.fire as never, lang) : ''}</div>
         </div>
         <StatusPill status={c.status} />
       </div>
       <dl className="kv-row">
         <div><dt>{t('coverage')}</dt><dd><TypeTag type={c.coverage} />{c.addCmi && <span className="muted"> {t('plusCmi')}</span>}</dd></div>
-        {(c.coverage === 'TRV' || c.coverage === 'PA') && c.pkg ? (
+        {(c.coverage === 'TRV' || c.coverage === 'PA' || c.coverage === 'FIRE') && c.pkg ? (
           <div><dt>{t('trPlan')}</dt><dd>{productName(c.pkg, lang)}</dd></div>
         ) : (
           <div><dt>{t('sumInsured')}</dt><dd className="num">{c.vehicle && ['T1', 'T2P', 'T3P', 'T2'].includes(c.coverage) ? fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang) : '—'}</dd></div>
@@ -1393,6 +1397,8 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
       {c.status === 'ISSUED' && c.vehicle && <IssuedExtras c={c} />}
       {c.status === 'ISSUED' && c.pkg?.accident && <PaRenewBox c={c} />}
       {c.coverage === 'PA' && <PaKv c={c} />}
+      {c.status === 'ISSUED' && c.pkg?.fire && <FireRenewBox c={c} />}
+      {c.coverage === 'FIRE' && <FireKv c={c} />}
       {c.source === 'quote' && (c.status === 'NEW' || c.status === 'ACCEPTED') && (
         <div className="callout">
           <div>
@@ -1406,7 +1412,7 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
 
       <h3>{t('timeline')}</h3>
       <ol className="timeline">
-        {TIMELINE.filter((st) => (c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')) && (c.source === 'self' ? st !== 'accepted' : st !== 'paid') && !((c.coverage === 'TRV' || c.coverage === 'PA') && st === 'docsComplete')).map((st) => (
+        {TIMELINE.filter((st) => (c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')) && (c.source === 'self' ? st !== 'accepted' : st !== 'paid') && !((c.coverage === 'TRV' || c.coverage === 'PA' || c.coverage === 'FIRE') && st === 'docsComplete')).map((st) => (
           <li key={st} className={c.stamps[st] ? 'done' : ''}>
             <span className="dot" aria-hidden="true" />
             <span>{STAGE_LABEL[lang][st]}</span>

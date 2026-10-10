@@ -2020,3 +2020,30 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .date-native { position: absolute; right: 4px; bottom: 0; width: 34px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 .cb-msg li { display: list-item; }
 .cb-msg ul { list-style: disc; }
+
+/* ---------- Fire insurance ---------- */
+.type-tag.type-FIRE { color: var(--warn); }
+.fi-samples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.fi-samples .hint { margin: 0 4px 0 0; }
+.fi-perils { display: flex; flex-wrap: wrap; gap: 8px; }
+.fi-peril { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.fi-peril.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.fi-loss { list-style: none; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); display: grid; gap: 6px; margin-top: 10px; }
+.fi-loss.invalid { border-color: var(--bad); }
+.fi-house { justify-self: start; margin: 10px 0 4px; display: inline-flex; gap: 6px; align-items: center; }
+.fi-house.done { border-color: var(--good); color: var(--good); }
+.fi-house.invalid { border-color: var(--bad); }
+.fa-settings { display: grid; gap: 12px; margin-bottom: 14px; }
+.fa-settings h3 { margin: 0; }
+.fa-mode { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: stretch; }
+.fa-mode .field-label { grid-column: 1 / -1; }
+.fa-costs { display: grid; gap: 6px; }
+.fa-costs label { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 8px; align-items: center; font-size: 0.88rem; }
+.fa-flood { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fa-flood .chip { display: inline-flex; gap: 6px; align-items: center; }
+.fa-flood select { width: auto; }
+.fa-show { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; }
+.fa-sub { margin: 14px 0 6px; font-size: 0.95rem; }
+.callout.pa-review-note { display: block; }
+.pa-review-note ul { margin: 4px 0 0; padding-left: 20px; }
+.fire-sell .tr-plan-grid, .buy.fire .tr-plan-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 380px)); }

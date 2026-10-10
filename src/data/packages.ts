@@ -24,6 +24,7 @@ export const REQUIRED_DOCS: Record<CoverageType, DocKey[]> = {
   CMI: ['regbook', 'idcard'],
   TRV: ['idcard', 'passport'],
   PA: ['idcard'],
+  FIRE: ['idcard', 'house'],
 };
 
 export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
@@ -111,4 +112,5 @@ export const SCENARIO_COVER: Record<CoverageType, Record<Scenario, boolean>> = {
   CMI: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: false },
   TRV: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: false },
   PA: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: false },
+  FIRE: { collide: false, solo: false, theftFire: false, flood: false, thirdParty: false },
 };

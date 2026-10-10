@@ -7,6 +7,7 @@ import { visitEn, visitTh } from './i18nVisit';
 import { travelEn, travelTh } from './i18nTravel';
 import { paEn, paTh } from './i18nPa';
 import { chatEn, chatTh } from './i18nChat';
+import { fireEn, fireTh } from './i18nFire';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -493,7 +494,7 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh, ...paTh, ...chatTh };
+const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh, ...paTh, ...chatTh, ...fireTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
@@ -503,6 +504,7 @@ const en: Dict = {
   ...travelEn,
   ...paEn,
   ...chatEn,
+  ...fireEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',
@@ -993,8 +995,8 @@ export function translate(lang: Lang, key: TKey, params?: Record<string, string 
 }
 
 export const COVERAGE_LABEL: Record<Lang, Record<CoverageType, string>> = {
-  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.', TRV: 'ประกันเดินทาง', PA: 'ประกันอุบัติเหตุ' },
-  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI', TRV: 'Travel', PA: 'Personal accident' },
+  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.', TRV: 'ประกันเดินทาง', PA: 'ประกันอุบัติเหตุ', FIRE: 'ประกันอัคคีภัย' },
+  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI', TRV: 'Travel', PA: 'Personal accident', FIRE: 'Fire' },
 };
 
 export const STATUS_LABEL: Record<Lang, Record<Status, string>> = {
@@ -1044,8 +1046,8 @@ export const STAGE_LABEL: Record<Lang, Record<Stage, string>> = {
 };
 
 export const DOC_LABEL: Record<Lang, Record<DocKey, string>> = {
-  th: { front: 'รูปรถด้านหน้า', back: 'รูปรถด้านหลัง', left: 'รูปรถด้านซ้าย', right: 'รูปรถด้านขวา', regbook: 'สำเนาเล่มรถ', idcard: 'สำเนาบัตรประชาชน', passport: 'สำเนาหนังสือเดินทาง (Passport)' },
-  en: { front: 'Car photo: front', back: 'Car photo: rear', left: 'Car photo: left', right: 'Car photo: right', regbook: 'Registration book copy', idcard: 'ID card copy', passport: 'Passport copy' },
+  th: { front: 'รูปรถด้านหน้า', back: 'รูปรถด้านหลัง', left: 'รูปรถด้านซ้าย', right: 'รูปรถด้านขวา', regbook: 'สำเนาเล่มรถ', idcard: 'สำเนาบัตรประชาชน', passport: 'สำเนาหนังสือเดินทาง (Passport)', house: 'รูปบ้าน / อาคารด้านหน้า' },
+  en: { front: 'Car photo: front', back: 'Car photo: rear', left: 'Car photo: left', right: 'Car photo: right', regbook: 'Registration book copy', idcard: 'ID card copy', passport: 'Passport copy', house: 'Photo of the building (front)' },
 };
 
 export const SLA_LABEL: Record<Lang, Record<SlaKey, string>> = {
