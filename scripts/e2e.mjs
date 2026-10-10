@@ -1020,7 +1020,13 @@ log(`customer bought travel Plus (worldwide, 7 days) online: no documents, polic
 
 // Partner: travel quotation with two plans and a discount; the customer accepts and pays through the link.
 await agent.bringToFront();
+// From the catalogue: "sell this plan" opens the travel sell screen with that plan picked.
+await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+await agent.locator('.ct-card.type-TRV', { hasText: 'เดินทาง Plus' }).getByRole('button', { name: 'เลือกแผนนี้ไปขาย' }).click();
+await agent.locator('.tr-picked').getByText(/เดินทาง Plus/).waitFor();
+assert.equal(await agent.locator('.tr-ag-table tbody tr.on', { hasText: 'เดินทาง Plus' }).count(), 1, 'plan picked from the catalogue');
 await agent.getByRole('tab', { name: 'ขาย / เสนอราคา' }).click();
+await agent.locator('#ag-line').getByRole('radio', { name: /ประกันรถยนต์/ }).click();
 await agent.locator('#ag-line').getByRole('radio', { name: /ประกันเดินทาง/ }).click();
 await agent.locator('#ag-tr-start').fill(isoIn(30));
 await agent.locator('#ag-tr-end').fill(isoIn(33));

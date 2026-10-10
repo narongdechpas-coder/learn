@@ -550,16 +550,17 @@ export function loadNote(t: T, age: number) {
  * Partner screen for travel: same rules as motor. Sell on the spot (one plan, the customer agrees in
  * person) or send a quotation of up to three plans; the discount comes out of the partner's commission.
  */
-export function TravelSell({ agent, onCase, renderMade }: { agent: Agent; onCase: (id: string) => void; renderMade: (id: string, again: () => void) => React.ReactNode }) {
+export function TravelSell({ agent, onCase, renderMade, initialPick }: { agent: Agent; onCase: (id: string) => void; renderMade: (id: string, again: () => void) => React.ReactNode; initialPick?: string }) {
   const { t, lang } = useT();
   const s = useStore();
   const [f, setF] = useState<TripForm>(defaultTripForm);
   const [mode, setMode] = useState<'buy' | 'quote'>('buy');
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(initialPick ? [initialPick] : []);
   const [disc, setDisc] = useState(0);
   const [collect, setCollect] = useState<'link' | 'agent'>('link');
   const [consent, setConsent] = useState(false);
   const [made, setMade] = useState<string | null>(null);
+  const pickedPlan = initialPick ? s.travelProducts.find((p) => p.id === initialPick) : undefined;
   const [err, setErr] = useState('');
   const set = (p: Partial<TripForm>) => setF((x) => ({ ...x, ...p }));
   const chk = checkTrip(f, t);
@@ -596,6 +597,9 @@ export function TravelSell({ agent, onCase, renderMade }: { agent: Agent; onCase
 
   return (
     <div className="ag-sell tr-sell">
+      {pickedPlan && (
+        <p className="callout tone-info tr-picked">✓ {t('trPickedFromCatalog', { name: lang === 'en' ? pickedPlan.nameEn || pickedPlan.nameTh : pickedPlan.nameTh })}</p>
+      )}
       <section className="card">
         <h3>✈️ {t('trTrip')}</h3>
         <TripFields f={f} set={set} errors={chk.errors} idPrefix="ag-tr" />
@@ -604,7 +608,7 @@ export function TravelSell({ agent, onCase, renderMade }: { agent: Agent; onCase
         <div className="card-head">
           <div>
             <h3>{t('trPlanTitle')}</h3>
-            <p className="hint">{mode === 'buy' ? t('agBuyHint') : t('trQuoteHint', { n: chosen.length })}</p>
+            <p className="hint">{mode === 'buy' ? t('trBuyHint') : t('trQuoteHint', { n: chosen.length })}</p>
           </div>
           <Segmented id="ag-tr-mode" label={t('agMode')} value={mode} onChange={(m) => { setMode(m); setPicked((p) => (m === 'buy' ? p.slice(0, 1) : p)); setErr(''); }} options={[
             { value: 'buy', label: t('agModeBuy') },

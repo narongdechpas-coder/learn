@@ -18,7 +18,7 @@ const pickList = (p: Product, lang: 'th' | 'en', th: 'highlightsTh' | 'exclusion
  * Products on sale, for customers (website) or a Business Partner (only what they may sell, with
  * their commission). "Check your price" leads into the usual car → package flow.
  */
-export function ProductCatalog({ channel, agentId, onCheck }: { channel: 'self' | 'partner'; agentId?: string; onCheck: (type: CoverageType) => void }) {
+export function ProductCatalog({ channel, agentId, onCheck }: { channel: 'self' | 'partner'; agentId?: string; onCheck: (type: CoverageType, productId?: string) => void }) {
   const travel = useStore().travelProducts.filter((p) => travelOnSale(p, channel, agentId));
   const { t, lang } = useT();
   const s = useStore();
@@ -103,7 +103,7 @@ export function ProductCatalog({ channel, agentId, onCheck }: { channel: 'self' 
                   <div className="ct-foot">
                     <div>{range && <div className="ct-price"><small>{t('ctFrom')}</small> <b className="num">{fmtBaht(range[0], lang)}</b></div>}</div>
                     <div className="ct-actions">
-                      <button type="button" className="btn primary small" onClick={() => onCheck('TRV')}>{t('ctCheck')}</button>
+                      <button type="button" className="btn primary small" onClick={() => onCheck('TRV', p.id)}>{t(channel === 'partner' ? 'ctSellPlan' : 'trChoose')}</button>
                     </div>
                   </div>
                 </article>
