@@ -427,3 +427,18 @@ export interface Staff {
   /** Used by the seed generator only: how quickly this person usually works. */
   pace: number;
 }
+
+/** A marketing officer's visit to a Business Partner, recorded after the meeting. */
+export interface Visit {
+  id: string;
+  agentId: string;
+  mktId: string;
+  /** Visit date (Bangkok noon of that day). */
+  at: number;
+  /** Points prepared for the meeting (printed on the report). */
+  topics: string[];
+  outcome: string;
+  /** Next appointment, if one was made. */
+  nextAt?: number;
+  recordedAt: number;
+}

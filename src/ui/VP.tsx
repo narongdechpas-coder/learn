@@ -1,40 +1,19 @@
 import { useMemo, useState } from 'react';
-import type { Agent, Case } from '../types';
+import type { Agent } from '../types';
 import { MARKETING } from '../data/agents';
 import { fmtBaht, fmtCompactBaht, fmtDate, fmtNum, useT, type TKey } from '../i18n';
 import { updateAgent, useStore } from '../store';
-import { firstLiveMonth, rolling12 } from '../lib/history';
-import { bkkParts, bkkTime, monthKey } from '../lib/time';
+import { rolling12 } from '../lib/history';
+import { ach, addRow as add, lossRatio, perfCells, renewRate, zeroRow as zero, type PerfRow as Row } from '../lib/perf';
+import { bkkTime, monthKey } from '../lib/time';
 import { ClusteredBarChart } from './charts';
 import { Segmented, useNow } from './common';
+import { NextVisit, VisitList, visitInfo } from './Visits';
 
 /** Marketing officers keep a fixed colour everywhere on this page (validated categorical slots 1-3). */
 export const MKT_COLOR: Record<string, string> = { m1: 'var(--mk-1)', m2: 'var(--mk-2)', m3: 'var(--mk-3)' };
 
 type Period = 'month' | 'r12';
-
-interface Row {
-  target: number;
-  gwp: number;
-  policies: number;
-  renewDue: number;
-  renewed: number;
-  renewGwp: number;
-  claims: number;
-}
-const zero = (): Row => ({ target: 0, gwp: 0, policies: 0, renewDue: 0, renewed: 0, renewGwp: 0, claims: 0 });
-const add = (a: Row, b: Row): Row => ({
-  target: a.target + b.target,
-  gwp: a.gwp + b.gwp,
-  policies: a.policies + b.policies,
-  renewDue: a.renewDue + b.renewDue,
-  renewed: a.renewed + b.renewed,
-  renewGwp: a.renewGwp + b.renewGwp,
-  claims: a.claims + b.claims,
-});
-const ach = (r: Row) => (r.target ? r.gwp / r.target : 0);
-const renewRate = (r: Row) => (r.renewDue ? r.renewed / r.renewDue : 0);
-const lossRatio = (r: Row) => (r.gwp ? r.claims / r.gwp : 0);
 
 /** Loss ratio bands (sample): up to 55% healthy, up to 70% watch, above that a problem. */
 const lrTone = (lr: number) => (lr <= 0.55 ? 'good' : lr <= 0.7 ? 'warn' : 'bad');
@@ -52,39 +31,10 @@ export function VPApp() {
   const [table, setTable] = useState(false);
 
   const months = useMemo(() => rolling12(now), [now]);
-  const live = firstLiveMonth(s.seededAt);
   const thisMonth = monthKey(now);
-  const np = bkkParts(now);
-  const monthShare = np.d / new Date(Date.UTC(np.y, np.mo + 1, 0)).getUTCDate();
 
   /** One partner's numbers for one month: production from the cases once they exist, else the history. */
-  const cell = useMemo(() => {
-    const byKey = new Map<string, Row>();
-    const issued = new Map<string, Case[]>();
-    for (const c of s.cases) {
-      if (!c.agentId || c.stamps.issued === undefined) continue;
-      const k = `${c.agentId}|${monthKey(c.stamps.issued)}`;
-      issued.set(k, [...(issued.get(k) ?? []), c]);
-    }
-    for (const m of s.monthly) {
-      const a = s.agents.find((x) => x.id === m.agentId);
-      if (!a) continue;
-      const k = `${m.agentId}|${m.month}`;
-      const cs = m.month >= live ? (issued.get(k) ?? []) : [];
-      const gwp = m.month >= live ? cs.reduce((x, c) => x + (c.premium ?? 0), 0) : m.gwp;
-      byKey.set(k, {
-        // The current month is compared with the target to date, so a half-finished month is not a "miss".
-        target: m.month === thisMonth ? Math.round(a.target * monthShare) : a.target,
-        gwp,
-        policies: m.month >= live ? cs.length : m.policies,
-        renewDue: m.renewDue,
-        renewed: m.renewed,
-        renewGwp: m.renewGwp,
-        claims: gwp * m.lossRatio,
-      });
-    }
-    return (agentId: string, month: string) => byKey.get(`${agentId}|${month}`) ?? zero();
-  }, [s.cases, s.monthly, s.agents, live, thisMonth, monthShare]);
+  const cell = useMemo(() => perfCells(s, now), [s.cases, s.monthly, s.agents, s.seededAt, now]);
 
   const inPeriod = period === 'month' ? [thisMonth] : months.map((m) => m.key);
   const agentRow = (a: Agent) => inPeriod.reduce((acc, m) => add(acc, cell(a.id, m)), zero());
@@ -346,6 +296,7 @@ export function VPApp() {
                 <th className="r">{t('vpRenewal')}</th>
                 <th className="r">{t('vpRenewalGwp')}</th>
                 <th>{t('vpLoss')}</th>
+                <th>{t('vpVisitCol')}</th>
               </tr>
             </thead>
             <tbody>
@@ -369,12 +320,29 @@ export function VPApp() {
                   <td className="r num">{fmtNum(renewRate(r) * 100, lang, 0)}% <span className="muted">({r.renewed}/{r.renewDue})</span></td>
                   <td className="r num">{fmtBaht(Math.round(r.renewGwp), lang)}</td>
                   <td><LrChip lr={lossRatio(r)} withValue /></td>
+                  <td className="vp-visit">
+                    {(() => {
+                      const vi = visitInfo(s.visits, a.id);
+                      return (
+                        <>
+                          <div className="hint">{t('vsLast')}: <span className="num">{vi.last ? fmtDate(vi.last.at, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : t('vsNever')}</span></div>
+                          <div className="hint">{t('vsNext')}: <NextVisit at={vi.next} now={now} /></div>
+                        </>
+                      );
+                    })()}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <p className="hint">{t('vpNote')}</p>
+      </section>
+
+      <section className="card">
+        <h3>{t('vpVisits')}</h3>
+        <p className="hint">{t('vpVisitsLead')}</p>
+        <VisitList visits={s.visits.filter((v) => mktFilter === 'all' || s.agents.find((a) => a.id === v.agentId)?.mktId === mktFilter)} limit={8} />
       </section>
     </div>
   );

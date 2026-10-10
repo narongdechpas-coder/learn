@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
-import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic } from './lib/seed';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle, Visit } from './types';
+import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
@@ -30,10 +30,12 @@ export interface State {
   /** The product catalogue (current version of each) and every saved version. */
   products: Product[];
   productLog: ProductVersion[];
+  /** Marketing visits to partners, newest first. */
+  visits: Visit[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 10;
+const VERSION = 11;
 
 function fresh(): State {
   const now = Date.now();
@@ -58,6 +60,7 @@ function fresh(): State {
     monthly: seedMonthly(cases, now),
     products,
     productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
+    visits: seedVisits(now),
   };
 }
 
@@ -703,6 +706,13 @@ export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: stri
     cases,
     emails: mail(base, 'agentRemit', { id: c.id, customer: { firstName: ag.th } as Customer }, { customer: `${c.customer.firstName} ${c.customer.lastName}`, premium: totalPremium(c) ?? 0, mkt: mktId }, `${ag.code.toLowerCase()}@agents.jacky.example`),
   });
+}
+
+export function addVisit(v: Omit<Visit, 'id' | 'recordedAt'>) {
+  const base = load() ?? state;
+  const visit: Visit = { ...v, id: `v${Date.now().toString(36)}`, recordedAt: Date.now() };
+  commit({ ...base, visits: [visit, ...base.visits].sort((a, b) => b.at - a.at) });
+  return visit;
 }
 
 export function updateAgent(id: string, patch: Partial<Pick<Agent, 'target' | 'active' | 'mktId'>>) {

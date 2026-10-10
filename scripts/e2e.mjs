@@ -683,6 +683,27 @@ await mkt.getByRole('button', { name: 'ทวงถาม' }).first().click();
 await mkt.getByText('✓ ทวงแล้ว').first().waitFor();
 log('marketing sees own partners, renewal rate overall and per partner, changed a target, suspended/reactivated a partner, sent reminders');
 
+// Partner visit: A4 report (two pages, internal figures), then record the outcome.
+await mkt.getByRole('tab', { name: 'เยี่ยม Partner' }).click();
+assert.equal(await mkt.locator('.vs-table tbody tr').count(), 2, 'visit list shows own partners');
+await mkt.locator('.vs-table tbody tr').first().getByRole('button', { name: /รายงานเยี่ยม/ }).click();
+assert.equal(await mkt.locator('.vr-page').count(), 2, 'report has two A4 pages');
+await mkt.locator('.vr-page').first().getByText('Loss Ratio', { exact: true }).waitFor();
+assert.equal(await mkt.locator('.vr-table').first().locator('thead th').count(), 4, 'this month, YTD and 12 months');
+await mkt.locator('.vr-page').first().getByText(/จาก 6/).first().waitFor();
+await mkt.locator('#vr-topics').fill('ยอดต่ำกว่าเป้า\nงานต่ออายุค้าง');
+assert.equal(await mkt.locator('.vr-topics li').count(), 2, 'topics printed on page 2');
+await mkt.getByRole('button', { name: 'บันทึกการเยี่ยม' }).click();
+const vform = mkt.getByRole('dialog', { name: 'บันทึกการเยี่ยม' });
+assert.equal(await vform.locator('#vf-topics').inputValue(), 'ยอดต่ำกว่าเป้า\nงานต่ออายุค้าง', 'topics carried into the visit record');
+await vform.getByRole('button', { name: 'บันทึก', exact: true }).click();
+await vform.getByText('กรุณากรอกผลการคุย').waitFor();
+await vform.locator('#vf-outcome').fill('ตกลงเร่งงานต่ออายุภายในเดือนนี้');
+await vform.getByRole('button', { name: 'บันทึก', exact: true }).click();
+await mkt.getByText(/บันทึกการเยี่ยม .* แล้ว/).waitFor();
+await mkt.locator('.vs-list li', { hasText: 'ตกลงเร่งงานต่ออายุภายในเดือนนี้' }).waitFor();
+log('marketing printed a two-page partner visit report (target, YTD, 12 months, rank, sales by class, new vs renewal, topics) and recorded the visit');
+
 await office.bringToFront();
 await abc(office, 'dashboard');
 await office.getByRole('heading', { name: 'อันดับ Business Partner' }).waitFor();
@@ -732,6 +753,9 @@ await office.locator('#vp-mkt').selectOption('m1');
 await office.getByRole('radio', { name: 'เดือนนี้' }).click();
 await office.getByText(/ยอดถึงวันนี้/).first().waitFor();
 assert.ok((await office.locator('.vp-agents .pill').first().innerText()).match(/%/), 'loss ratio shown per partner');
+await office.getByRole('heading', { name: 'การเยี่ยม Partner ล่าสุด' }).waitFor();
+await office.locator('#vp-mkt').selectOption('all');
+await office.locator('.vs-list li', { hasText: 'ตกลงเร่งงานต่ออายุภายในเดือนนี้' }).waitFor();
 log('VP sees marketing targets and ranking, rolling 12 months, partner GWP, renewal and loss ratio, and assigns partners to officers');
 
 // ---- Products: edit, versions, commission, end date, Excel round trip ----
