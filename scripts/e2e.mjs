@@ -67,6 +67,12 @@ await customer.bringToFront();
 assert.equal(await customer.locator('.line-card').count(), 4, 'home shows four lines of business');
 assert.equal(await customer.locator('.line-card.soon').count(), 2, 'personal accident and fire are marked coming soon');
 await customer.locator('.line-card.soon .soon-mark', { hasText: 'Coming soon' }).first().waitFor();
+// The line bar on top reaches every line from any step; lines not on sale are disabled.
+assert.deepEqual(await customer.locator('.line-nav .ln-item.soon').evaluateAll((els) => els.map((e) => e.disabled)), [true, true], 'coming-soon lines disabled in the bar');
+await customer.locator('.line-nav').getByRole('button', { name: /ประกันเดินทาง/ }).click();
+await customer.locator('#tr-start').waitFor();
+await customer.locator('.line-nav').getByRole('button', { name: /หน้าแรก/ }).click();
+assert.equal(await customer.locator('.line-card').count(), 4, 'bar goes back to the home page');
 await motor(customer);
 const seeBtn = customer.getByRole('button', { name: /ดูแพ็กเกจ/ });
 assert.equal(await seeBtn.isDisabled(), true, 'packages locked until car is chosen');

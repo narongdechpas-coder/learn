@@ -18,6 +18,9 @@ export const travelTh = {
   comingSoon: 'Coming soon',
   homeStart: 'เริ่มเลย',
   homeBack: 'เลือกประกันอื่น',
+  lineNavLabel: 'ประเภทประกัน',
+  lineNavHome: 'หน้าแรก',
+  lineNavSoon: 'เร็วๆ นี้',
   agLine: 'ประเภทประกัน',
   dashByLine: 'ยอดตามประเภทประกัน',
 
@@ -160,6 +163,9 @@ export const travelEn: typeof travelTh = {
   comingSoon: 'Coming soon',
   homeStart: 'Start',
   homeBack: 'Other insurance',
+  lineNavLabel: 'Insurance types',
+  lineNavHome: 'Home',
+  lineNavSoon: 'Soon',
   agLine: 'Insurance type',
   dashByLine: 'By line of business',
 

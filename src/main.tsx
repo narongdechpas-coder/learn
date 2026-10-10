@@ -85,6 +85,7 @@ function App() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sideOpen, setSideOpen] = useState(() => read('abc-side') !== '0');
   const toggleSide = () => setSideOpen((v) => (write('abc-side', v ? '0' : '1'), !v));
+  const [custHome, setCustHome] = useState(0);
   const [lastAbc, setLastAbc] = useState<View>(() => (isAbc(view) ? view : 'backoffice'));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const s = useStore();
@@ -221,7 +222,7 @@ function App() {
           </span>
         </div>
         <nav className="mainnav" aria-label="main">
-          <button type="button" className={`${view === 'customer' || view === 'agent' ? 'on' : ''} nav-customer`} aria-current={view === 'customer' ? 'page' : undefined} onClick={() => setView('customer')}>
+          <button type="button" className={`${view === 'customer' || view === 'agent' ? 'on' : ''} nav-customer`} aria-current={view === 'customer' ? 'page' : undefined} onClick={() => { setView('customer'); setCustHome((n) => n + 1); }}>
             {t('navCustomer')}
           </button>
           <button type="button" className={`${isAbc(view) ? 'on' : ''} nav-abc`} aria-current={isAbc(view) ? 'page' : undefined} onClick={() => setView(lastAbc)}>
@@ -264,7 +265,7 @@ function App() {
         {view === 'agent' && partnerId && <AgentApp agentId={partnerId} onLogout={() => { setPartnerId(null); setView('customer'); }} onOpenOffer={(id, asAgent) => openOffer(id, asAgent)} />}
         {view === 'agent' && !partnerId && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={null} openLogin onPartner={(id) => setPartnerId(id)} />}
 
-        {view === 'customer' && <CustomerApp trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
+        {view === 'customer' && <CustomerApp homeSignal={custHome} trackId={trackId} setTrackId={openTrack} onOpenCase={openCase} partnerId={partnerId} onPartner={(id) => { setPartnerId(id); setView('agent'); }} />}
         {isAbc(view) && (
           <div className={`abc-shell${sideOpen ? '' : ' side-hidden'}`}>
             {!sideOpen && (

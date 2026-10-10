@@ -31,6 +31,31 @@ const LINES: { line: Line; icon: string; title: TKey; desc: TKey; live: boolean 
   { line: 'fire', icon: '🏠', title: 'lineFire', desc: 'lineFireDesc', live: false },
 ];
 
+/** Customer navigation between lines of business; lines not on sale yet are shown but disabled. */
+export function LineNav({ line, onPick }: { line: Line | null; onPick: (l: Line | null) => void }) {
+  const { t } = useT();
+  return (
+    <nav className="line-nav" aria-label={t('lineNavLabel')}>
+      <button type="button" className={`ln-item${line === null ? ' on' : ''}`} aria-current={line === null ? 'page' : undefined} onClick={() => onPick(null)}>
+        <span aria-hidden="true">🏠</span> {t('lineNavHome')}
+      </button>
+      {LINES.map((x) => (
+        <button
+          key={x.line}
+          type="button"
+          className={`ln-item ln-${x.line}${line === x.line ? ' on' : ''}${x.live ? '' : ' soon'}`}
+          aria-current={line === x.line ? 'page' : undefined}
+          disabled={!x.live}
+          onClick={() => onPick(x.line)}
+        >
+          <span aria-hidden="true">{x.icon}</span> {t(x.title)}
+          {!x.live && <small className="ln-soon">{t('lineNavSoon')}</small>}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 /** Customer home: one card per line of business; lines not on sale yet carry a "Coming soon" mark. */
 export function ProductHome({ onPick }: { onPick: (l: Line) => void }) {
   const { t } = useT();
@@ -441,9 +466,6 @@ export function TravelBuy({ onHome, renderCheckout }: { onHome: () => void; rend
 
   return (
     <div className="buy travel">
-      <div className="line-back">
-        <button type="button" className="link" onClick={onHome}>← {t('homeBack')}</button>
-      </div>
       {step === 'trip' && <HeroBanner img={HERO_IMG.travel} title={t('trTitle')} lead={t('trLead')} className="hero-travel" />}
       <TravelSteps step={step} />
 

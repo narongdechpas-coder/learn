@@ -1942,3 +1942,15 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .line-card.soon b, .line-card.soon .line-desc { opacity: 0.6; }
 .line-card.soon .soon-mark { top: 59px; inset-inline: -20%; }
 .hero-banner { width: 100%; box-sizing: border-box; }
+
+/* ---------- Customer: line-of-business bar (sticky under the top bar) ---------- */
+.line-nav { position: sticky; top: var(--topbar-h, 64px); z-index: 20; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: -6px 0 14px; padding: 6px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); }
+.line-nav::-webkit-scrollbar { display: none; }
+.ln-item { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.ln-item:hover:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
+.ln-item.on { background: var(--accent); color: var(--accent-ink); }
+.ln-item:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.ln-item.soon { color: var(--muted); cursor: not-allowed; }
+.ln-soon { font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; color: var(--warm-ink); background: var(--warm-soft); }
+@media (max-width: 560px) { .line-nav { border-radius: var(--r-sm); margin-inline: -4px; } .ln-item { padding: 7px 12px; } }
+.ln-item.on, .ln-item.on:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
