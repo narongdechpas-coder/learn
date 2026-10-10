@@ -241,6 +241,7 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
   const cmiDeath = cmiStd?.pa ?? 500_000;
   const money = (n: number) => (n ? fmtBaht(n, lang) : t('ofNo'));
   const prices = pr.options.map((o) => optionPrice(o, pr.discountPct, pr.vehicle.usage));
+  const seats = pr.options.find((o) => o.pkg.passengers !== undefined)?.pkg.passengers ?? 0;
   type Row = { label: string; cell: (i: number) => string; strong?: boolean; render?: (i: number, v: string) => React.ReactNode };
   const opt = (i: number) => pr.options[i];
   const vol = (i: number, fn: () => string) => (opt(i).pkg.type === 'CMI' ? '—' : fn());
@@ -259,9 +260,16 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
       { label: t('ofTppd'), cell: (i) => vol(i, () => money(opt(i).pkg.tppd)) },
     ]],
     [t('ofGroupRider'), [
-      { label: t('ofPa'), cell: (i) => vol(i, () => money(opt(i).pkg.pa)) },
-      { label: t('ofMedical'), cell: (i) => vol(i, () => money(opt(i).pkg.medical)) },
-      { label: t('ofBail'), cell: (i) => vol(i, () => money(opt(i).pkg.bail)) },
+      { label: `${t('rdRy01Short')} · ${t('rdDriver')}`, cell: (i) => vol(i, () => money(opt(i).pkg.pa)) },
+      { label: `${t('rdRy01Short')} · ${t('rdPassenger')} (${t('ofPeople', { n: seats })})`, cell: (i) => vol(i, () => money(opt(i).pkg.paPassenger ?? opt(i).pkg.pa)) },
+      ...(pr.options.some((o) => o.pkg.tempDriver || o.pkg.tempPassenger)
+        ? [
+            { label: `${t('rdRy01Temp')} · ${t('rdDriver')}`, cell: (i: number) => vol(i, () => (opt(i).pkg.tempDriver ? `${fmtBaht(opt(i).pkg.tempDriver, lang)}${t('rdPerWeek')}` : t('ofNo'))) },
+            { label: `${t('rdRy01Temp')} · ${t('rdPassenger')}`, cell: (i: number) => vol(i, () => (opt(i).pkg.tempPassenger ? `${fmtBaht(opt(i).pkg.tempPassenger, lang)}${t('rdPerWeek')}` : t('ofNo'))) },
+          ]
+        : []),
+      { label: `${t('rdRy02')} (${t('ofPeople', { n: seats + 1 })})`, cell: (i) => vol(i, () => money(opt(i).pkg.medical)) },
+      { label: t('rdRy03'), cell: (i) => vol(i, () => money(opt(i).pkg.bail)) },
       { label: t('ofExtras'), cell: (i) => vol(i, () => (opt(i).pkg.extras ?? []).filter((x) => x !== 'flood').map((x) => t(EXTRA_KEY[x])).join(', ') || '—') },
     ]],
     [t('ofGroupCmi'), [

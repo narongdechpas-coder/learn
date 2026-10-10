@@ -21,6 +21,7 @@ import {
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, type Scenario } from '../data/packages';
 import { packagesFor } from '../data/products';
 import { EXTRA_KEY, productName } from './Products';
+import { riderRows } from './riders';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
@@ -749,8 +750,7 @@ function coverRows(p: Package, t: (k: TKey, v?: Record<string, string | number>)
         [t('flood'), p.flood ? t('covered') : t('notCovered')],
         [t('tpbi'), `${fmtBaht(p.tpbiPerson, lang)}${t('perPerson')}`],
         [t('tppd'), fmtBaht(p.tppd, lang)],
-        [t('paMed'), `${fmtBaht(p.pa, lang)} / ${fmtBaht(p.medical, lang)}`],
-        [t('bail'), fmtBaht(p.bail, lang)],
+        ...riderRows(p, t, lang),
       ];
 }
 

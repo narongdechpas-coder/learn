@@ -744,19 +744,34 @@ assert.ok(offered, 'the earlier quotation offered Class 2+ 200,000');
 const pdRow = (id) => office.locator('.pd-table tbody tr').filter({ has: office.locator('.pd-name + .hint', { hasText: new RegExp(`^${id}$`) }) });
 const editRow = async (id) => {
   await pdRow(id).getByRole('button', { name: 'แก้ไข' }).click();
-  await office.getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).waitFor();
+  await office.locator('.pd-savebar').waitFor();
 };
+const edTab = (name) => office.getByRole('tab', { name }).click();
 const saveEdit = async (note) => {
   if (note) await office.locator('#pd-note').fill(note);
-  await office.getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
-  await office.locator('.pd-save .ok-note').waitFor();
+  await office.locator('.pd-savebar').getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+  await office.getByRole('dialog', { name: 'ตรวจก่อนบันทึก' }).getByRole('button', { name: /ยืนยันบันทึก/ }).click();
+  await office.locator('.pd-savebar', { hasText: /บันทึกแล้ว/ }).waitFor();
 };
 const backToList = () => office.getByRole('button', { name: /กลับไปรายการ/ }).click();
 await editRow('T2P-200000');
+assert.equal(await office.locator('.pd-editor [role="tab"]').count(), 4, 'editor split into four tabs');
+await edTab(/เบี้ยและค่าคอม/);
 await office.locator('#pd-r0-110').fill('9200');
-await saveEdit('ปรับเบี้ยทดสอบ');
-await office.getByText('บันทึกแล้ว (v2)').waitFor();
-assert.equal(await office.locator('.pd-history li').count(), 2, 'history lists both versions');
+await office.locator('.pd-savebar', { hasText: 'มีการแก้ไขที่ยังไม่บันทึก' }).waitFor();
+assert.equal(await office.locator('.pd-tabs [aria-selected="true"] .pd-tab-dot').count(), 1, 'edited tab marked');
+office.once('dialog', (d) => d.dismiss());
+await backToList();
+await office.locator('.pd-savebar').waitFor();
+await office.locator('#pd-note').fill('ปรับเบี้ยทดสอบ');
+await office.locator('.pd-savebar').getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+const review1 = office.getByRole('dialog', { name: 'ตรวจก่อนบันทึก' });
+await review1.getByText(/เปลี่ยนราคา 1 ช่อง/).waitFor();
+await review1.getByRole('button', { name: 'ยืนยันบันทึก v2' }).click();
+await office.locator('.pd-savebar', { hasText: 'บันทึกแล้ว (v2)' }).waitFor();
+await office.getByRole('button', { name: /ประวัติเวอร์ชัน/ }).click();
+const drawer = office.getByRole('dialog', { name: 'ประวัติเวอร์ชัน' });
+assert.equal(await drawer.locator('.pd-history li').count(), 2, 'history lists both versions');
 let st = await state(office);
 assert.equal(prod(st, 'T2P-200000').rates[0].prices['110'], 9200);
 assert.equal(st.proposals.find((p) => p.id === quoteId).options.find((o) => o.pkg.id === 'T2P-200000').pkg.premium, offered.pkg.premium, 'quotation already sent keeps its price');
@@ -770,10 +785,11 @@ await shop.locator('#car-model').selectOption('toyota-yaris-ativ');
 await shop.locator('#car-year').selectOption('2020');
 await shop.getByRole('button', { name: /ดูแพ็กเกจ/ }).click();
 await shop.locator('.pkg-card', { hasText: 'ชั้น 2+ ทุน 200,000' }).getByText('฿9,200').waitFor();
-log('product edit saved as v2: new price on the customer site, the quotation already sent keeps its price');
+log('product edit in tabs: unsaved mark, leave warning, review before saving v2; new price on the customer site, the quotation already sent keeps its price');
 office.once('dialog', (d) => d.accept());
-await office.locator('.pd-history li', { hasText: 'v1' }).getByRole('button', { name: /ย้อนกลับ/ }).click();
-await office.getByText('ย้อนกลับจาก v1').waitFor();
+await drawer.locator('.pd-history li', { hasText: 'v1' }).getByRole('button', { name: /ย้อนกลับ/ }).click();
+await drawer.getByText('ย้อนกลับจาก v1').waitFor();
+await drawer.getByRole('button', { name: /ปิด/ }).click();
 st = await state(office);
 assert.equal(prod(st, 'T2P-200000').ver, 3);
 assert.equal(prod(st, 'T2P-200000').rates[0].prices['110'], 8900, 'rollback restores the v1 price as v3');
@@ -782,6 +798,7 @@ log('rolled back to v1, saved as v3; history kept');
 
 // Commission: product special rate for everyone, a partner's own rate wins over it.
 await editRow('T3');
+await edTab(/เบี้ยและค่าคอม/);
 await office.locator('#pd-pc-a3').fill('17');
 await saveEdit();
 await backToList();
@@ -794,11 +811,15 @@ log('partner catalogue shows standard 18%, product special 20% and the partner\'
 // Closing a channel and the end date.
 await office.locator('label.switch', { has: office.locator('#pd-partner-T3P-100000') }).click();
 await editRow('T1-EV-PLUS');
+await edTab(/การขายและเอกสาร/);
 const yesterday = new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10);
 await office.locator('#pd-until').fill(yesterday);
 await saveEdit();
 await backToList();
 await pdRow('T1-EV-PLUS').getByText('หมดเวลาขาย').waitFor();
+await office.locator('.pd-stat', { hasText: 'หมดเขตแล้ว' }).click();
+assert.equal(await office.locator('.pd-table tbody tr').count(), 1, 'status tile filters the list');
+await office.locator('.pd-stat', { hasText: 'ทั้งหมด' }).click();
 await agent.getByRole('tab', { name: 'ขาย' }).click();
 await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
 await agent.locator('.ct-card').first().waitFor();
@@ -822,21 +843,31 @@ log('closed to partners and past its end date: hidden from the partner catalogue
 // New product from the standard cover button.
 await office.locator('#pd-new-type').selectOption('T2P');
 await office.getByRole('button', { name: '+ สร้างแพ็กเกจ' }).click();
-await office.locator('#pd-ownDamage-mode').selectOption('none');
+await edTab(/การขายและเอกสาร/);
 await office.locator('#pd-doc-regbook').uncheck();
+await edTab(/ความคุ้มครองและเงื่อนไข/);
+await office.locator('#pd-ownDamage-mode').selectOption('none');
 await office.getByRole('button', { name: /ใส่ความคุ้มครองมาตรฐานชั้น 2\+/ }).click();
 assert.equal(await office.locator('#pd-ownDamage-mode').inputValue(), 'fixed', 'standard cover restored');
 assert.equal(await office.locator('#pd-ownDamage-val').inputValue(), '200,000', 'amounts shown with thousands separators');
-assert.equal(await office.locator('#pd-doc-regbook').isChecked(), true, 'standard documents restored');
+assert.equal(await office.locator('#pd-pa').inputValue(), '100,000', 'driver personal accident');
+assert.equal(await office.locator('#pd-paPassenger').inputValue(), '100,000', 'passenger personal accident, per person');
+await office.locator('#pd-tempDriver').fill('1000');
 await office.locator('#pd-ownDamage-val').fill('250000');
+await edTab(/การขายและเอกสาร/);
+assert.equal(await office.locator('#pd-doc-regbook').isChecked(), true, 'standard documents restored');
+await office.locator('.pd-savebar').getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+const review2 = office.getByRole('dialog', { name: 'ตรวจก่อนบันทึก' });
+await review2.getByText('ต้องใส่ชื่อแพ็กเกจ (ไทย)').waitFor();
+await review2.getByRole('button', { name: /ไปที่แท็บ ข้อมูลทั่วไป/ }).click();
 await office.locator('#pd-nameTh').fill('ชั้น 2+ ทดสอบ');
 await saveEdit();
 await backToList();
 assert.equal(await office.locator('.pd-table tbody tr').count(), 12);
 st = await state(office);
 const created = st.products.find((p) => p.nameTh === 'ชั้น 2+ ทดสอบ');
-assert.ok(created && created.ownDamage.value === 250000 && !created.channels.self && !created.channels.partner, 'new product saved, closed for sale');
-log('new product: standard 2+ cover filled in by the button, then adjusted; saved closed for sale');
+assert.ok(created && created.ownDamage.value === 250000 && created.tempDriver === 1000 && !created.channels.self && !created.channels.partner, 'new product saved, closed for sale');
+log('new product: standard 2+ cover by the button (driver/passenger riders), adjusted; review blocks a missing name and links to its tab; saved closed for sale');
 
 // Excel: export, edit (as Excel would, deflated), import with a review of changes and errors.
 const unzip = (buf) => {
@@ -872,7 +903,7 @@ const zipDeflated = (files) => {
   return Buffer.concat([...parts, cd, e]);
 };
 const [download] = await Promise.all([office.waitForEvent('download'), office.getByRole('button', { name: /Export Excel/ }).click()]);
-assert.match(download.suggestedFilename(), /^abc-products-.*\.xlsx$/);
+assert.match(download.suggestedFilename(), /^jacky-products-.*\.xlsx$/);
 const files = unzip(readFileSync(await download.path()));
 const sheetsXml = [...files.keys()].filter((k) => k.startsWith('xl/worksheets/'));
 assert.equal(sheetsXml.length, 13, 'guide sheet + 12 product sheets');

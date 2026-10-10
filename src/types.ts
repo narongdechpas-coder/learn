@@ -69,9 +69,17 @@ export interface Package {
   tpbiPerson: number;
   tpbiAccident: number;
   tppd: number;
+  /** Riders (เอกสารแนบท้าย). R.Y.01 personal accident, death or permanent disability: driver, and each passenger. */
   pa: number;
+  paPassenger: number;
+  /** R.Y.01 temporary disability per week (0 = not covered): driver, and each passenger. */
+  tempDriver: number;
+  tempPassenger: number;
+  /** R.Y.02 medical expenses per person (driver and passengers); R.Y.03 bail bond per accident. */
   medical: number;
   bail: number;
+  /** Passengers covered by the riders (seats less the driver). */
+  passengers: number;
   /** Gross premium incl. tax and stamp duty, THB. */
   premium: number;
   /** Snapshot of the product it came from, so later edits never change a price already offered. */
@@ -131,9 +139,17 @@ export interface Product {
   tpbiPerson: number;
   tpbiAccident: number;
   tppd: number;
+  /** Riders (เอกสารแนบท้าย). R.Y.01 personal accident, death or permanent disability: driver, and each passenger. */
   pa: number;
+  paPassenger: number;
+  /** R.Y.01 temporary disability per week (0 = not covered): driver, and each passenger. */
+  tempDriver: number;
+  tempPassenger: number;
+  /** R.Y.02 medical expenses per person (driver and passengers); R.Y.03 bail bond per accident. */
   medical: number;
   bail: number;
+  /** Passengers covered; absent = by vehicle code (110: 6, 210: 11, 320: 2). */
+  passengers?: number;
   extras: ProductExtra[];
   /** Underwriting: oldest car accepted (years), vehicle codes, electric cars, models refused. */
   maxAge?: number;
