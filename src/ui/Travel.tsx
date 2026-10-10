@@ -27,7 +27,7 @@ export const COVER_LABEL: Record<keyof TravelCover, TKey> = {
 const LINES: { line: Line; icon: string; title: TKey; desc: TKey; live: boolean }[] = [
   { line: 'motor', icon: '🚗', title: 'lineMotor', desc: 'lineMotorDesc', live: true },
   { line: 'travel', icon: '✈️', title: 'lineTravel', desc: 'lineTravelDesc', live: true },
-  { line: 'pa', icon: '🩹', title: 'linePa', desc: 'linePaDesc', live: false },
+  { line: 'pa', icon: '🩹', title: 'linePa', desc: 'linePaDesc', live: true },
   { line: 'fire', icon: '🏠', title: 'lineFire', desc: 'lineFireDesc', live: false },
 ];
 

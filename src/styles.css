@@ -416,7 +416,7 @@ button.doc-thumb:not(:disabled) { cursor: zoom-in; }
 @media (max-width: 640px) { .cd-grid { grid-template-columns: 1fr; } }
 .cd-grid section { min-width: 0; }
 .cd-grid h4, .case-detail section > h4 { margin-top: 0; }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: 0.88rem; }
+.kv { display: grid; grid-template-columns: fit-content(45%) minmax(0, 1fr); gap: 4px 12px; margin: 0 0 12px; font-size: 0.88rem; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
 .history { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 0; font-size: 0.86rem; max-height: 260px; overflow: auto; }
@@ -1954,3 +1954,29 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .ln-soon { font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; color: var(--warm-ink); background: var(--warm-soft); }
 @media (max-width: 560px) { .line-nav { border-radius: var(--r-sm); margin-inline: -4px; } .ln-item { padding: 7px 12px; } }
 .ln-item.on, .ln-item.on:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
+
+/* ---------- Personal accident ---------- */
+.type-tag.type-PA { color: var(--good); }
+.callout.tone-warn { background: var(--warn-bg); color: var(--warn); }
+.callout.tone-good { background: var(--good-bg); color: var(--good); }
+.pa-mc { align-items: center; max-width: 620px; }
+.pa-mc input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
+.pa-mc small { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.pa-health { list-style: decimal; margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.pa-health li { padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.pa-health li > span:first-child { display: block; margin-bottom: 6px; }
+.pa-health.invalid li { border-color: var(--bad); }
+.pa-yn { display: inline-flex; gap: 8px; }
+.chip-radio { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 0.9rem; background: var(--surface); }
+.chip-radio input { margin: 0; accent-color: var(--accent); }
+.chip-radio.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.pa-referral { display: block; margin-bottom: 10px; }
+.pa-referral ul { margin: 4px 0 0; padding-left: 20px; }
+.pa-review-note, .pa-instant-note { margin: 14px 0 0; }
+.pa-renew { margin-top: 14px; }
+.pa-occ { margin-top: 16px; padding: 12px 16px; }
+.pa-occ summary { cursor: pointer; font-weight: 700; }
+.pa-occ-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; }
+.pa-occ-grid ul { margin: 6px 0 0; padding-left: 18px; font-size: 0.88rem; color: var(--ink-2); }
+.pa-sent .actions { flex-wrap: wrap; }
+.pa-badge { margin-left: 6px; }

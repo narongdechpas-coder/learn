@@ -344,7 +344,7 @@ function TravelEditor({ initial, isNew, staffId, zones, onClose }: { initial: Tr
 
       <div className={`pd-savebar${dirty ? ' dirty' : ''}`} role="region" aria-label={t('pdSave')}>
         <div className="pd-save-status" aria-live="polite">
-          {flash ? <b>{flash}</b> : dirty ? <b>● {t('pdUnsaved', { n: changes.length })}</b> : <span className="muted">{t('pdAllSaved')}{saved ? ` · v${saved.ver}` : ''}</span>}
+          {flash ? <b>{flash}</b> : dirty ? <b>● {t('pdUnsaved', { n: changes.length })}</b> : <span className="muted">{saved ? t('pdAllSaved', { ver: saved.ver }) : t('pdNotSavedYet')}</span>}
         </div>
         <input id="ta-note" className="pd-note" value={note} placeholder={t('pdNotePh')} aria-label={t('pdNote')} onChange={(e) => setNote(e.target.value)} />
         <button type="button" className="btn ghost" disabled={!dirty} onClick={() => { setD(structuredClone(base)); setFlash(''); }}>{t('pdDiscard')}</button>

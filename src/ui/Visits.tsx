@@ -242,7 +242,7 @@ function VisitReport({ a, mktId, topics, setTopics, onBack, onRecord }: { a: Age
   const sold = s.cases.filter((c) => c.agentId === a.id && c.stamps.issued !== undefined && c.stamps.issued >= yearStart && c.stamps.issued <= now);
   const firstSale = sold.reduce((m, c) => Math.min(m, c.stamps.issued!), now);
   const totGwp = sold.reduce((x, c) => x + (c.premium ?? 0), 0);
-  const byClass = [...COVERAGE_TYPES, 'TRV' as const].map((ct: CoverageType) => {
+  const byClass = [...COVERAGE_TYPES, 'TRV' as const, 'PA' as const].map((ct: CoverageType) => {
     const cs = sold.filter((c) => c.coverage === ct);
     const gwp = cs.reduce((x, c) => x + (c.premium ?? 0), 0);
     return { ct, n: cs.length, gwp };

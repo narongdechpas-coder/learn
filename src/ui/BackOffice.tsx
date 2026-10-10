@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { subjectText } from '../data/travel';
 import { TravelKv } from './Travel';
+import { PaKv } from './Pa';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES, estimateQuote } from '../data/packages';
@@ -181,7 +182,7 @@ export function BackOffice({
         </select>
         <select id="bo-type" aria-label={t('filterType')} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
-          {[...COVERAGE_TYPES, 'TRV' as const].map((x) => (
+          {[...COVERAGE_TYPES, 'TRV' as const, 'PA' as const].map((x) => (
             <option key={x} value={x}>{COVERAGE_LABEL[lang][x]}</option>
           ))}
         </select>
@@ -444,6 +445,11 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             {c.delivery && (<><dt>{t('deliveryLabel')}</dt><dd>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</dd></>)}
           </dl>
         </section>
+        ) : c.pkg?.accident ? (
+          <section>
+            <h4>{t('paInfo')}</h4>
+            <PaKv c={c} />
+          </section>
         ) : (
           <section>
             <h4>{t('trInfo')}</h4>

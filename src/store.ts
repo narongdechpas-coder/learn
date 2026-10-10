@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
-import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, PaProduct, PaProductVersion, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
+import { seedAgentWork, seedCases, seedLeads, seedPa, seedPaRenewals, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { defaultProducts, setCatalog } from './data/products';
 import { defaultTravelProducts, defaultZones, setTravelCatalog } from './data/travel';
+import { defaultPaProducts, setPaCatalog } from './data/pa';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
@@ -39,10 +40,13 @@ export interface State {
   travelProducts: TravelProduct[];
   travelLog: TravelProductVersion[];
   travelZones: TravelZone[];
+  /** Personal accident plans (current version of each) and every saved version. */
+  paProducts: PaProduct[];
+  paLog: PaProductVersion[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 12;
+const VERSION = 13;
 
 function fresh(): State {
   const now = Date.now();
@@ -52,12 +56,15 @@ function fresh(): State {
   const travelProducts = defaultTravelProducts(now);
   const travelZones = defaultZones();
   setTravelCatalog(travelProducts, travelZones);
+  const paProducts = defaultPaProducts(now);
+  setPaCatalog(paProducts);
   const motor = seedCases(now);
   const motorProposals = seedAgentWork(motor.cases, now);
   const travel = seedTravel(now, motor.seq);
-  const cases = [...motor.cases, ...travel.cases].sort((a, b) => a.createdAt - b.createdAt);
-  const proposals = [...motorProposals, ...travel.proposals];
-  const seq = travel.seq;
+  const pa = seedPa(now, travel.seq);
+  const cases = [...motor.cases, ...travel.cases, ...pa.cases].sort((a, b) => a.createdAt - b.createdAt);
+  const proposals = [...motorProposals, ...travel.proposals, ...pa.proposals];
+  const seq = pa.seq;
   return {
     version: VERSION,
     seededAt: now,
@@ -70,7 +77,7 @@ function fresh(): State {
     traffic: seedTraffic(cases, now),
     agents: AGENTS.map((a) => ({ ...a })),
     proposals,
-    renewals: seedRenewals(now),
+    renewals: [...seedRenewals(now), ...seedPaRenewals(now)].sort((a, b) => a.expiry - b.expiry),
     monthly: seedMonthly(cases, now),
     products,
     productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
@@ -78,13 +85,16 @@ function fresh(): State {
     travelProducts,
     travelLog: travelProducts.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
     travelZones,
+    paProducts,
+    paLog: paProducts.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
   };
 }
 
-/** Both catalogues follow whichever copy of the state is current. */
+/** The catalogues follow whichever copy of the state is current. */
 function applyCatalogs(s: State) {
   setCatalog(s.products);
   setTravelCatalog(s.travelProducts, s.travelZones);
+  setPaCatalog(s.paProducts);
 }
 
 function load(): State | null {
@@ -209,8 +219,9 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
   commit({ ...s, ...extra, cases });
 }
 
-/** Policy number: P (motor) or TR (travel), year, running number. */
-const policyNoFor = (c: Case, s: State) => `${c.coverage === 'TRV' ? 'TR' : 'P'}${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+/** Policy number: P (motor), TR (travel) or PA (personal accident), year, running number. */
+const POLICY_PREFIX: Partial<Record<CoverageType, string>> = { TRV: 'TR', PA: 'PA' };
+const policyNoFor = (c: Case, s: State) => `${POLICY_PREFIX[c.coverage] ?? 'P'}${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
 
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
@@ -251,8 +262,10 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const p = bkkParts(now);
   const id = `JKY-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
   const self = input.source === 'self';
-  // Renewals and travel need no documents or checking: they are issued once paid.
-  const renewal = !!input.renewalOf || input.coverage === 'TRV';
+  // Renewals, travel and PA that passed the health questions need no documents or checking: they are issued once paid.
+  const renewal = issuesOnPayment(input);
+  // PA needs no documents either; a referred application goes straight to the back office for review.
+  const noDocs = input.coverage === 'PA';
   const c: Case = {
     id,
     ...input,
@@ -261,7 +274,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
     stamps:
       input.source === 'quote'
         ? { submitted: now }
-        : { submitted: now, quoted: now, confirmed: now, ...(self || renewal ? { accepted: now } : {}), ...(renewal ? { docsComplete: now } : {}) },
+        : { submitted: now, quoted: now, confirmed: now, ...(self || renewal ? { accepted: now } : {}), ...(renewal || noDocs ? { docsComplete: now } : {}) },
     docs: {},
     log: [{ at: now, by: input.agentId ?? 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
@@ -278,7 +291,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
   }
   s.emails = mail(s, 'custReceived', c);
   // Package sales can attach documents straight away, so say which ones (quotes get this after accepting).
-  if (c.source === 'package') s.emails = mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 });
+  if (c.source === 'package' && requiredDocs(c).length) s.emails = mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 });
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
@@ -679,8 +692,12 @@ export function payByLink(id: string, method: 'qr' | 'card', last4?: string, mon
   });
 }
 
-/** Renewals and travel policies are issued the moment they are paid (or the partner has the money). */
-export const issuesOnPayment = (c: Pick<Case, 'renewalOf' | 'coverage'>) => !!c.renewalOf || c.coverage === 'TRV';
+/**
+ * Renewals, travel, and PA that needs no review are issued the moment they are paid (or the partner
+ * has the money). A referred PA application waits for the back office instead.
+ */
+export const issuesOnPayment = (c: Pick<Case, 'renewalOf' | 'coverage' | 'pkg'>) =>
+  !!c.renewalOf || c.coverage === 'TRV' || (c.coverage === 'PA' && !c.pkg?.accident?.referral);
 
 /** A renewal is issued the moment it is paid (or the partner has the money): nothing to check. */
 function issueRenewal(c: Case, s: State, now: number): Partial<State> {
@@ -817,7 +834,7 @@ export function rollbackProduct(id: string, ver: number, by: string) {
 }
 
 // ---- Travel plans ----
-export function travelChanges(a: TravelProduct | undefined, b: TravelProduct): string[] {
+export function travelChanges<P extends object>(a: P | undefined, b: P): string[] {
   if (!a) return ['created'];
   const skip = new Set(['ver', 'updatedAt', 'updatedBy']);
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
@@ -849,4 +866,27 @@ export function rollbackTravelProduct(id: string, ver: number, by: string) {
 export function saveTravelZones(zones: TravelZone[]) {
   const base = latest();
   commit({ ...base, travelZones: zones });
+}
+
+// ---- Personal accident plans ----
+
+/** Save a PA plan as a new version. Quotations and policies keep the version they were priced on. */
+export function savePaProduct(p: PaProduct, by: string, note = ''): boolean {
+  const base = latest();
+  const prev = base.paProducts.find((x) => x.id === p.id);
+  const changes = travelChanges(prev, p);
+  if (!changes.length) return false;
+  const now = Date.now();
+  const next: PaProduct = { ...p, ver: (prev?.ver ?? 0) + 1, updatedAt: now, updatedBy: by };
+  commit({
+    ...base,
+    paProducts: prev ? base.paProducts.map((x) => (x.id === p.id ? next : x)) : [...base.paProducts, next],
+    paLog: [{ id: p.id, ver: next.ver, at: now, by, note, changes, snapshot: next }, ...base.paLog],
+  });
+  return true;
+}
+
+export function rollbackPaProduct(id: string, ver: number, by: string) {
+  const old = latest().paLog.find((v) => v.id === id && v.ver === ver);
+  if (old) savePaProduct({ ...old.snapshot }, by, `rollback:${ver}`);
 }

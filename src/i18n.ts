@@ -5,6 +5,7 @@ import { agentEn, agentTh } from './i18nAgent';
 import { productEn, productTh } from './i18nProduct';
 import { visitEn, visitTh } from './i18nVisit';
 import { travelEn, travelTh } from './i18nTravel';
+import { paEn, paTh } from './i18nPa';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -484,7 +485,7 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh };
+const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh, ...paTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
@@ -492,6 +493,7 @@ const en: Dict = {
   ...productEn,
   ...visitEn,
   ...travelEn,
+  ...paEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',
@@ -975,8 +977,8 @@ export function translate(lang: Lang, key: TKey, params?: Record<string, string 
 }
 
 export const COVERAGE_LABEL: Record<Lang, Record<CoverageType, string>> = {
-  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.', TRV: 'ประกันเดินทาง' },
-  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI', TRV: 'Travel' },
+  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.', TRV: 'ประกันเดินทาง', PA: 'ประกันอุบัติเหตุ' },
+  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI', TRV: 'Travel', PA: 'Personal accident' },
 };
 
 export const STATUS_LABEL: Record<Lang, Record<Status, string>> = {
@@ -1043,7 +1045,7 @@ export const SLA_STATE_LABEL: Record<Lang, Record<SlaState, string>> = {
 type MailText = { subject: string; body: string };
 export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
   th: {
-    custRenewal: { subject: 'ใกล้ถึงเวลาต่ออายุ {policyNo}', body: 'สวัสดีครับคุณ{name}\n\nกรมธรรม์ {policyNo} ของรถ {car} จะหมดอายุวันที่ {expiry}\nต่ออายุตอนนี้ในราคา {price} (รวมส่วนลดไม่มีเคลม 5%) กดต่ออายุได้ในเมนู "ติดตามคำขอ"' },
+    custRenewal: { subject: 'ใกล้ถึงเวลาต่ออายุ {policyNo}', body: 'สวัสดีครับคุณ{name}\n\nกรมธรรม์ {policyNo} ({what}) จะหมดอายุวันที่ {expiry}\nต่ออายุตอนนี้ในราคา {price}{ncd} กดต่ออายุได้ในเมนู "ติดตามคำขอ"' },
     custClaim: { subject: 'รับเรื่องแจ้งเคลม {claimNo}', body: 'สวัสดีครับคุณ{name}\n\nABC ได้รับเรื่องแจ้งเคลม {claimNo} ของรถ {car} แล้ว เจ้าหน้าที่จะโทรหาภายใน 30 นาที\nหากเร่งด่วนโทร 1234 ได้ตลอด 24 ชั่วโมง' },
     custLead: { subject: 'ราคาประกันสำหรับ {car} เริ่มต้น {price}/ปี', body: 'สวัสดีครับ\n\nนี่คือราคาประกันรถ {car} ที่คุณขอไว้ เริ่มต้น {price}/ปี\nกลับมาเลือกแพ็กเกจหรือซื้อออนไลน์ได้ทุกเมื่อ เจ้าหน้าที่ Jacky อาจติดต่อกลับเพื่อช่วยแนะนำ' },
     custSelfIssued: { subject: 'กรมธรรม์ {policyNo} พร้อมแล้ว', body: 'เรียนคุณ{name}\n\nขอบคุณที่ซื้อประกันออนไลน์กับ Jacky ประกันภัย ชำระเงิน {premium} เรียบร้อย\nกรมธรรม์เลขที่ {policyNo} (คำขอ {ref})\n{delivery}' },
@@ -1062,7 +1064,7 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     agentRemit: { subject: '[นำส่งเบี้ย] {ref} เกินกำหนด', body: 'เรียน{name}\n\nเบี้ยประกัน {premium} ของลูกค้า{customer} (งาน {ref}) ยังไม่ได้นำส่ง Jacky และเกินกำหนดแล้ว\nกรุณานำส่งและแจ้งในหน้า "งานของฉัน"\n\n{mkt} (Marketing Jacky)' },
   },
   en: {
-    custRenewal: { subject: 'Time to renew {policyNo}', body: 'Hello {name},\n\nPolicy {policyNo} for {car} expires on {expiry}.\nRenew now for {price} (5% no-claim discount included) from “Track a request”.' },
+    custRenewal: { subject: 'Time to renew {policyNo}', body: 'Hello {name},\n\nPolicy {policyNo} ({what}) expires on {expiry}.\nRenew now for {price}{ncd} from “Track a request”.' },
     custClaim: { subject: 'Claim {claimNo} received', body: 'Hello {name},\n\nABC received claim {claimNo} for {car}. An agent will call you within 30 minutes.\nFor anything urgent call 1234, 24 hours a day.' },
     custLead: { subject: 'Insurance prices for {car} from {price}/yr', body: 'Hello,\n\nHere are the prices you asked for on {car}, from {price}/yr.\nCome back to pick a package or buy online any time. An Jacky agent may call to help.' },
     custSelfIssued: { subject: 'Your policy {policyNo} is ready', body: 'Dear {name},\n\nThank you for buying online with Jacky Insurance. We received {premium}.\nPolicy number {policyNo} (request {ref})\n{delivery}' },

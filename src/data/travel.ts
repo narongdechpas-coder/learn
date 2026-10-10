@@ -198,9 +198,11 @@ export function tripText(trip: Trip, lang: Lang) {
 }
 export const tripRange = (trip: Trip, lang: Lang) => `${fmtD(trip.start, lang)} – ${fmtD(trip.end, lang)}`;
 
-/** What a case or quotation is about: the car, or the trip for travel. */
+/** What a case or quotation is about: the car, the trip for travel, or the plan for personal accident. */
 export function subjectText(x: { vehicle?: Vehicle; pkg?: Package; options?: { pkg: Package }[] }, lang: Lang) {
   if (x.vehicle) return vehicleText(x.vehicle);
+  const pa = x.pkg?.accident ?? x.options?.[0]?.pkg.accident;
+  if (pa) return `${lang === 'th' ? 'ประกันอุบัติเหตุ' : 'Personal accident'} · ${(lang === 'th' ? x.pkg?.nameTh ?? x.options?.[0]?.pkg.nameTh : x.pkg?.nameEn ?? x.options?.[0]?.pkg.nameEn) || `PA ${pa.cover.death.toLocaleString('en-US')}`}`;
   const trip = x.pkg?.travel?.trip ?? x.options?.[0]?.pkg.travel?.trip;
   return `${lang === 'th' ? 'ประกันเดินทาง' : 'Travel'}${trip ? ` · ${tripText(trip, lang)}` : ''}`;
 }

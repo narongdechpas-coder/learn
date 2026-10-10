@@ -4,6 +4,8 @@ import { installmentPlan } from '../data/packages';
 import { vehicleText } from '../data/vehicles';
 import { COVER_KEYS, subjectText, tripRange } from '../data/travel';
 import { COVER_LABEL, TravelCertificate, coverValue } from './Travel';
+import { PA_COVER_LABEL, PaCertificate } from './Pa';
+import { PA_COVER_KEYS, occName } from '../data/pa';
 import { fmtBaht, fmtDate, fmtDateTime, useT } from '../i18n';
 import { acceptProposal, declineProposal, markProposalSent, payByLink, totalPremium, useStore, viewProposal } from '../store';
 import { StatusPill, TypeTag } from './common';
@@ -100,6 +102,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
   }
   const now = Date.now();
   const isTravel = pr.options.every((o) => o.pkg.type === 'TRV');
+  const isPa = pr.options.every((o) => o.pkg.type === 'PA');
   const expired = pr.status === 'open' && now > pr.expiresAt;
   const c = pr.caseId ? s.cases.find((x) => x.id === pr.caseId) : undefined;
   const open = pr.status === 'open' && !expired;
@@ -126,7 +129,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             </span>
             <div>
               <b>{t('appName')}</b>
-              <div className="muted">{t(isTravel ? 'trOfferTitle' : 'offerTitle')}</div>
+              <div className="muted">{t(isTravel ? 'trOfferTitle' : isPa ? 'paOfferTitle' : 'offerTitle')}</div>
             </div>
           </div>
           <div className="offer-ref">
@@ -140,7 +143,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
           <div>
             <div className="eyebrow">{t('offerFor')}</div>
             <b>{t('offerDear', { name: `${pr.customer.firstName} ${pr.customer.lastName}` })}</b>
-            <div className="muted">{pr.vehicle ? `${vehicleText(pr.vehicle)} · ${t('sumInsured')} ${fmtBaht(pr.vehicle.sumInsured, lang)}` : `${subjectText(pr, lang)}${pr.options[0]?.pkg.travel ? ` · ${tripRange(pr.options[0].pkg.travel.trip, lang)}` : ''}`}</div>
+            <div className="muted">{pr.vehicle ? `${vehicleText(pr.vehicle)} · ${t('sumInsured')} ${fmtBaht(pr.vehicle.sumInsured, lang)}` : `${subjectText(pr, lang)}${pr.options[0]?.pkg.travel ? ` · ${tripRange(pr.options[0].pkg.travel.trip, lang)}` : ''}${pr.options[0]?.pkg.accident ? ` · ${tripRange(pr.options[0].pkg.accident as never, lang)}` : ''}`}</div>
           </div>
           <div className="offer-agent">
             <div className="eyebrow">{t('offerAgent')}</div>
@@ -155,7 +158,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
         </div>
 
         <CoverTable pr={pr} picked={pr.status === 'accepted' ? pr.chosen : choice} onPick={open ? setChoice : undefined} />
-        <p className="hint">{t(isTravel ? 'trOfferNote' : 'offerNote')}</p>
+        <p className="hint">{t(isTravel ? 'trOfferNote' : isPa ? 'paOfferNote' : 'offerNote')}</p>
 
         {expired && <p className="callout tone-bad">{t('offerExpired')}</p>}
         {pr.status === 'declined' && <p className="callout">{t('offerDeclined')}</p>}
@@ -205,12 +208,15 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             {c.status === 'ISSUED' && c.policyNo && (
               <div className="ok-note">
                 ✓ {t('policyIssued', { no: c.policyNo })}{' '}
-                {c.coverage === 'TRV' && <button type="button" className="btn small" onClick={() => setCert((v) => !v)}>{t(cert ? 'trHideCert' : 'trViewCert')}</button>}
+                {(c.coverage === 'TRV' || c.coverage === 'PA') && <button type="button" className="btn small" onClick={() => setCert((v) => !v)}>{t(cert ? 'trHideCert' : 'trViewCert')}</button>}
               </div>
             )}
             {cert && c.coverage === 'TRV' && <TravelCertificate c={c} />}
+            {cert && c.coverage === 'PA' && <PaCertificate c={c} />}
             {c.coverage === 'TRV' ? (
               <p className="hint">✈️ {t('trInstant')}</p>
+            ) : c.coverage === 'PA' ? (
+              <p className="hint">{c.pkg?.accident?.referral && !c.renewalOf ? `🔎 ${t('paReviewNote')}` : `⚡ ${t('paInstantNote')}`}</p>
             ) : c.renewalOf ? (
               <p className="hint">↻ {t('renewNoDocs')}</p>
             ) : (
@@ -264,7 +270,8 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
   const vol = (i: number, fn: () => string) => (opt(i).pkg.type === 'CMI' ? '—' : fn());
   const hasCmi = (i: number) => opt(i).pkg.type === 'CMI' || opt(i).addCmi;
   const travel = pr.options.every((o) => o.pkg.type === 'TRV');
-  const priceGroup: [string, Row[]] = [t(travel ? 'trOfGroupPrice' : 'ofGroupPrice'), [
+  const pa = pr.options.every((o) => o.pkg.type === 'PA');
+  const priceGroup: [string, Row[]] = [t(travel || pa ? 'trOfGroupPrice' : 'ofGroupPrice'), [
     { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang), render: (i, v) => (prices[i].discount ? <s>{v}</s> : v) },
     ...(prices.some((p) => p.discount > 0)
       ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? t('offerSave', { v: fmtBaht(prices[i].discount, lang) }) : '—'), render: (i: number, v: string) => (prices[i].discount ? <span className="pill tone-good">{v}</span> : v) }]
@@ -272,7 +279,14 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
     { label: t('ofPay'), cell: (i) => fmtBaht(prices[i].price, lang), strong: true },
     { label: t('ofInst'), cell: (i) => { const pl = installmentPlan(prices[i].price); return pl ? `${fmtBaht(pl.monthly, lang)} × ${pl.months}` : '—'; } },
   ]];
-  const groups: [string, Row[]][] = travel ? [
+  const groups: [string, Row[]][] = pa ? [
+    [t('ofGroupPa'), [
+      ...PA_COVER_KEYS.map((k) => ({ label: t(PA_COVER_LABEL[k]), cell: (i: number) => { const v = opt(i).pkg.accident?.cover[k] ?? 0; return v ? `${fmtBaht(v, lang)}${k === 'hospitalDaily' ? ` ${t('paPerDay')}` : ''}` : t('ofNo'); } })),
+      { label: t('paMotorcycle'), cell: (i) => (opt(i).pkg.accident?.motorcycle ? t('covered') : t('ofNo')) },
+      { label: t('paOccupation'), cell: (i) => { const a = opt(i).pkg.accident; return a ? `${occName(a.occupation, lang)} (${a.occClass})` : '—'; } },
+    ]],
+    priceGroup,
+  ] : travel ? [
     [t('ofGroupTravel'), [
       ...COVER_KEYS.map((k) => ({ label: t(COVER_LABEL[k]), cell: (i: number) => { const v = coverValue(opt(i).pkg.travel?.cover[k] ?? 0, t, lang); return v === t('trNotCovered') ? t('ofNo') : v; } })),
       { label: t('trSchengen'), cell: (i) => (opt(i).pkg.travel?.schengen ? t('trYes') : t('ofNo')) },
@@ -325,7 +339,7 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
               {pr.options.map((o, i) => (
                 <th key={i} scope="col" className={`oc-opt${picked === i ? ' pick' : ''}`} aria-selected={picked === i}>
                   <div className="oc-no">{t('ofOption', { n: i + 1 })}</div>
-                  {o.pkg.type !== 'TRV' && <TypeTag type={o.pkg.type} />}
+                  {o.pkg.type !== 'TRV' && o.pkg.type !== 'PA' && <TypeTag type={o.pkg.type} />}
                   {o.pkg.nameTh && <div className="oc-name">{productName(o.pkg, lang)}</div>}
                   {onPick ? (
                     <label className={`oc-pick no-print${picked === i ? ' on' : ''}`}>

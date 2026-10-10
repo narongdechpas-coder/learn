@@ -65,10 +65,10 @@ await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
 assert.equal(await customer.locator('.line-card').count(), 4, 'home shows four lines of business');
-assert.equal(await customer.locator('.line-card.soon').count(), 2, 'personal accident and fire are marked coming soon');
+assert.equal(await customer.locator('.line-card.soon').count(), 1, 'only fire is still marked coming soon');
 await customer.locator('.line-card.soon .soon-mark', { hasText: 'Coming soon' }).first().waitFor();
 // The line bar on top reaches every line from any step; lines not on sale are disabled.
-assert.deepEqual(await customer.locator('.line-nav .ln-item.soon').evaluateAll((els) => els.map((e) => e.disabled)), [true, true], 'coming-soon lines disabled in the bar');
+assert.deepEqual(await customer.locator('.line-nav .ln-item.soon').evaluateAll((els) => els.map((e) => e.disabled)), [true], 'coming-soon line disabled in the bar');
 await customer.locator('.line-nav').getByRole('button', { name: /ประกันเดินทาง/ }).click();
 await customer.locator('#tr-start').waitFor();
 await customer.locator('.line-nav').getByRole('button', { name: /หน้าแรก/ }).click();
@@ -549,7 +549,7 @@ assert.ok(ds.length > 0 && ds.every((d, i) => i === 0 || d >= ds[i - 1]), 'not-r
 await agent.locator('#rr-months').selectOption('3');
 const due3 = await agent.locator('.rr-count .rr-money-v').innerText();
 assert.ok(Number(due3.replace(/\D/g, '')) >= Number(due1.replace(/\D/g, '')), '3 months covers at least as many as 1 month');
-const firstRow = agent.locator('.rr-table tbody tr', { has: agent.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }) }).first();
+const firstRow = agent.locator('.rr-table tbody tr:not(:has(.type-PA))', { has: agent.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }) }).first();
 const renewName = await firstRow.locator('td b').first().innerText();
 await firstRow.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }).click();
 await agent.getByText(/กรอกข้อมูลจากกรมธรรม์เดิมให้แล้ว/).waitFor();
@@ -1087,6 +1087,132 @@ await office.locator('#d-line').selectOption('travel');
 assert.equal(await office.getByRole('heading', { name: 'ยอดตามประเภทประกัน' }).count(), 0, 'line breakdown hidden when one line is picked');
 await office.locator('#d-line').selectOption('all');
 log('back office: travel plan price saved as v2 (policies keep their price), zones listed, travel filter in the inbox and the dashboard');
+
+// ---- Personal accident: instant issue, referral to the back office, partner sale and renewal, plan admin ----
+const paCust = await ctx.newPage();
+watch(paCust);
+await paCust.goto(url + '?pa=1#customer');
+await thai(paCust);
+await paCust.locator('.line-card.line-pa').click();
+await paCust.locator('#pa-occ').waitFor();
+await paCust.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await paCust.getByText('กรุณาตอบคำถามสุขภาพให้ครบ').waitFor();
+await paCust.locator('#pa-occ').selectOption('miner');
+await paCust.getByText(/อาชีพนี้มีความเสี่ยงสูง/).first().waitFor();
+await paCust.locator('#pa-occ').selectOption('office');
+await paCust.locator('#pa-birth').fill('1950-01-01');
+for (const i of [0, 1, 2]) await paCust.locator(`#pa-q${i}-no`).check();
+await paCust.getByText('รับประกันผู้มีอายุ 15–65 ปี').waitFor();
+await paCust.locator('#pa-birth').fill('1990-05-15');
+await paCust.locator('.pa-instant-note').waitFor();
+await paCust.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+assert.equal(await paCust.locator('.pa-plan').count(), 3, 'three PA plans');
+assert.equal((await paCust.locator('.pa-plan', { hasText: 'PA 300,000' }).locator('.tr-plan-price').innerText()).replace(/\D/g, ''), '1590', 'class 1 price');
+await paCust.locator('.pa-plan', { hasText: 'PA 300,000' }).getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await paCust.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await paCust.locator('#pf-beneficiary[aria-invalid="true"]').waitFor();
+await paCust.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await paCust.locator('#pf-declare').check();
+await paCust.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await paCust.getByRole('heading', { name: 'ชำระเงินและรับกรมธรรม์' }).waitFor();
+assert.equal(await paCust.locator('.uploads').count(), 0, 'PA needs no documents');
+await paCust.locator('.pay-btn').click();
+const paNo = (await paCust.locator('.ref-big').innerText()).trim();
+assert.match(paNo, /^PA\d{2}-\d{5}$/, 'PA policy number issued on payment');
+await paCust.getByText('ตารางกรมธรรม์ประกันภัยอุบัติเหตุส่วนบุคคล').waitFor();
+let st3 = await state(paCust);
+const paCase = st3.cases.find((c) => c.policyNo === paNo);
+assert.equal(paCase.status, 'ISSUED');
+assert.equal(paCase.premium, 1590);
+assert.equal(paCase.pkg.accident.referral, false);
+log(`customer bought PA 300,000 (office worker, all health answers no): policy ${paNo} issued on payment`);
+
+// A class 3 job with the motorcycle add-on goes to the back office before issue.
+await paCust.getByRole('button', { name: 'เริ่มคำขอใหม่' }).click();
+await paCust.locator('#pa-occ').selectOption('builder');
+await paCust.locator('#pa-mc').check();
+for (const i of [0, 1, 2]) await paCust.locator(`#pa-q${i}-no`).check();
+await paCust.locator('.pa-review-note').waitFor();
+await paCust.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+assert.equal((await paCust.locator('.pa-plan', { hasText: 'PA 100,000' }).locator('.tr-plan-price').innerText()).replace(/\D/g, ''), '1550', 'class 3 price +30% motorcycle');
+await paCust.locator('.pa-plan', { hasText: 'PA 100,000' }).getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await paCust.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await paCust.locator('#pf-declare').check();
+await paCust.getByRole('button', { name: /ส่งใบคำขอให้เจ้าหน้าที่พิจารณา/ }).click();
+await paCust.getByRole('heading', { name: 'ส่งใบคำขอเรียบร้อย' }).waitFor();
+const paRef = (await paCust.locator('.ref-big').innerText()).trim();
+st3 = await state(paCust);
+const refCase = st3.cases.find((c) => c.id === paRef);
+assert.equal(refCase.status, 'NEW', 'referred PA waits for the back office');
+assert.equal(refCase.pkg.accident.referral, true);
+assert.equal(refCase.pkg.accident.motorcycle, true);
+await paCust.getByRole('button', { name: 'ติดตามคำขอนี้' }).click();
+await paCust.locator('.track-detail').getByText('ต้องพิจารณาก่อนออกกรมธรรม์').waitFor();
+log(`class 3 job + motorcycle add-on: application ${paRef} sent to the back office for review`);
+
+await office.bringToFront();
+await abc(office, 'backoffice');
+await office.locator('#bo-type').selectOption('PA');
+await office.locator('#bo-q').fill(paRef);
+await office.locator('.case-row').first().click();
+await office.locator('.case-detail .pa-referral').getByText(/อาชีพขั้น 3/).waitFor();
+await office.locator('.case-detail').getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
+await office.locator('.case-detail').getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
+await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor();
+st3 = await state(office);
+assert.match(st3.cases.find((c) => c.id === paRef).policyNo, /^PA\d{2}-/, 'back office issued the referred PA');
+await office.locator('#bo-q').fill('');
+await office.locator('#bo-type').selectOption('all');
+log('back office reviewed the referred PA application and issued the policy');
+
+// Partner: sells PA on the spot and collects the money; issued at once.
+await agent.bringToFront();
+await agent.getByRole('tab', { name: 'ขาย / เสนอราคา' }).click();
+await agent.locator('#ag-line').getByRole('radio', { name: /ประกันอุบัติเหตุ/ }).click();
+for (const i of [0, 1, 2]) await agent.locator(`#ag-pa-q${i}-no`).check();
+await agent.locator('.tr-ag-table tbody tr', { hasText: 'PA 500,000' }).click();
+await agent.locator('.pa-sell').getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await agent.locator('.pa-sell').getByText('ตัวแทนเก็บเงินแล้วนำส่ง Jacky ภายใน 15 วัน').click();
+await agent.locator('.pa-sell').getByText(/ลูกค้ารับทราบความคุ้มครอง/).click();
+await agent.getByRole('button', { name: 'ยืนยันซื้อแทนลูกค้า' }).click();
+await agent.getByText(/ผ่านเกณฑ์ ออกกรมธรรม์ทันทีหลังชำระเงิน/).first().waitFor();
+await agent.getByRole('button', { name: /เก็บเงินจากลูกค้าแล้ว/ }).click();
+await agent.locator('.ag-case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor({ timeout: 5000 });
+st3 = await state(agent);
+const agPa = st3.cases.filter((c) => c.coverage === 'PA' && c.agentId === 'a3' && !c.seeded).sort((x, y) => y.createdAt - x.createdAt)[0];
+assert.equal(agPa.status, 'ISSUED');
+assert.equal(agPa.pkg.id, 'PA-500');
+log('partner sold PA 500,000 on the spot, collected the money, and the policy was issued at once');
+
+// Partner: PA renewal from the renewal report, prefilled, no health questions.
+await agent.getByRole('tab', { name: /รายงานต่ออายุ/ }).click();
+await agent.locator('#rr-months').selectOption('3');
+const paRow = agent.locator('.rr-table tbody tr:has(.type-PA)', { has: agent.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }) }).first();
+await paRow.getByRole('button', { name: 'ออกใบเสนอต่ออายุ' }).click();
+await agent.getByText(/ต่ออายุประกันอุบัติเหตุ/).waitFor();
+assert.equal(await agent.locator('#ag-pa-q0-no').count(), 0, 'renewal asks no health questions');
+assert.equal(await agent.locator('.tr-ag-table tbody tr.on').count(), 1, 'renewal picks the same plan');
+log('PA renewal from the partner renewal report opens the PA sale prefilled, without health questions');
+
+// Back office: PA plans menu, new price version, dashboard by line.
+await office.bringToFront();
+await abc(office, 'pa');
+await office.getByRole('heading', { name: /แผนประกันอุบัติเหตุ/ }).waitFor();
+assert.equal(await office.locator('.ta-table tbody tr').count(), 3, 'three PA plans');
+await office.locator('.ta-table tbody tr', { hasText: 'PA 300,000' }).getByRole('button', { name: 'แก้ไข' }).click();
+await office.locator('#pa-price-1').fill('1690');
+await office.locator('.pd-savebar').getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+await office.getByText('บันทึกแล้ว (v2)').waitFor();
+st3 = await state(office);
+assert.equal(st3.paProducts.find((p) => p.id === 'PA-300').prices[1], 1690);
+assert.equal(st3.cases.find((c) => c.policyNo === paNo).premium, 1590, 'issued PA keeps its price');
+await office.getByRole('button', { name: /กลับ/ }).first().click();
+await abc(office, 'dashboard');
+await office.getByRole('heading', { name: 'ยอดตามประเภทประกัน' }).waitFor();
+await office.locator('.dash-lines').getByText('ประกันอุบัติเหตุ').waitFor();
+await office.locator('#d-line').selectOption('pa');
+await office.locator('#d-line').selectOption('all');
+log('back office: PA price saved as v2 (policies keep their price); dashboard shows PA as its own line');
 
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });

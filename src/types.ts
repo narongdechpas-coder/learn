@@ -5,10 +5,10 @@ export type BodyType = 'sedan' | 'suv' | 'pickup' | 'ev' | 'van';
 /** Thai motor insurance vehicle code (รหัสรถ). The catalogue sells 110, 210 and 320; the rest are quote-only. */
 export type UsageCode = '110' | '120' | '210' | '220' | '320' | '340';
 
-/** Motor classes, plus TRV for travel insurance (its packages carry the trip and travel cover). */
-export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI' | 'TRV';
+/** Motor classes, plus TRV for travel and PA for personal accident (their packages carry their own cover). */
+export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI' | 'TRV' | 'PA';
 
-/** Lines of business on the customer home page; only motor and travel are on sale so far. */
+/** Lines of business on the customer home page; fire is not on sale yet. */
 export type Line = 'motor' | 'travel' | 'pa' | 'fire';
 
 /** Single trip (1-180 days) or annual multi-trip (any number of trips, up to 90 days each). */
@@ -115,6 +115,82 @@ export interface TravelProductVersion {
   snapshot: TravelProduct;
 }
 
+/** Personal accident occupation class: 1 office, 2 outdoor or driving, 3 manual work (4 = refused). */
+export type OccClass = 1 | 2 | 3;
+
+/** Benefits of a personal accident plan, THB (0 = not covered). */
+export interface PaCover {
+  /** Accidental death, loss of limbs or sight, permanent total disability (อ.บ.1). */
+  death: number;
+  /** Medical expenses per accident. */
+  medical: number;
+  /** Hospital cash per day as an in-patient. */
+  hospitalDaily: number;
+  funeral: number;
+}
+
+/** A PA plan priced for one person, kept on the package (and so on the case). */
+export interface PaOffer {
+  productId: string;
+  occClass: OccClass;
+  /** Occupation id from the occupation list. */
+  occupation: string;
+  /** Riding or riding pillion on a motorcycle covered (extra premium). */
+  motorcycle: boolean;
+  cover: PaCover;
+  /** Answers to the health questions ("yes" = true). */
+  health: boolean[];
+  /** Back office has to review before the policy is issued (a "yes" answer or class 3). */
+  referral: boolean;
+  /** YYYY-MM-DD; one-year cover. */
+  start: string;
+  end: string;
+}
+
+/** A PA plan the back office sets up: one sum insured, a price per occupation class. */
+export interface PaProduct {
+  id: string;
+  ver: number;
+  updatedAt: number;
+  updatedBy: string;
+  nameTh: string;
+  nameEn: string;
+  tagTh: string;
+  tagEn: string;
+  highlightsTh: string[];
+  highlightsEn: string[];
+  badge?: 'recommended' | 'new';
+  channels: { self: boolean; partner: boolean };
+  partners: 'all' | string[];
+  saleUntil?: string;
+  cover: PaCover;
+  /** Yearly premium by occupation class. */
+  prices: Record<OccClass, number>;
+  /** Motorcycle add-on, % on top of the premium (0 = not offered). */
+  motorcyclePct: number;
+  /** Entry age range, and the oldest age a policy can be renewed to. */
+  minAge: number;
+  maxAge: number;
+  renewAge: number;
+  commission?: number;
+  partnerCommission: Record<string, number>;
+  termsTh: string;
+  termsEn: string;
+  exclusionsTh: string[];
+  exclusionsEn: string[];
+  archived?: boolean;
+}
+
+export interface PaProductVersion {
+  id: string;
+  ver: number;
+  at: number;
+  by: string;
+  note: string;
+  changes: string[];
+  snapshot: PaProduct;
+}
+
 export type Source = 'package' | 'quote' | 'self';
 
 export type Status =
@@ -203,6 +279,8 @@ export interface Package {
   cmi?: number;
   /** Travel packages only (type TRV): the trip and the plan's cover. */
   travel?: TravelOffer;
+  /** Personal accident packages only (type PA): occupation, add-ons and the plan's cover. */
+  accident?: PaOffer;
 }
 
 /** Extra benefits a product includes in its premium. */
@@ -306,7 +384,7 @@ export interface Customer {
   startDate: string;
   driver1: string;
   driver2: string;
-  /** Travel: traveller's passport number, date of birth (YYYY-MM-DD) and beneficiary. */
+  /** Travel and PA: passport number (travel), date of birth (YYYY-MM-DD) and beneficiary. */
   passport?: string;
   birthDate?: string;
   beneficiary?: string;
@@ -447,7 +525,9 @@ export interface RenewalItem {
   policyNo: string;
   customerName: string;
   phone: string;
-  vehicle: Vehicle;
+  /** Motor renewals; PA renewals carry the insured person instead. */
+  vehicle?: Vehicle;
+  pa?: { productId: string; occupation: string; motorcycle: boolean; birthDate: string; idCard: string; email: string };
   coverage: CoverageType;
   premium: number;
   expiry: number;
