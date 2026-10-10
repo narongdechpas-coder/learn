@@ -364,13 +364,27 @@ function rateDelta(a: RateRow[], b: RateRow[]) {
   return { cells, added: [...bm.keys()].filter((k) => !am.has(k)).length, removed: [...am.keys()].filter((k) => !bm.has(k)).length };
 }
 
-function Section({ title, hint, children, id }: { title: string; hint?: string; children: React.ReactNode; id?: string }) {
+/** Fields each "fill in standard" button sets, by section. */
+const STD_PARTS = {
+  car: ['repair', 'deductible', 'ownDamage', 'fireTheft'],
+  tp: ['tpbiPerson', 'tpbiAccident', 'tppd'],
+  riders: ['pa', 'paPassenger', 'tempDriver', 'tempPassenger', 'medical', 'bail', 'passengers'],
+  cmi: ['tpbiPerson', 'pa', 'medical'],
+  extras: ['extras'],
+  docs: ['docs'],
+} satisfies Record<string, (keyof Product)[]>;
+type StdPart = keyof typeof STD_PARTS;
+
+function Section({ title, hint, children, id, action }: { title: string; hint?: string; children: React.ReactNode; id?: string; action?: React.ReactNode }) {
   const hid = `${id ?? title}-h`;
   return (
     <section className="card pd-sec" aria-labelledby={hid}>
       <div className="pd-sec-head">
-        <h4 id={hid}>{title}</h4>
-        {hint && <p className="hint">{hint}</p>}
+        <div>
+          <h4 id={hid}>{title}</h4>
+          {hint && <p className="hint">{hint}</p>}
+        </div>
+        {action}
       </div>
       {children}
     </section>
@@ -387,7 +401,7 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
   const [confirm, setConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
-  const [stdDone, setStdDone] = useState(false);
+  const [stdDone, setStdDone] = useState<Set<string>>(() => new Set());
   const [exModel, setExModel] = useState('');
   const [tryCode, setTryCode] = useState<UsageCode>('110');
   const [trySi, setTrySi] = useState(500_000);
@@ -425,9 +439,27 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
     onClose();
   };
   const applyStandard = () => {
-    setD((x) => ({ ...x, ...standardCover(x.type) }));
-    setStdDone(true);
+    setD((x) => ({ ...x, ...standardCover(x.type), passengers: undefined }));
+    setStdDone(new Set(['all', ...Object.keys(STD_PARTS)]));
   };
+  // Fill one section with the class standard; everything stays editable afterwards.
+  const stdBtn = (part: StdPart, title: string) => (
+    <div className="pd-sec-std">
+      {stdDone.has(part) && <span className="hint" role="status">✓ {t('pdStdPartDone')}</span>}
+      <button
+        type="button"
+        className="btn small"
+        aria-label={`${t('pdStdPart')} · ${title}`}
+        onClick={() => {
+          const std = standardCover(d.type);
+          setD((x) => ({ ...x, ...Object.fromEntries(STD_PARTS[part].map((k) => [k, k === 'passengers' ? undefined : std[k as keyof typeof std]])) }));
+          setStdDone((x) => new Set(x).add(part));
+        }}
+      >
+        ★ {t('pdStdPart')}
+      </button>
+    </div>
+  );
   const doSave = () => {
     const ok = saveProduct({ ...d, rates: [...d.rates].sort((a, b) => a.siFrom - b.siFrom) }, staffId, note.trim());
     setConfirm(false);
@@ -476,11 +508,10 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
     );
   };
   type MoneyKey = 'tpbiPerson' | 'tpbiAccident' | 'tppd' | 'pa' | 'paPassenger' | 'tempDriver' | 'tempPassenger' | 'medical' | 'bail' | 'deductible';
-  const money = (k: MoneyKey, label: string, hint?: string) => (
+  const money = (k: MoneyKey, label: string, sub?: string) => (
     <div className="field">
-      <label htmlFor={`pd-${k}`}>{label}</label>
+      <label htmlFor={`pd-${k}`}>{label}{sub && <small>{sub}</small>}</label>
       <NumInput id={`pd-${k}`} value={d[k]} onChange={(v) => set(k, v ?? 0)} />
-      {hint && <span className="hint">{hint}</span>}
     </div>
   );
   const tryRow = d.rates.find((r) => trySi >= r.siFrom && trySi <= r.siTo);
@@ -548,14 +579,13 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
 
         {tab === 'cover' && (
           <>
-            <Section title={t('pdSecCover')} hint={t('pdSecCoverHint')}>
-              <div className="pd-std">
-                <button type="button" className="btn small" onClick={applyStandard}>★ {t('pdStdBtn', { type: COVERAGE_LABEL[lang][d.type] })}</button>
-                <span className="hint">{stdDone ? `✓ ${t('pdStdDone')}` : t('pdStdHint')}</span>
-              </div>
-              {!isCmi ? (
-                <>
-                  <h5 className="pd-sub">{t('pdSubCar')}</h5>
+            <div className="pd-std">
+              <button type="button" className="btn small" onClick={applyStandard}>★ {t('pdStdBtn', { type: COVERAGE_LABEL[lang][d.type] })}</button>
+              <span className="hint">{stdDone.has('all') ? `✓ ${t('pdStdDone')}` : t('pdStdHint')}</span>
+            </div>
+            {!isCmi ? (
+              <>
+                <Section title={t('pdSubCar')} hint={t('pdSubCarHint')} action={stdBtn('car', t('pdSubCar'))}>
                   <div className="form-grid pair">
                     <div className="field">
                       <label htmlFor="pd-repair">{t('repairType')}</label>
@@ -569,56 +599,42 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
                     <div className="field"><span className="field-label">{t('ownDamage')}</span>{rule('ownDamage')}</div>
                     <div className="field"><span className="field-label">{t('fireTheft')}</span>{rule('fireTheft')}</div>
                   </div>
-                  <h5 className="pd-sub">{t('pdSubTp')}</h5>
-                  <div className="form-grid three">
+                </Section>
+
+                <Section title={t('pdSubTp')} hint={t('pdSubTpHint')} action={stdBtn('tp', t('pdSubTp'))}>
+                  <div className="form-grid pair">
                     {money('tpbiPerson', t('pdTpbiPerson'))}
                     {money('tpbiAccident', t('pdTpbiAccident'))}
                     {money('tppd', t('tppd'))}
                   </div>
-                  <h5 className="pd-sub">{t('pdSubRiders')}</h5>
-                  <div className="pd-riders" role="group" aria-label={t('pdSubRiders')}>
-                    <div className="pd-rd-head" aria-hidden="true">
-                      <span />
-                      <span>{t('rdDriver')}</span>
-                      <span>{t('rdPassenger')}</span>
-                    </div>
-                    <div className="pd-rd-row">
-                      <span className="pd-rd-label">{t('rdRy01Short')}</span>
-                      <NumInput id="pd-pa" label={`${t('rdRy01Short')} ${t('rdDriver')}`} value={d.pa} onChange={(v) => set('pa', v ?? 0)} />
-                      <NumInput id="pd-paPassenger" label={`${t('rdRy01Short')} ${t('rdPassenger')}`} value={d.paPassenger} onChange={(v) => set('paPassenger', v ?? 0)} />
-                    </div>
-                    <div className="pd-rd-row">
-                      <span className="pd-rd-label">{t('rdRy01Temp')}<small>{t('rdTempHint')}</small></span>
-                      <NumInput id="pd-tempDriver" label={`${t('rdRy01Temp')} ${t('rdDriver')}`} value={d.tempDriver} onChange={(v) => set('tempDriver', v ?? 0)} />
-                      <NumInput id="pd-tempPassenger" label={`${t('rdRy01Temp')} ${t('rdPassenger')}`} value={d.tempPassenger} onChange={(v) => set('tempPassenger', v ?? 0)} />
-                    </div>
-                    <div className="pd-rd-row">
-                      <span className="pd-rd-label">{t('rdRy02')}<small>{t('pdPerPersonAll')}</small></span>
-                      <NumInput id="pd-medical" label={t('rdRy02')} value={d.medical} onChange={(v) => set('medical', v ?? 0)} />
-                      <span />
-                    </div>
-                    <div className="pd-rd-row">
-                      <span className="pd-rd-label">{t('rdRy03')}<small>{t('pdPerCase')}</small></span>
-                      <NumInput id="pd-bail" label={t('rdRy03')} value={d.bail} onChange={(v) => set('bail', v ?? 0)} />
-                      <span />
-                    </div>
-                    <div className="pd-rd-row">
-                      <span className="pd-rd-label">{t('rdPassengers')}<small>{t('rdPassengersHint')}</small></span>
-                      <span />
-                      <NumInput id="pd-passengers" label={t('rdPassengers')} value={d.passengers} placeholder={t('pdByCode')} onChange={(v) => set('passengers', v)} />
+                </Section>
+
+                <Section title={t('pdSubRiders')} hint={t('pdSubRidersHint')} action={stdBtn('riders', t('pdSubRiders'))}>
+                  <div className="form-grid pair">
+                    {money('pa', t('rdRy01Short'), t('rdDriver'))}
+                    {money('paPassenger', t('rdRy01Short'), t('rdPassenger'))}
+                    {money('tempDriver', t('rdRy01Temp'), `${t('rdDriver')} · ${t('rdTempHint')}`)}
+                    {money('tempPassenger', t('rdRy01Temp'), `${t('rdPassenger')} · ${t('rdTempHint')}`)}
+                    {money('medical', t('rdRy02'), t('pdPerPersonAll'))}
+                    {money('bail', t('rdRy03'), t('pdPerCase'))}
+                    <div className="field">
+                      <label htmlFor="pd-passengers">{t('rdPassengers')}<small>{t('rdPassengersHint')}</small></label>
+                      <NumInput id="pd-passengers" value={d.passengers} placeholder={t('pdByCode')} onChange={(v) => set('passengers', v)} />
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className="form-grid three">
+                </Section>
+              </>
+            ) : (
+              <Section title={t('pdSecCover')} hint={t('pdSecCoverHint')} action={stdBtn('cmi', t('pdSecCover'))}>
+                <div className="form-grid pair">
                   {money('tpbiPerson', t('pdTpbiPerson'))}
                   {money('pa', t('cmiDeath'))}
                   {money('medical', t('cmiMedical'))}
                 </div>
-              )}
-            </Section>
+              </Section>
+            )}
 
-            <Section title={t('pdSecExtras')} hint={t('pdExtrasHint')}>
+            <Section title={t('pdSecExtras')} hint={t('pdExtrasHint')} action={stdBtn('extras', t('pdSecExtras'))}>
               <div className="pd-chips">
                 {EXTRAS.map((x) => {
                   const on = d.extras.includes(x);
@@ -633,7 +649,7 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
             </Section>
 
             <Section title={t('pdSecRules')} hint={t('pdSecRulesHint')}>
-              <div className="form-grid three">
+              <div className="form-grid pair">
                 <div className="field">
                   <label htmlFor="pd-maxAge">{t('pdMaxAge')}</label>
                   <NumInput id="pd-maxAge" value={d.maxAge} placeholder={t('pdNoLimit')} onChange={(v) => set('maxAge', v)} />
@@ -860,7 +876,7 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
               )}
             </Section>
 
-            <Section title={t('pdSecDocs')} hint={t('pdDocsHint')}>
+            <Section title={t('pdSecDocs')} hint={t('pdDocsHint')} action={stdBtn('docs', t('pdSecDocs'))}>
               <div className="pd-chips">
                 {DOC_KEYS.map((k) => {
                   const on = d.docs.includes(k);

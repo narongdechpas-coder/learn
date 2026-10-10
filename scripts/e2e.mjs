@@ -852,6 +852,10 @@ assert.equal(await office.locator('#pd-ownDamage-mode').inputValue(), 'fixed', '
 assert.equal(await office.locator('#pd-ownDamage-val').inputValue(), '200,000', 'amounts shown with thousands separators');
 assert.equal(await office.locator('#pd-pa').inputValue(), '100,000', 'driver personal accident');
 assert.equal(await office.locator('#pd-paPassenger').inputValue(), '100,000', 'passenger personal accident, per person');
+await office.locator('#pd-tppd').fill('9');
+await office.getByRole('button', { name: 'เติมตามมาตรฐาน · ความรับผิดต่อบุคคลภายนอก' }).click();
+await office.waitForFunction(() => document.querySelector('#pd-tppd')?.value === '1,000,000', null, { timeout: 3000 }); // section standard fills only that section
+assert.equal(await office.locator('#pd-tempDriver').inputValue(), '0', 'other sections untouched');
 await office.locator('#pd-tempDriver').fill('1000');
 await office.locator('#pd-ownDamage-val').fill('250000');
 await edTab(/การขายและเอกสาร/);
