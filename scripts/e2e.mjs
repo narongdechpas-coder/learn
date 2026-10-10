@@ -1005,11 +1005,12 @@ assert.match(plusPrice, /฿920/, 'Plus, worldwide, 7 days');
 await traveller.locator('.tr-plan', { hasText: 'เดินทาง Plus' }).getByRole('button', { name: 'เลือกแผนนี้' }).click();
 await traveller.getByRole('button', { name: /ไปชำระเงิน/ }).click();
 await traveller.getByText('กรุณายืนยันคำแถลงก่อนชำระเงิน').waitFor();
+await traveller.getByText('กรุณาแนบสำเนาบัตรประชาชนและหนังสือเดินทาง').waitFor();
 await traveller.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
 await traveller.locator('#tf-declare').check();
 await traveller.getByRole('button', { name: /ไปชำระเงิน/ }).click();
 await traveller.getByRole('heading', { name: 'ชำระเงินและรับกรมธรรม์' }).waitFor();
-assert.equal(await traveller.locator('.uploads').count(), 0, 'travel needs no documents');
+assert.equal(await traveller.locator('.uploads').count(), 0, 'ID card and passport already attached on the form');
 await traveller.locator('.pay-btn').click();
 const trNo = (await traveller.locator('.ref-big').innerText()).trim();
 assert.match(trNo, /^TR\d{2}-\d{5}$/, 'travel policy number issued on payment');
@@ -1019,7 +1020,7 @@ const trCase = st2.cases.find((c) => c.policyNo === trNo);
 assert.equal(trCase.status, 'ISSUED');
 assert.equal(trCase.coverage, 'TRV');
 assert.equal(trCase.premium, 920);
-log(`customer bought travel Plus (worldwide, 7 days) online: no documents, policy ${trNo} and Schengen certificate issued on payment`);
+log(`customer bought travel Plus (worldwide, 7 days) online: ID card and passport attached, policy ${trNo} and Schengen certificate issued on payment`);
 
 // Partner: travel quotation with two plans and a discount; the customer accepts and pays through the link.
 await agent.bringToFront();
@@ -1057,6 +1058,7 @@ assert.equal(qCase.status, 'ISSUED', 'partner travel sale issued on payment');
 assert.equal(qCase.pkg.id, 'TRV-MAX');
 assert.ok(qCase.discount > 0, 'partner discount applied');
 assert.equal(qCase.agentId, 'a3');
+assert.ok(qCase.docs.idcard && qCase.docs.passport, 'partner-attached ID card and passport copies came with the quotation');
 log('partner quoted two travel plans with a 5% discount; the customer picked Max by link, paid, and the policy was issued at once');
 
 // Back office: travel plans menu, new price version, travel filter in the inbox and the dashboard.
@@ -1121,21 +1123,40 @@ assert.equal((await paCust.locator('.pa-plan', { hasText: 'PA 300,000' }).locato
 await paCust.locator('.pa-plan', { hasText: 'PA 300,000' }).getByRole('button', { name: 'เลือกแผนนี้' }).click();
 await paCust.getByRole('button', { name: /ไปชำระเงิน/ }).click();
 await paCust.locator('#pf-beneficiary[aria-invalid="true"]').waitFor();
-await paCust.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await paCust.getByText('กรุณาแนบสำเนาบัตรประชาชน', { exact: true }).waitFor();
+// The ID card photo fills the form (simulated OCR) and is attached as the ID card copy.
+await paCust.locator('#pf-ocr-id').setInputFiles(jpg('pa-id.jpg'));
+await paCust.locator('.ocr-box').getByText(/กรอกชื่อ เลขบัตร และที่อยู่จากบัตรแล้ว/).waitFor();
+assert.equal(await paCust.locator('#pf-firstName').inputValue(), 'วิภาวดี', 'OCR filled the name');
+assert.match(await paCust.locator('#pf-address').inputValue(), /ลาดพร้าว/, 'OCR filled the ID card address');
+await paCust.locator('#pf-phone').fill('0891234567');
+await paCust.locator('#pf-email').fill('wipa@example.com');
+await paCust.locator('#pf-beneficiary').fill('นายสมชาย ศรีสุข (คู่สมรส)');
 await paCust.locator('#pf-declare').check();
 await paCust.getByRole('button', { name: /ไปชำระเงิน/ }).click();
 await paCust.getByRole('heading', { name: 'ชำระเงินและรับกรมธรรม์' }).waitFor();
-assert.equal(await paCust.locator('.uploads').count(), 0, 'PA needs no documents');
+assert.equal(await paCust.locator('.uploads').count(), 0, 'ID card already attached on the form');
+// Paper policy: the address on the ID card, or one typed in.
+await paCust.getByRole('radio', { name: /กรมธรรม์กระดาษ/ }).click();
+assert.ok(await paCust.locator('[id^="ship-id-"]').isChecked(), 'ID card address picked by default');
+await paCust.locator('[id^="ship-custom-"]').check();
+await paCust.locator('.pay-btn').click();
+await paCust.getByText('กรุณากรอกที่อยู่หรืออีเมลสำหรับรับกรมธรรม์').first().waitFor();
+await paCust.locator('[id^="ship-id-"]').check();
 await paCust.locator('.pay-btn').click();
 const paNo = (await paCust.locator('.ref-big').innerText()).trim();
 assert.match(paNo, /^PA\d{2}-\d{5}$/, 'PA policy number issued on payment');
+await paCust.getByRole('button', { name: 'ดู e-Policy' }).click();
 await paCust.getByText('ตารางกรมธรรม์ประกันภัยอุบัติเหตุส่วนบุคคล').waitFor();
 let st3 = await state(paCust);
 const paCase = st3.cases.find((c) => c.policyNo === paNo);
 assert.equal(paCase.status, 'ISSUED');
 assert.equal(paCase.premium, 1590);
+assert.ok(paCase.docs.idcard, 'ID card copy attached');
+assert.equal(paCase.delivery.method, 'paper');
+assert.match(paCase.delivery.address, /ลาดพร้าว/, 'paper policy sent to the ID card address');
 assert.equal(paCase.pkg.accident.referral, false);
-log(`customer bought PA 300,000 (office worker, all health answers no): policy ${paNo} issued on payment`);
+log(`customer bought PA 300,000 (office worker, all health answers no; ID card read by OCR; paper policy to the ID card address): policy ${paNo} issued on payment`);
 
 // A class 3 job with the motorcycle add-on goes to the back office before issue.
 await paCust.getByRole('button', { name: 'เริ่มคำขอใหม่' }).click();
@@ -1184,6 +1205,7 @@ await office.locator('#bo-type').selectOption('PA');
 await office.locator('#bo-q').fill(paRef);
 await office.locator('.case-row').first().click();
 await office.locator('.case-detail .pa-referral').getByText(/อาชีพขั้น 3/).waitFor();
+assert.equal(await office.locator('.case-detail .doc-tile.has').count(), 1, 'ID card copy in the back office');
 await office.locator('.case-detail').getByRole('button', { name: 'รับเรื่อง', exact: true }).click();
 await office.locator('.case-detail').getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
 await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).first().waitFor();

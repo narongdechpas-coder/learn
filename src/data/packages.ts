@@ -22,8 +22,8 @@ export const REQUIRED_DOCS: Record<CoverageType, DocKey[]> = {
   T2: ['regbook', 'idcard'],
   T3: ['regbook', 'idcard'],
   CMI: ['regbook', 'idcard'],
-  TRV: [],
-  PA: [],
+  TRV: ['idcard', 'passport'],
+  PA: ['idcard'],
 };
 
 export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Agent, Case, Customer as CustomerT, OccClass, Package, PaCover, RenewalItem } from '../types';
+import type { Agent, Case, Customer as CustomerT, DocKey, OccClass, Package, PaCover, RenewalItem } from '../types';
 import { HEALTH_QUESTIONS, OCCUPATIONS, PA_COVER_KEYS, getPaProducts, occName, occupationById, paEnd, paPackages, paRefusal, type PaApplicant } from '../data/pa';
 import { ageOn, tripRange } from '../data/travel';
 import { fmtBaht, fmtDate, fmtDateTime, useT, type TKey } from '../i18n';
-import { acceptProposal, createProposal, sendRenewalPreview, setReminders, submitCase, totalPremium, trackStep, useStore } from '../store';
+import { acceptProposal, createProposal, docMeta, sendRenewalPreview, setReminders, storeFiles, submitCase, totalPremium, trackStep, useStore } from '../store';
+import { OCR_DOC, OCR_SAMPLE, OcrBox, fakeDocSync } from './extras';
 import { optionPrice, rateOf } from '../data/agents';
 import { dayKey } from '../lib/time';
 import { Field, Segmented } from './common';
@@ -337,14 +338,17 @@ const samplePerson = (birth: string): CustomerT => ({
 });
 const blankPerson = (birth: string): CustomerT => ({ ...samplePerson(birth), firstName: '', lastName: '', idCard: '', phone: '', email: '', address: '', beneficiary: '' });
 
-export function usePaPersonForm(birth: string, initial?: Partial<CustomerT>) {
+export function usePaPersonForm(birth: string, initial?: Partial<CustomerT>, needDocs = true) {
   const { t } = useT();
   const [cust, setCust] = useState<CustomerT>(() => ({ ...blankPerson(birth), ...initial }));
   const [declared, setDeclared] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof CustomerT | 'declare', string>>>({});
+  // ID card copy: read by the (simulated) OCR and attached to the application. A renewal needs none.
+  const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CustomerT | 'declare' | 'docs', string>>>({});
   useEffect(() => setCust((c) => ({ ...c, birthDate: birth })), [birth]);
   const validate = (needDeclare = true): CustomerT | null => {
     const e: typeof errors = {};
+    if (needDocs && !files.idcard) e.docs = t('paErrDocs');
     for (const k of ['firstName', 'lastName', 'idCard', 'phone', 'email', 'beneficiary'] as const) if (!(cust[k] ?? '').trim()) e[k] = t('errRequired');
     if (!e.idCard && !/^\d{13}$/.test(cust.idCard.replace(/[\s-]/g, ''))) e.idCard = t('errIdCard');
     if (!e.phone && !/^0\d{9}$/.test(cust.phone.replace(/[\s-]/g, ''))) e.phone = t('errPhone');
@@ -362,13 +366,28 @@ export function usePaPersonForm(birth: string, initial?: Partial<CustomerT>) {
     );
     return (
       <>
+        {needDocs && (
+          <OcrBox
+            idPrefix={`${idPrefix}-ocr`}
+            kinds={['id']}
+            title={t('paDocsTitle')}
+            lead={t('paDocsLead')}
+            attached={files.idcard ? ['id'] : []}
+            invalid={!!errors.docs}
+            onRead={(kind, file) => {
+              setCust((c) => ({ ...c, ...OCR_SAMPLE[kind] }));
+              setFiles((f) => ({ ...f, [OCR_DOC[kind]]: file }));
+            }}
+          />
+        )}
+        {errors.docs && <p className="error" role="alert">{errors.docs}</p>}
         <div className="tr-form-grid">
           {input('firstName', 'firstName')}
           {input('lastName', 'lastName')}
           {input('idCard', 'idCard', { inputMode: 'numeric' })}
           {input('phone', 'phone', { type: 'tel', inputMode: 'tel' })}
           {input('email', 'email', { type: 'email', inputMode: 'email' })}
-          {input('address', 'address', { optional: true })}
+          {input('address', 'addrIdCard', { optional: true })}
           {input('beneficiary', 'trBeneficiary', { hint: t('paBeneficiaryHint') })}
         </div>
         {withDeclare && (
@@ -381,7 +400,12 @@ export function usePaPersonForm(birth: string, initial?: Partial<CustomerT>) {
       </>
     );
   };
-  return { cust, setCust, validate, fields, fillSample: () => setCust(samplePerson(birth)), setDeclared };
+  const fillSample = () => {
+    const sample = samplePerson(birth);
+    setCust(sample);
+    if (needDocs) setFiles({ idcard: fakeDocSync('idcard', { customer: sample }) });
+  };
+  return { cust, setCust, validate, fields, files, fillSample, setDeclared };
 }
 
 /* ---------------- customer buying flow ---------------- */
@@ -446,7 +470,8 @@ export function PaBuy({ renderCheckout, onTrack }: { renderCheckout: (id: string
     if (!customer) return;
     const referral = pkg.accident.referral;
     // A referred application goes to the back office (like a Class 1 package); the rest pay and are issued at once.
-    const id = submitCase({ source: referral ? 'package' : 'self', coverage: 'PA', pkg, addCmi: false, customer: { ...customer, startDate: pkg.accident.start } });
+    const id = submitCase({ source: referral ? 'package' : 'self', coverage: 'PA', pkg, addCmi: false, customer: { ...customer, startDate: pkg.accident.start }, docs: docMeta(form.files) });
+    void storeFiles(id, form.files);
     setCaseId(id);
     setStep(referral ? 'sent' : 'checkout');
   };
@@ -576,7 +601,8 @@ export function PaSell({ agent, onCase, renderMade, initialPick, prefill }: { ag
   const pkgs = useMemo(() => (ok ? paPackages(chk.applicant, { channel: 'partner', agentId: agent.id }) : []), [JSON.stringify(chk.applicant), ok, agent.id, s.paProducts]);
   const chosen = pkgs.filter((p) => picked.includes(p.id));
   const maxDisc = Math.round(Math.max(0, ...chosen.map((p) => rateOf(p) * 100)));
-  const form = usePaPersonForm(f.birth, prefill?.customer);
+  // A renewal keeps the documents already on file.
+  const form = usePaPersonForm(f.birth, prefill?.customer, !renewal);
   useEffect(() => {
     if (disc > maxDisc) setDisc(maxDisc);
   }, [maxDisc, disc]);
@@ -586,14 +612,15 @@ export function PaSell({ agent, onCase, renderMade, initialPick, prefill }: { ag
     if (mode === 'buy') return setPicked([id]);
     setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 3 ? cur : [...cur, id]));
   };
-  const submit = () => {
+  const submit = async () => {
     if (!ok) return setErr(Object.values(chk.errors)[0] ?? t('trNoPlan'));
     if (!chosen.length) return setErr(t('agPickPkg'));
     const customer = form.validate(mode === 'buy');
     if (!customer) return setErr(t('agNeedCust'));
     if (mode === 'buy' && !consent) return setErr(t('agNeedConsent'));
     const options = chosen.map((p) => ({ pkg: p, addCmi: false }));
-    const id = createProposal({ agentId: agent.id, customer: { ...customer, startDate: f.start }, options, discountPct: disc, renewalOf: prefill?.renewalOf });
+    const id = createProposal({ agentId: agent.id, customer: { ...customer, startDate: f.start }, options, discountPct: disc, renewalOf: prefill?.renewalOf, ...(renewal ? {} : { docs: docMeta(form.files) }) });
+    if (!renewal) await storeFiles(id, form.files);
     if (mode === 'quote') return setMade(id);
     const caseId = acceptProposal(id, 0, 'agent', collect);
     if (caseId) onCase(caseId);

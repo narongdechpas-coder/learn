@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, PaProduct, PaProductVersion, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, DocMeta, Email, EmailTemplate, Lead, Notification, Package, PaProduct, PaProductVersion, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
 import { seedAgentWork, seedCases, seedLeads, seedPa, seedPaRenewals, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
@@ -10,7 +10,7 @@ import { defaultTravelProducts, defaultZones, setTravelCatalog } from './data/tr
 import { defaultPaProducts, paEnd, setPaCatalog } from './data/pa';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
-import { clearFiles, deleteFile, putFile } from './files';
+import { clearFiles, deleteFile, getFile, putFile } from './files';
 
 export const STAFF_EMAIL = 'motor-ops@jacky.example';
 
@@ -273,7 +273,17 @@ export interface SubmitInput {
   collect?: Case['collect'];
   proposalId?: string;
   renewalOf?: string;
+  /** Documents attached on the form (travel and PA: ID card / passport copies). */
+  docs?: Partial<Record<DocKey, DocMeta>>;
 }
+
+/** Document details for files picked on a form, before they are stored. */
+export const docMeta = (files: Partial<Record<DocKey, File>>): Partial<Record<DocKey, DocMeta>> =>
+  Object.fromEntries((Object.entries(files) as [DocKey, File][]).map(([k, f]) => [k, { name: f.name, size: f.size, at: Date.now() }]));
+
+/** Keep the files of a case or quotation (IndexedDB, keyed by its id). */
+export const storeFiles = (id: string, files: Partial<Record<DocKey, File>>) =>
+  Promise.all((Object.entries(files) as [DocKey, File][]).map(([k, f]) => putFile(`${id}:${k}`, f)));
 
 export function submitCase(input: SubmitInput, mine = true): string {
   const base = latest();
@@ -284,8 +294,6 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const self = input.source === 'self';
   // Renewals, travel and PA that passed the health questions need no documents or checking: they are issued once paid.
   const renewal = issuesOnPayment(input);
-  // PA needs no documents either; a referred application goes straight to the back office for review.
-  const noDocs = input.coverage === 'PA';
   const c: Case = {
     id,
     ...input,
@@ -294,11 +302,13 @@ export function submitCase(input: SubmitInput, mine = true): string {
     stamps:
       input.source === 'quote'
         ? { submitted: now }
-        : { submitted: now, quoted: now, confirmed: now, ...(self || renewal ? { accepted: now } : {}), ...(renewal || noDocs ? { docsComplete: now } : {}) },
-    docs: {},
+        : { submitted: now, quoted: now, confirmed: now, ...(self || renewal ? { accepted: now } : {}) },
+    docs: { ...input.docs },
     log: [{ at: now, by: input.agentId ?? 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
   keepStartCurrent(c);
+  // Every document already attached on the form (travel and PA, or none needed): nothing left to send.
+  if (input.source !== 'quote' && docsMissing(c).length === 0) c.stamps.docsComplete = now;
   const s: State = { ...base, seq, cases: [c, ...base.cases], mine: mine ? [id, ...base.mine] : base.mine };
   // A lead that comes back and submits counts as converted.
   const phone = input.customer.phone.replace(/\D/g, '');
@@ -312,7 +322,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
   }
   s.emails = mail(s, 'custReceived', c);
   // Package sales can attach documents straight away, so say which ones (quotes get this after accepting).
-  if (c.source === 'package' && requiredDocs(c).length) s.emails = mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 });
+  if (c.source === 'package' && docsMissing(c).length) s.emails = mail(s, 'custDocsNeeded', c, { docs: requiredDocs(c).join(','), confirm: 1 });
   s.emails = mail(s, 'staffNewCase', c, { source: c.source });
   s.notifications = notify(s, 'new', id, { source: c.source, ...(c.agentId ? { agent: c.agentId } : {}) });
   commit(s);
@@ -627,6 +637,7 @@ export interface ProposalInput {
   options: ProposalOption[];
   discountPct: number;
   renewalOf?: string;
+  docs?: Proposal['docs'];
 }
 
 /** An agent's quotation (1-5 packages) for a customer. */
@@ -691,9 +702,12 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
       collect,
       proposalId: id,
       renewalOf: pr.renewalOf,
+      docs: pr.docs,
     },
     by === 'customer',
   );
+  // The partner's copies of the ID card / passport become the case's documents.
+  for (const k of Object.keys(pr.docs ?? {})) void getFile(`${id}:${k}`).then((b) => b && putFile(`${caseId}:${k}`, b));
   const after = latest();
   const now = Date.now();
   commit({
@@ -724,7 +738,8 @@ export const issuesOnPayment = (c: Pick<Case, 'renewalOf' | 'coverage' | 'pkg'>)
   !!c.renewalOf || c.coverage === 'TRV' || (c.coverage === 'PA' && !c.pkg?.accident?.referral);
 
 /** A renewal is issued the moment it is paid (or the partner has the money): nothing to check. */
-function issueRenewal(c: Case, s: State, now: number): Partial<State> {
+function issueRenewal(c: Case, s: State, now: number): Partial<State> | void {
+  if (docsMissing(c).length) return;
   c.stamps.paid = now;
   c.stamps.issued = now;
   c.status = 'ISSUED';

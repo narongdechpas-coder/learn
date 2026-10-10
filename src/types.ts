@@ -208,7 +208,7 @@ export type Status =
 /** Milestones recorded on a case; the funnel and SLA are computed from these. */
 export type Stage = 'submitted' | 'accepted' | 'quoted' | 'confirmed' | 'docsComplete' | 'paid' | 'issued' | 'cancelled';
 
-export type DocKey = 'front' | 'back' | 'left' | 'right' | 'regbook' | 'idcard';
+export type DocKey = 'front' | 'back' | 'left' | 'right' | 'regbook' | 'idcard' | 'passport';
 
 export interface Brand {
   id: string;
@@ -492,6 +492,8 @@ export interface Proposal {
   vehicle?: Vehicle;
   customer: Customer;
   options: ProposalOption[];
+  /** ID card / passport copies the partner attached (travel and PA); they go with the case on acceptance. */
+  docs?: Partial<Record<DocKey, DocMeta>>;
   /** Discount as % of net premium; each option is capped at its commission rate. */
   discountPct: number;
   sentVia: ('link' | 'pdf' | 'line')[];

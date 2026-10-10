@@ -181,7 +181,7 @@ export function paPackage(p: PaProduct, a: PaApplicant, agentId?: string): Packa
     nameTh: p.nameTh,
     nameEn: p.nameEn,
     ver: p.ver,
-    docs: [],
+    docs: ['idcard'],
     ...(p.badge ? { badge: p.badge } : {}),
     comRate: paCommission(p, agentId),
     accident: { productId: p.id, occClass, occupation: a.occupation, ...(occ.other && a.occupationText?.trim() ? { occupationText: a.occupationText.trim() } : {}), motorcycle, cover: { ...p.cover }, health: [...a.health], referral, start: a.start, end: paEnd(a.start) },

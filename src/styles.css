@@ -120,7 +120,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .topbar {
   position: sticky;
   top: env(safe-area-inset-top, 0px);
-  z-index: 20;
+  /* Above the customer line bar, so the demo tools menu opens over it. */
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1944,7 +1945,7 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .hero-banner { width: 100%; box-sizing: border-box; }
 
 /* ---------- Customer: line-of-business bar (sticky under the top bar) ---------- */
-.line-nav { position: sticky; top: var(--topbar-h, 64px); z-index: 20; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: -6px 0 14px; padding: 6px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); }
+.line-nav { position: sticky; top: var(--topbar-h, 64px); z-index: 20; display: flex; width: fit-content; max-width: 100%; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: -6px 0 14px; padding: 6px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); }
 .line-nav::-webkit-scrollbar { display: none; }
 .ln-item { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .ln-item:hover:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
@@ -1980,3 +1981,10 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .pa-occ-grid ul { margin: 6px 0 0; padding-left: 18px; font-size: 0.88rem; color: var(--ink-2); }
 .pa-sent .actions { flex-wrap: wrap; }
 .pa-badge { margin-left: 6px; }
+.ship-choice { border: 0; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.ship-choice legend { font-weight: 600; margin-bottom: 6px; padding: 0; }
+.ship-choice .check { align-items: flex-start; }
+.ship-choice .check span { display: grid; gap: 2px; }
+.ship-choice .check.disabled { opacity: 0.6; }
+.ship-choice textarea { width: 100%; }
+.ocr-box.invalid { border-color: var(--bad); }

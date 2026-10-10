@@ -34,7 +34,7 @@ import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
 import { attachSampleDocs } from './extras';
 import { SubmitDocsBar, SubmitDocsHost } from './SubmitDocs';
-import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
+import { AngleGuide, ANGLES, IssuedExtras, OCR_DOC, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
 
@@ -692,7 +692,7 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
               const data = OCR_SAMPLE[kind];
               setCustomer((cu) => ({ ...cu, ...data }));
               setOcrFilled((f) => [...new Set([...f, ...(Object.keys(data) as (keyof CustomerT)[])])]);
-              setOcrFiles((o) => ({ ...o, [kind === 'id' ? 'idcard' : 'regbook']: file }));
+              setOcrFiles((o) => ({ ...o, [OCR_DOC[kind]]: file }));
             }}
           />
           <div className="form-grid">
@@ -702,7 +702,7 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
             {input('phone', 'phone', { inputMode: 'tel', type: 'tel' })}
             {input('email', 'email', { type: 'email', inputMode: 'email', wide: true })}
             <div className="span-2">
-              <Field htmlFor="f-address" label={t('address')} error={errors.address}>
+              <Field htmlFor="f-address" label={t('addrIdCard')} error={errors.address}>
                 <textarea id="f-address" rows={2} value={customer.address} onChange={set('address')} />
               </Field>
             </div>
@@ -1041,7 +1041,9 @@ function CheckoutById({ id, onRestart }: { id: string; onRestart?: () => void })
 function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () => void; embedded?: boolean }) {
   const { t, lang } = useT();
   const [method, setMethod] = useState<Delivery['method']>('pdf');
-  const [address, setAddress] = useState(c.customer.address);
+  // Paper policy: send it to the address on the ID card, or to one the customer types in.
+  const [addrMode, setAddrMode] = useState<'id' | 'custom'>(c.customer.address.trim() ? 'id' : 'custom');
+  const [address, setAddress] = useState('');
   const [email, setEmail] = useState(c.customer.email);
   const [pay, setPay] = useState<'qr' | 'card'>('qr');
   const [card, setCard] = useState({ no: '4242 4242 4242 4242', exp: '12/29', cvv: '123' });
@@ -1051,9 +1053,10 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
   const total = totalPremium(c) ?? 0;
   const plan = installmentPlan(total);
   const missing = docsMissing(c);
-  // Travel and PA need no documents and come as an e-policy only.
+  // Travel and PA documents were attached on the form; only what is still missing is asked for here.
   const travel = c.coverage === 'TRV' || c.coverage === 'PA';
-  const n0 = travel ? 0 : 1;
+  const n0 = travel && !missing.length ? 0 : 1;
+  const shipTo = addrMode === 'id' ? c.customer.address.trim() : address.trim();
   useEffect(() => {
     if (!missing.length) setErr(null);
   }, [missing.length]);
@@ -1062,12 +1065,12 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
 
   const doPay = () => {
     if (missing.length) return setErr(t('payNeedDocs'));
-    if (method === 'paper' ? !address.trim() : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErr(t('errShip'));
+    if (method === 'paper' ? !shipTo : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErr(t('errShip'));
     if (pay === 'card' && (card.no.replace(/\s/g, '').length < 15 || !/^\d{2}\/\d{2}$/.test(card.exp) || card.cvv.length < 3)) return setErr(t('errCard'));
     setErr(null);
     setBusy(true);
     setTimeout(() => {
-      payAndIssue(c.id, method === 'paper' ? { method, address: address.trim() } : { method, email: email.trim() }, {
+      payAndIssue(c.id, method === 'paper' ? { method, address: shipTo } : { method, email: email.trim() }, {
         method: pay,
         last4: pay === 'card' ? card.no.replace(/\s/g, '').slice(-4) : undefined,
         months: pay === 'card' && plan && months ? plan.months : undefined,
@@ -1087,7 +1090,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
       </div>
       <div className="checkout-grid">
         <div className="checkout-main">
-          {!travel && (
+          {(!travel || missing.length > 0) && (
             <div className="co-step">
               <div className="section-label"><span className="section-n">1</span>{t('uploadTitle')}</div>
               <Uploads c={c} bare />
@@ -1097,7 +1100,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
           <div className="co-step">
             <div className="section-label"><span className="section-n">{n0 + 1}</span>{t('deliveryTitle')}</div>
             <div className="option-grid" role="radiogroup" aria-label={t('deliveryTitle')}>
-              {(travel ? (['pdf'] as const) : (['pdf', 'paper'] as const)).map((m) => (
+              {(['pdf', 'paper'] as const).map((m) => (
                 <button key={m} type="button" role="radio" aria-checked={method === m} className={`option-card${method === m ? ' on' : ''}`} onClick={() => setMethod(m)}>
                   <span className="radio-dot" aria-hidden="true" />
                   <span>
@@ -1108,9 +1111,23 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
               ))}
             </div>
             {method === 'paper' ? (
-              <Field htmlFor={`ship-${c.id}`} label={t('shipTo')}>
-                <textarea id={`ship-${c.id}`} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
-              </Field>
+              <fieldset className="ship-choice">
+                <legend>{t('shipTo')}</legend>
+                <label className={`check${c.customer.address.trim() ? '' : ' disabled'}`}>
+                  <input type="radio" id={`ship-id-${c.id}`} name={`ship-${c.id}`} checked={addrMode === 'id'} disabled={!c.customer.address.trim()} onChange={() => setAddrMode('id')} />
+                  <span>
+                    <b>{t('shipIdAddr')}</b>
+                    <small className="hint">{c.customer.address.trim() || t('shipIdNone')}</small>
+                  </span>
+                </label>
+                <label className="check">
+                  <input type="radio" id={`ship-custom-${c.id}`} name={`ship-${c.id}`} checked={addrMode === 'custom'} onChange={() => setAddrMode('custom')} />
+                  <span><b>{t('shipCustom')}</b></span>
+                </label>
+                {addrMode === 'custom' && (
+                  <textarea id={`ship-${c.id}`} aria-label={t('shipCustom')} rows={2} value={address} placeholder={t('shipCustomPh')} onChange={(e) => setAddress(e.target.value)} />
+                )}
+              </fieldset>
             ) : (
               <Field htmlFor={`mail-${c.id}`} label={t('sendTo')}>
                 <input id={`mail-${c.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />

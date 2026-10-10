@@ -172,7 +172,7 @@ export function travelPackage(p: TravelProduct, trip: Trip, age: number, agentId
     nameTh: p.nameTh,
     nameEn: p.nameEn,
     ver: p.ver,
-    docs: [],
+    docs: ['idcard', 'passport'],
     ...(p.badge ? { badge: p.badge } : {}),
     comRate: travelCommission(p, agentId),
     travel: { productId: p.id, trip, cover: { ...p.cover }, schengen: meetsSchengen(p.cover, zoneById(trip.zoneId)) },

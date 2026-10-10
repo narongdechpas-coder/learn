@@ -22,6 +22,13 @@ const thBase = {
   ocrLead: 'อัปโหลดรูปบัตรประชาชนหรือเล่มรถ (.jpg) ระบบจะอ่านแล้วเติมข้อมูลให้ และแนบเป็นเอกสารให้ด้วย',
   ocrId: 'ถ่าย/เลือกรูปบัตรประชาชน',
   ocrReg: 'ถ่าย/เลือกรูปเล่มรถ',
+  ocrPassport: 'ถ่าย/เลือกรูปหนังสือเดินทาง',
+  ocrDonePassport: 'กรอกเลขหนังสือเดินทางจากรูปแล้ว',
+  addrIdCard: 'ที่อยู่ตามบัตรประชาชน',
+  shipIdAddr: 'ใช้ที่อยู่ตามบัตรประชาชน',
+  shipIdNone: 'ไม่มีที่อยู่ตามบัตร กรุณาระบุเอง',
+  shipCustom: 'ระบุที่อยู่จัดส่งเอง',
+  shipCustomPh: 'บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์',
   ocrReading: 'กำลังอ่านข้อมูลจากรูป…',
   ocrDoneId: 'กรอกชื่อ เลขบัตร และที่อยู่จากบัตรแล้ว ตรวจอีกครั้งได้เลย',
   ocrDoneReg: 'กรอกทะเบียน จังหวัด และเลขตัวถังจากเล่มรถแล้ว',
@@ -508,6 +515,13 @@ const en: Dict = {
   ocrLead: 'Upload a photo of your ID card or registration book (.jpg). We read it, fill in the form and attach it as a document.',
   ocrId: 'Photo of ID card',
   ocrReg: 'Photo of registration book',
+  ocrPassport: 'Photo of passport',
+  ocrDonePassport: 'Passport number filled in from the photo.',
+  addrIdCard: 'Address on the ID card',
+  shipIdAddr: 'Use the address on my ID card',
+  shipIdNone: 'No ID card address on file; please enter one',
+  shipCustom: 'Send it to another address',
+  shipCustomPh: 'House no., street, sub-district, district, province, postcode',
   ocrReading: 'Reading the photo…',
   ocrDoneId: 'Name, ID number and address filled in from the card. Please check them.',
   ocrDoneReg: 'Plate, province and chassis number filled in from the book.',
@@ -1028,8 +1042,8 @@ export const STAGE_LABEL: Record<Lang, Record<Stage, string>> = {
 };
 
 export const DOC_LABEL: Record<Lang, Record<DocKey, string>> = {
-  th: { front: 'รูปรถด้านหน้า', back: 'รูปรถด้านหลัง', left: 'รูปรถด้านซ้าย', right: 'รูปรถด้านขวา', regbook: 'สำเนาเล่มรถ', idcard: 'สำเนาบัตรประชาชน' },
-  en: { front: 'Car photo: front', back: 'Car photo: rear', left: 'Car photo: left', right: 'Car photo: right', regbook: 'Registration book copy', idcard: 'ID card copy' },
+  th: { front: 'รูปรถด้านหน้า', back: 'รูปรถด้านหลัง', left: 'รูปรถด้านซ้าย', right: 'รูปรถด้านขวา', regbook: 'สำเนาเล่มรถ', idcard: 'สำเนาบัตรประชาชน', passport: 'สำเนาหนังสือเดินทาง (Passport)' },
+  en: { front: 'Car photo: front', back: 'Car photo: rear', left: 'Car photo: left', right: 'Car photo: right', regbook: 'Registration book copy', idcard: 'ID card copy', passport: 'Passport copy' },
 };
 
 export const SLA_LABEL: Record<Lang, Record<SlaKey, string>> = {
