@@ -59,6 +59,22 @@ const trNo = (await trip.locator('.ref-big').innerText()).trim();
 assert.match(trNo, /^TR/, 'travel policy issued offline');
 console.log(`  travel policy ${trNo} issued offline`);
 
+// Personal accident too: answer the health questions, buy, policy issued.
+const pa = await ctx.newPage();
+pa.on('pageerror', (e) => errors.push(e.message));
+await pa.goto(file + '#customer');
+await pa.locator('.line-card.line-pa').click();
+for (const i of [0, 1, 2]) await pa.locator(`#pa-q${i}-no`).check();
+await pa.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await pa.locator('.pa-plan').first().getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await pa.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await pa.locator('#pf-declare').check();
+await pa.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await pa.locator('.pay-btn').click();
+const paNo = (await pa.locator('.ref-big').innerText()).trim();
+assert.match(paNo, /^PA/, 'PA policy issued offline');
+console.log(`  PA policy ${paNo} issued offline`);
+
 await office.bringToFront();
 await office.locator('.toast', { hasText: ref }).waitFor({ timeout: 5000 });
 console.log('  back-office tab got the real-time alert');

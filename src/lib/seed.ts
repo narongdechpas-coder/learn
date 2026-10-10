@@ -6,6 +6,7 @@ import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay, dayKey } from 
 import { SLA_KEYS, slaFor } from './sla';
 import { AGENTS, PAY_DAYS, PROPOSAL_DAYS, optionPrice } from '../data/agents';
 import { makeTrip, travelPackages } from '../data/travel';
+import { OCCUPATIONS, getPaProducts, paPackage } from '../data/pa';
 
 function mulberry32(seed: number) {
   return () => {
@@ -580,7 +581,7 @@ export function seedTravel(now: number, startSeq: number): { cases: Case[]; prop
         customer,
         status: 'ISSUED',
         stamps: { submitted, quoted: submitted, confirmed: submitted, accepted: submitted, docsComplete: submitted, paid: issued, issued },
-        docs: {},
+        docs: Object.fromEntries((pkg.docs ?? []).map((k) => [k, { name: `${k}.jpg`, size: 180_000, at: submitted }])),
         log: [],
         policyNo: `TR${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`,
         premium: pkg.premium,
@@ -632,4 +633,185 @@ export function seedTravel(now: number, startSeq: number): { cases: Case[]; prop
     }
   }
   return { cases, proposals, seq };
+}
+
+/** Thai-style birth date for an age in whole years on a given day. */
+const birthFor = (rnd: () => number, now: number, age: number) =>
+  `${bkkParts(now).y - age - 1}-${String(1 + Math.floor(rnd() * 12)).padStart(2, '0')}-${String(1 + Math.floor(rnd() * 28)).padStart(2, '0')}`;
+
+/**
+ * Three months of personal accident policies, bought online or sold by partners. Most are issued on
+ * payment; applications with a "yes" health answer or a class 3 job were reviewed by the back office
+ * first, and the newest of those are still waiting in the queue.
+ */
+export function seedPa(now: number, startSeq: number): { cases: Case[]; proposals: Proposal[]; seq: number } {
+  const rnd = mulberry32(6060);
+  const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
+  const agentWeights: [string, number][] = [['a1', 22], ['a2', 15], ['a3', 25], ['a4', 10], ['a5', 18], ['a6', 10]];
+  const weighted = <T,>(items: [T, number][]) => {
+    const total = items.reduce((x, [, w]) => x + w, 0);
+    let r = rnd() * total;
+    for (const [v, w] of items) if ((r -= w) <= 0) return v;
+    return items[items.length - 1][0];
+  };
+  const occs = OCCUPATIONS.filter((o) => o.cls !== 4 && !o.other);
+  const plans = getPaProducts();
+  const cases: Case[] = [];
+  const proposals: Proposal[] = [];
+  let seq = startSeq;
+  let qn = 300;
+  const startDay = startOfBkkDay(now) - 91 * DAY_MS;
+  for (let day = startDay; day <= startOfBkkDay(now); day += DAY_MS) {
+    const n = rnd() < 0.45 ? 1 : rnd() < 0.15 ? 2 : 0;
+    for (let i = 0; i < n; i++) {
+      const p = bkkParts(day);
+      const submitted = bkkTime(p.y, p.mo, p.d, 0, Math.floor(8 * 60 + rnd() * 780));
+      if (submitted > now - 30 * 60_000) continue;
+      const occ = weighted(occs.map((o) => [o, o.cls === 1 ? 6 : o.cls === 2 ? 4 : 2] as [typeof o, number]));
+      const health = [rnd() < 0.05, rnd() < 0.04, rnd() < 0.03];
+      const age = Math.round(20 + rnd() * 42);
+      const start = dayKey(submitted + (1 + Math.floor(rnd() * 10)) * DAY_MS);
+      const plan = weighted<string>([['PA-100', 30], ['PA-300', 50], ['PA-500', 20]]);
+      const prod = plans.find((x) => x.id === plan) ?? plans[0];
+      const motorcycle = rnd() < (occ.id === 'rider' ? 0.9 : 0.2);
+      const birth = birthFor(rnd, submitted, age);
+      const pkg = paPackage(prod, { birth, start, occupation: occ.id, motorcycle, health });
+      if (!pkg?.accident) continue;
+      const referral = pkg.accident.referral;
+      seq++;
+      const sp = bkkParts(submitted);
+      const id = `JKY-${String(sp.y).slice(2)}${String(sp.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+      const customer: Customer = {
+        firstName: pick(FIRST),
+        lastName: pick(LAST),
+        idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`,
+        phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
+        email: `pa${seq}@example.com`,
+        address: '',
+        plate: '',
+        province: '',
+        chassis: '',
+        startDate: start,
+        driver1: '',
+        driver2: '',
+        birthDate: birth,
+        beneficiary: pick(['ทายาทโดยธรรม', 'คู่สมรส', 'บิดา มารดา']),
+      };
+      const viaAgent = rnd() < 0.45;
+      // Referred applications: reviewed within a working day; the last two days are still open.
+      const pending = referral && now - submitted < 2 * DAY_MS;
+      const accepted = referral ? submitted + (0.5 + rnd() * 4) * 3600_000 : submitted;
+      const issued = referral ? accepted + (1 + rnd() * 6) * 3600_000 : submitted + (3 + rnd() * 40) * 60_000;
+      const staff = STAFF[Math.floor(rnd() * STAFF.length)].id;
+      const c: Case = {
+        id,
+        source: viaAgent || referral ? 'package' : 'self',
+        createdAt: submitted,
+        coverage: 'PA',
+        pkg,
+        addCmi: false,
+        customer,
+        status: 'ISSUED',
+        stamps: { submitted, quoted: submitted, confirmed: submitted, accepted, docsComplete: submitted, paid: issued, issued },
+        docs: Object.fromEntries((pkg.docs ?? []).map((k) => [k, { name: `${k}.jpg`, size: 180_000, at: submitted }])),
+        log: [],
+        policyNo: `PA${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`,
+        premium: pkg.premium,
+        delivery: { method: 'pdf', email: customer.email },
+        ...(referral ? { assignee: staff } : {}),
+        seeded: true,
+      };
+      if (pending) {
+        const taken = now - submitted > 3 * 3600_000;
+        c.status = taken ? 'DOCS_REVIEW' : 'NEW';
+        c.stamps = { submitted, quoted: submitted, confirmed: submitted, docsComplete: submitted, ...(taken ? { accepted } : {}) };
+        if (!taken) delete c.assignee;
+        delete c.policyNo;
+        delete c.premium;
+        delete c.delivery;
+      }
+      if (!viaAgent) {
+        if (!pending) c.payment = { method: rnd() < 0.6 ? 'qr' : 'card', at: issued };
+      } else {
+        const agentId = weighted(agentWeights);
+        c.agentId = agentId;
+        c.collect = rnd() < 0.7 ? 'link' : 'agent';
+        const discountPct = pick([0, 0, 0, 3, 5]);
+        const options: ProposalOption[] = [{ pkg, addCmi: false }];
+        const price = optionPrice(options[0], discountPct);
+        c.discount = price.discount || undefined;
+        if (c.premium !== undefined) c.premium = Math.round((pkg.premium - (c.discount ?? 0)) * 100) / 100;
+        c.paidAt = pending ? undefined : issued;
+        if (!pending && c.collect === 'link') c.payment = { method: 'qr', at: issued };
+        if (!pending && c.collect === 'agent') {
+          const remittedAt = issued + (1 + rnd() * 14) * DAY_MS;
+          if (remittedAt < now) c.remittedAt = remittedAt;
+        }
+        const createdAt = submitted - (0.5 + rnd() * 30) * 3600_000;
+        qn++;
+        const qp = bkkParts(createdAt);
+        const pr: Proposal = {
+          id: `Q-${String(qp.y).slice(2)}${String(qp.mo + 1).padStart(2, '0')}-A${String(qn).padStart(4, '0')}`,
+          agentId,
+          createdAt,
+          expiresAt: createdAt + PROPOSAL_DAYS * DAY_MS,
+          customer,
+          options,
+          discountPct,
+          sentVia: ['link', 'line'],
+          viewedAt: createdAt + 3600_000,
+          status: 'accepted',
+          acceptedAt: submitted,
+          acceptedBy: c.collect === 'agent' ? 'agent' : 'customer',
+          chosen: 0,
+          caseId: id,
+          seeded: true,
+        };
+        c.proposalId = pr.id;
+        proposals.push(pr);
+      }
+      cases.push(c);
+    }
+  }
+  return { cases, proposals, seq };
+}
+
+/** Last year's PA policies coming up for renewal (one-year cover, like motor). */
+export function seedPaRenewals(now: number): RenewalItem[] {
+  const rnd = mulberry32(6161);
+  const agents = AGENTS.map((a) => a.id);
+  const occs = OCCUPATIONS.filter((o) => o.cls !== 4 && !o.other);
+  const plans = getPaProducts();
+  const out: RenewalItem[] = [];
+  for (let i = 0; i < 60; i++) {
+    const expiry = startOfBkkDay(now) + Math.round(-30 + rnd() * 120) * DAY_MS;
+    const prod = plans[Math.floor(rnd() * plans.length)];
+    const occ = occs[Math.floor(rnd() * occs.length)];
+    const motorcycle = rnd() < 0.25;
+    const age = Math.round(22 + rnd() * 45);
+    const birth = birthFor(rnd, now, age);
+    const start = dayKey(expiry + DAY_MS);
+    const pkg = paPackage(prod, { birth, start, occupation: occ.id, motorcycle, health: [false, false, false], renewal: true });
+    if (!pkg) continue;
+    const days = (expiry - now) / DAY_MS;
+    const r = rnd();
+    const status: RenewalItem['status'] =
+      days < 0 ? (r < 0.75 ? 'renewed' : 'lost') : days < 30 ? (r < 0.4 ? 'renewed' : r < 0.65 ? 'quoted' : 'open') : r < 0.1 ? 'renewed' : r < 0.25 ? 'quoted' : 'open';
+    const agentId = rnd() < 0.7 ? agents[Math.floor(rnd() * agents.length)] : undefined;
+    const n = 1 + Math.floor(rnd() * 9000);
+    out.push({
+      id: `RP-${String(i + 1).padStart(4, '0')}`,
+      agentId,
+      policyNo: `PA${(CURRENT_YEAR - 1) % 100}-${String(10000 + Math.floor(rnd() * 89999))}`,
+      customerName: `${FIRST[Math.floor(rnd() * FIRST.length)]} ${LAST[Math.floor(rnd() * LAST.length)]}`,
+      phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
+      pa: { productId: prod.id, occupation: occ.id, motorcycle, birthDate: birth, idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`, email: `renew${n}@example.com` },
+      coverage: 'PA',
+      premium: pkg.premium,
+      expiry,
+      status,
+      ...(status === 'renewed' ? { renewedPremium: pkg.premium, renewedAt: Math.min(now, expiry - Math.round(rnd() * 25) * DAY_MS) } : {}),
+    });
+  }
+  return out;
 }

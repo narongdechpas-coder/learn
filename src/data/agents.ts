@@ -20,7 +20,7 @@ export const AGENTS: Agent[] = [
 export const mktById = (id?: string) => MARKETING.find((m) => m.id === id);
 
 /** Commission as a share of net premium (excl. VAT and stamp duty), by cover type. */
-export const COMMISSION_RATE: Record<CoverageType, number> = { T1: 0.18, T2P: 0.15, T3P: 0.15, T2: 0.15, T3: 0.15, CMI: 0.12, TRV: 0.2 };
+export const COMMISSION_RATE: Record<CoverageType, number> = { T1: 0.18, T2P: 0.15, T3P: 0.15, T2: 0.15, T3: 0.15, CMI: 0.12, TRV: 0.2, PA: 0.18 };
 
 /** Quotations stay valid this many days; agents remit collected premium within this many days of issue. */
 export const PROPOSAL_DAYS = 15;

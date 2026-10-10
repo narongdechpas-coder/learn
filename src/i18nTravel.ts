@@ -2,6 +2,9 @@
 export const travelTh = {
   descTRV: 'คุ้มครองค่ารักษาพยาบาลและอุบัติเหตุระหว่างเดินทางต่างประเทศ',
   trTrip: 'การเดินทาง',
+  trDocsTitle: 'แนบสำเนาบัตรประชาชนและหนังสือเดินทาง',
+  trDocsLead: 'ถ่ายหรือเลือกรูป (.jpg) ระบบจะอ่านแล้วกรอกชื่อ เลขบัตร ที่อยู่ และเลขหนังสือเดินทางให้ และแนบเป็นเอกสารประกอบการรับประกัน',
+  trErrDocs: 'กรุณาแนบสำเนาบัตรประชาชนและหนังสือเดินทาง',
   trInfo: 'ข้อมูลการเดินทาง',
 
   // Home page product cards
@@ -94,10 +97,10 @@ export const travelTh = {
   trYes: 'ได้',
   trOfferTitle: 'ใบเสนอราคาประกันเดินทาง',
   trOfGroupPrice: 'เบี้ยประกัน (บาท)',
-  trOfferNote: 'ราคารวมภาษีและอากรแสตมป์แล้ว ไม่ต้องแนบเอกสาร ออกกรมธรรม์ทันทีเมื่อชำระเงิน รับประกันโดย Jacky ประกันภัย',
+  trOfferNote: 'ราคารวมภาษีและอากรแสตมป์แล้ว แนบสำเนาบัตรประชาชนและหนังสือเดินทาง ออกกรมธรรม์ทันทีเมื่อชำระเงิน รับประกันโดย Jacky ประกันภัย',
   trDiscountHint: 'หักจากคอมมิชชันของคุณ ลดได้ไม่เกินอัตราคอมฯ ของแผน (สูงสุด {max}%)',
   nAgentIssued: '{ref} ออกกรมธรรม์แล้ว ({type}) ขายโดย {agent}',
-  trInstant: 'ประกันเดินทางไม่ต้องแนบเอกสาร ออกกรมธรรม์ทันทีเมื่อชำระเงิน',
+  trInstant: 'แนบสำเนาบัตรประชาชนและหนังสือเดินทางแล้ว ออกกรมธรรม์ทันทีเมื่อชำระเงิน',
   ofGroupTravel: 'ความคุ้มครองการเดินทาง',
   trNo: 'ไม่ได้',
 
@@ -151,6 +154,9 @@ export const travelTh = {
 export const travelEn: typeof travelTh = {
   descTRV: 'Medical and accident cover while travelling abroad',
   trTrip: 'Trip',
+  trDocsTitle: 'Attach your ID card and passport',
+  trDocsLead: 'Take or pick a photo (.jpg): we read it, fill in your name, ID number, address and passport number, and attach it to the application.',
+  trErrDocs: 'Please attach copies of your ID card and passport',
   trInfo: 'Trip details',
 
   homeTitle: 'Choose your insurance',
@@ -237,10 +243,10 @@ export const travelEn: typeof travelTh = {
   trYes: 'Yes',
   trOfferTitle: 'Travel insurance quotation',
   trOfGroupPrice: 'Premium (THB)',
-  trOfferNote: 'Prices include VAT and stamp duty. No documents needed; the policy is issued as soon as it is paid. Underwritten by Jacky Insurance.',
+  trOfferNote: 'Prices include VAT and stamp duty. ID card and passport copies are needed; the policy is issued as soon as it is paid. Underwritten by Jacky Insurance.',
   trDiscountHint: 'Comes out of your commission, up to the plan commission rate (max {max}%)',
   nAgentIssued: '{ref}: policy issued ({type}), sold by {agent}',
-  trInstant: 'No documents needed: the travel policy is issued as soon as it is paid',
+  trInstant: 'ID card and passport attached: the travel policy is issued as soon as it is paid',
   ofGroupTravel: 'Travel cover',
   trNo: 'No',
 

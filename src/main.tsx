@@ -16,14 +16,15 @@ import { Toasts, type Toast } from './ui/common';
 import { STAFF } from './data/vehicles';
 import { ProductsAdmin } from './ui/Products';
 import { TravelAdmin } from './ui/TravelAdmin';
+import { PaAdmin } from './ui/PaAdmin';
 
-type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'leads' | 'remit' | 'products' | 'travel' | 'dashboard' | 'mail' | 'split' | 'offer';
-const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'leads', 'remit', 'products', 'travel', 'dashboard', 'mail', 'split'];
+type View = 'customer' | 'agent' | 'marketing' | 'vp' | 'backoffice' | 'leads' | 'remit' | 'products' | 'travel' | 'pa' | 'dashboard' | 'mail' | 'split' | 'offer';
+const VIEWS: View[] = ['customer', 'agent', 'marketing', 'vp', 'backoffice', 'leads', 'remit', 'products', 'travel', 'pa', 'dashboard', 'mail', 'split'];
 type NavKey = Parameters<typeof translate>[1];
 /** ABC's own screens, grouped by the work they are for (left-hand menu). */
 const ABC_GROUPS: [NavKey, [View, NavKey][]][] = [
   ['navGroupOps', [['backoffice', 'inbox'], ['leads', 'tabLeads'], ['remit', 'tabRemit']]],
-  ['navGroupProduct', [['products', 'navPackages'], ['travel', 'navTravel']]],
+  ['navGroupProduct', [['products', 'navPackages'], ['travel', 'navTravel'], ['pa', 'navPa']]],
   ['navGroupPartner', [['marketing', 'navMkt'], ['vp', 'navVp']]],
   ['navGroupReport', [['dashboard', 'navDash']]],
 ];
@@ -293,6 +294,7 @@ function App() {
               {(view === 'backoffice' || view === 'leads' || view === 'remit') && backOffice}
               {view === 'products' && <ProductsAdmin staffId={staffId} />}
               {view === 'travel' && <TravelAdmin staffId={staffId} />}
+              {view === 'pa' && <PaAdmin staffId={staffId} />}
               {view === 'marketing' && <MarketingApp mktId={mktId} setMktId={setMktId} />}
               {view === 'vp' && <VPApp />}
               {view === 'dashboard' && <Dashboard onOpenCase={openCase} />}

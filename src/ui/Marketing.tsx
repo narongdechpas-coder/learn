@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Agent, Case, Proposal } from '../types';
 import { MARKETING, caseCommission, mktById, payInfo, settled } from '../data/agents';
-import { vehicleText } from '../data/vehicles';
+import { renewalText } from '../data/pa';
 import { COVERAGE_LABEL, fmtBaht, fmtDate, fmtNum, useT } from '../i18n';
 import { nudgeAgent, totalPremium, updateAgent, useStore } from '../store';
 import { DAY_MS, bkkParts, bkkTime } from '../lib/time';
@@ -99,7 +99,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
                   return (
                     <li key={r.id}>
                       <div>
-                        <b>{r.customerName}</b> <span className="muted">· {vehicleText(r.vehicle)}</span>
+                        <b>{r.customerName}</b> <span className="muted">· {renewalText(r, lang)}</span>
                         <div className="hint num">{ag[lang]} · {r.policyNo} · {COVERAGE_LABEL[lang][r.coverage]}</div>
                       </div>
                       <span className={`pill tone-${days < 0 ? 'bad' : days <= 30 ? 'warn' : 'neutral'}`}>{days < 0 ? t('agExpired', { n: -days }) : t('agExpiresIn', { n: days })}</span>

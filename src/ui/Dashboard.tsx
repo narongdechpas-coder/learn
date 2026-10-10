@@ -19,6 +19,9 @@ type Metric = 'policies' | 'gwp';
 
 const FUNNEL: Stage[] = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'issued'];
 
+/** Line of business of a case, for the line filter and the by-line chart. */
+const lineOf = (ct: CoverageType) => (ct === 'TRV' ? 'travel' : ct === 'PA' ? 'pa' : 'motor');
+
 export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) {
   const { t, lang } = useT();
   const s = useStore();
@@ -33,7 +36,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const [table, setTable] = useState(false);
   const [channel, setChannel] = useState<'all' | 'direct' | 'agent'>('all');
   const [mkt, setMkt] = useState('all');
-  const [line, setLine] = useState<'all' | 'motor' | 'travel'>('all');
+  const [line, setLine] = useState<'all' | 'motor' | 'travel' | 'pa'>('all');
   const mktAgents = s.agents.filter((a) => mkt === 'all' || a.mktId === mkt);
   const inChannel = (agentId?: string) =>
     mkt !== 'all' ? !!agentId && mktAgents.some((a) => a.id === agentId) : channel === 'all' || (channel === 'agent' ? !!agentId : !agentId);
@@ -51,7 +54,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const base = useMemo(
     () =>
       s.cases.filter(
-        (c) => (line === 'all' || (line === 'travel') === (c.coverage === 'TRV')) && (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle?.brandId === brand) && (staff === 'all' || c.assignee === staff) && inChannel(c.agentId),
+        (c) => (line === 'all' || line === lineOf(c.coverage)) && (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle?.brandId === brand) && (staff === 'all' || c.assignee === staff) && inChannel(c.agentId),
       ),
     [s.cases, line, type, brand, staff, channel, mkt, s.agents],
   );
@@ -152,10 +155,11 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           { value: '90', label: t('r90') },
           { value: 'month', label: t('rMonth') },
         ]} />
-        <select id="d-line" aria-label={t('agLine')} value={line} onChange={(e) => { const v = e.target.value as typeof line; setLine(v); if (v === 'travel') { setType('all'); setBrand('all'); } }}>
+        <select id="d-line" aria-label={t('agLine')} value={line} onChange={(e) => { const v = e.target.value as typeof line; setLine(v); if (v !== 'all' && v !== 'motor') { setType('all'); setBrand('all'); } }}>
           <option value="all">{t('agLine')}: {t('filterAll')}</option>
           <option value="motor">{t('lineMotor')}</option>
           <option value="travel">{t('lineTravel')}</option>
+          <option value="pa">{t('linePa')}</option>
         </select>
         <select id="d-type" aria-label={t('filterType')} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
@@ -199,8 +203,8 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
         <section className="card dash-lines">
           <h3>{t('dashByLine')}</h3>
           <HBars
-            rows={([['motor', 'lineMotor'], ['travel', 'lineTravel']] as const).map(([k, label]) => {
-              const cs = issued.filter((c) => (k === 'travel') === (c.coverage === 'TRV'));
+            rows={([['motor', 'lineMotor'], ['travel', 'lineTravel'], ['pa', 'linePa']] as const).map(([k, label]) => {
+              const cs = issued.filter((c) => lineOf(c.coverage) === k);
               return { key: k, label: t(label), value: value(cs), sub: metric === 'gwp' ? `${fmtNum(cs.length, lang)} ${t('mPolicies')}` : fmtBaht(Math.round(sum(cs.map((c) => c.premium ?? 0))), lang) };
             })}
             format={fmtVal}

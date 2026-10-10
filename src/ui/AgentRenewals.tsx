@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Agent, Proposal, RenewalItem } from '../types';
 import { optionPrice } from '../data/agents';
-import { vehicleText } from '../data/vehicles';
+import { renewalText } from '../data/pa';
 import { fmtBaht, fmtDate, fmtNum, useT } from '../i18n';
 import { DAY_MS } from '../lib/time';
 import { Segmented, TypeTag, useNow } from './common';
@@ -16,7 +16,8 @@ export function expectedPremium(r: RenewalItem, proposals: Proposal[]) {
     const same = pr.options.find((o) => o.pkg.type === r.coverage) ?? pr.options[0];
     return { value: optionPrice(same, pr.discountPct, pr.vehicle?.usage).price, quoted: true };
   }
-  return { value: Math.round(r.premium * RENEWAL_FACTOR), quoted: false };
+  // Motor renews with the no-claim discount; PA renews at the same price.
+  return { value: r.coverage === 'PA' ? r.premium : Math.round(r.premium * RENEWAL_FACTOR), quoted: false };
 }
 
 /** "Expiring within N months": 1, 2 or 3, counted cumulatively from today. */
@@ -213,7 +214,7 @@ export function RenewalReport({ renewals, proposals, onRenew, onOpenOffer, agent
                       {mkt && <td className="rr-c-agent">{agentOf(r)?.[lang] ?? '—'}<div className="hint">{agentOf(r)?.code}</div></td>}
                       <td className="rr-c-pol">
                         <div className="rr-pol"><TypeTag type={r.coverage} /> <span className="num">{r.policyNo}</span></div>
-                        <div className="hint">{vehicleText(r.vehicle)}</div>
+                        <div className="hint">{renewalText(r, lang)}</div>
                       </td>
                       <td className="rr-c-exp">
                         <div className="num">{fmtDate(r.expiry, lang, { day: 'numeric', month: 'short', year: 'numeric' })}</div>

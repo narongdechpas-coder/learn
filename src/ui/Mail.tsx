@@ -24,6 +24,8 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
       p.car = subjectText(c, lang);
       p.type = COVERAGE_LABEL[lang][c.coverage];
       p.source = translate(lang, c.source === 'package' ? 'srcPackage' : c.source === 'self' ? 'srcSelf' : 'srcQuote');
+      p.what = c.vehicle ? (lang === 'th' ? `ประกันรถ ${p.car}` : `car insurance for ${p.car}`) : p.car;
+      p.ncd = c.vehicle ? (lang === 'th' ? ' (รวมส่วนลดไม่มีเคลม 5%)' : ' (5% no-claim discount included)') : '';
     }
     if (typeof e.params.premium === 'number') p.premium = fmtBaht(e.params.premium, lang);
     if (offer) {

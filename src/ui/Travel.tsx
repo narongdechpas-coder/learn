@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Agent, Case, Customer as CustomerT, Line, Package, TravelCover, Trip, TripType } from '../types';
+import type { Agent, Case, Customer as CustomerT, DocKey, Line, Package, TravelCover, Trip, TripType } from '../types';
 import { COVER_KEYS, ageOn, getTravelProducts, makeTrip, travelPackages, tripRange, tripText } from '../data/travel';
 import { fmtBaht, fmtDate, fmtDateTime, useT, type TKey } from '../i18n';
-import { acceptProposal, createProposal, submitCase, totalPremium, trackStep, useStore } from '../store';
+import { acceptProposal, createProposal, docMeta, storeFiles, submitCase, totalPremium, trackStep, useStore } from '../store';
+import { OCR_DOC, OCR_SAMPLE, OcrBox, fakeDocSync, type OcrKind } from './extras';
 import { optionPrice, rateOf } from '../data/agents';
 import { dayKey } from '../lib/time';
 import { Field, Segmented } from './common';
@@ -27,7 +28,7 @@ export const COVER_LABEL: Record<keyof TravelCover, TKey> = {
 const LINES: { line: Line; icon: string; title: TKey; desc: TKey; live: boolean }[] = [
   { line: 'motor', icon: '🚗', title: 'lineMotor', desc: 'lineMotorDesc', live: true },
   { line: 'travel', icon: '✈️', title: 'lineTravel', desc: 'lineTravelDesc', live: true },
-  { line: 'pa', icon: '🩹', title: 'linePa', desc: 'linePaDesc', live: false },
+  { line: 'pa', icon: '🩹', title: 'linePa', desc: 'linePaDesc', live: true },
   { line: 'fire', icon: '🏠', title: 'lineFire', desc: 'lineFireDesc', live: false },
 ];
 
@@ -341,7 +342,7 @@ const sampleTraveller = (birth: string): CustomerT => ({
   idCard: '1103700012345',
   phone: '0812345678',
   email: 'somchai@example.com',
-  address: '',
+  address: '99/9 ถนนพหลโยธิน แขวงจตุจักร เขตจตุจักร กรุงเทพฯ 10900',
   plate: '',
   province: '',
   chassis: '',
@@ -353,7 +354,7 @@ const sampleTraveller = (birth: string): CustomerT => ({
   beneficiary: 'ทายาทโดยธรรม',
 });
 
-const blankTraveller = (birth: string): CustomerT => ({ ...sampleTraveller(birth), firstName: '', lastName: '', idCard: '', phone: '', email: '', passport: '', beneficiary: '' });
+const blankTraveller = (birth: string): CustomerT => ({ ...sampleTraveller(birth), firstName: '', lastName: '', idCard: '', phone: '', email: '', address: '', passport: '', beneficiary: '' });
 
 type TravelStep = 'trip' | 'plan' | 'form' | 'checkout';
 
@@ -378,10 +379,13 @@ export function useTravellerForm(birth: string) {
   const { t } = useT();
   const [cust, setCust] = useState<CustomerT>(() => blankTraveller(birth));
   const [declared, setDeclared] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof CustomerT | 'declare', string>>>({});
+  // ID card and passport copies: read by the (simulated) OCR and attached to the application.
+  const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CustomerT | 'declare' | 'docs', string>>>({});
   useEffect(() => setCust((c) => ({ ...c, birthDate: birth })), [birth]);
   const validate = (needDeclare = true): CustomerT | null => {
     const e: typeof errors = {};
+    if (!files.idcard || !files.passport) e.docs = t('trErrDocs');
     for (const k of ['firstName', 'lastName', 'idCard', 'phone', 'email', 'passport'] as const) if (!(cust[k] ?? '').trim()) e[k] = t('errRequired');
     if (!e.idCard && !/^\d{13}$/.test(cust.idCard.replace(/[\s-]/g, ''))) e.idCard = t('errIdCard');
     if (!e.phone && !/^0\d{9}$/.test(cust.phone.replace(/[\s-]/g, ''))) e.phone = t('errPhone');
@@ -398,8 +402,22 @@ export function useTravellerForm(birth: string) {
         <input id={`${idPrefix}-${k}`} type={opts.type ?? 'text'} inputMode={opts.inputMode} value={cust[k] ?? ''} onChange={(e) => setCust((c) => ({ ...c, [k]: e.target.value }))} aria-invalid={!!errors[k]} />
       </Field>
     );
+    const kinds: OcrKind[] = ['id', 'passport'];
     return (
       <>
+        <OcrBox
+          idPrefix={`${idPrefix}-ocr`}
+          kinds={kinds}
+          title={t('trDocsTitle')}
+          lead={t('trDocsLead')}
+          attached={kinds.filter((k) => files[OCR_DOC[k]])}
+          invalid={!!errors.docs}
+          onRead={(kind, file) => {
+            setCust((c) => ({ ...c, ...OCR_SAMPLE[kind] }));
+            setFiles((f) => ({ ...f, [OCR_DOC[kind]]: file }));
+          }}
+        />
+        {errors.docs && <p className="error" role="alert">{errors.docs}</p>}
         <div className="tr-form-grid">
           {input('firstName', 'firstName')}
           {input('lastName', 'lastName')}
@@ -407,6 +425,7 @@ export function useTravellerForm(birth: string) {
           {input('idCard', 'idCard', { inputMode: 'numeric' })}
           {input('phone', 'phone', { type: 'tel', inputMode: 'tel' })}
           {input('email', 'email', { type: 'email', inputMode: 'email' })}
+          {input('address', 'addrIdCard', { optional: true })}
           {input('beneficiary', 'trBeneficiary', { optional: true })}
         </div>
         {withDeclare && (
@@ -419,7 +438,12 @@ export function useTravellerForm(birth: string) {
       </>
     );
   };
-  return { cust, setCust, validate, fields, fillSample: () => setCust(sampleTraveller(birth)), setDeclared };
+  const fillSample = () => {
+    const sample = sampleTraveller(birth);
+    setCust(sample);
+    setFiles({ idcard: fakeDocSync('idcard', { customer: sample }), passport: fakeDocSync('passport', { customer: sample }) });
+  };
+  return { cust, setCust, validate, fields, files, fillSample, setDeclared };
 }
 
 export function TravelBuy({ onHome, renderCheckout }: { onHome: () => void; renderCheckout: (id: string, restart: () => void) => React.ReactNode }) {
@@ -452,7 +476,8 @@ export function TravelBuy({ onHome, renderCheckout }: { onHome: () => void; rend
     if (!pkg) return;
     const customer = form.validate();
     if (!customer) return;
-    const id = submitCase({ source: 'self', coverage: 'TRV', pkg, addCmi: false, customer: { ...customer, startDate: pkg.travel?.trip.start ?? '' } });
+    const id = submitCase({ source: 'self', coverage: 'TRV', pkg, addCmi: false, customer: { ...customer, startDate: pkg.travel?.trip.start ?? '' }, docs: docMeta(form.files) });
+    void storeFiles(id, form.files);
     setCaseId(id);
     setStep('checkout');
   };
@@ -580,14 +605,15 @@ export function TravelSell({ agent, onCase, renderMade, initialPick }: { agent: 
     if (mode === 'buy') return setPicked([id]);
     setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 3 ? cur : [...cur, id]));
   };
-  const submit = () => {
+  const submit = async () => {
     if (Object.keys(chk.errors).length || !chk.trip) return setErr(Object.values(chk.errors)[0] ?? t('trErrDates'));
     if (!chosen.length) return setErr(t('agPickPkg'));
     const customer = form.validate(mode === 'buy');
     if (!customer) return setErr(t('agNeedCust'));
     if (mode === 'buy' && !consent) return setErr(t('agNeedConsent'));
     const options = chosen.map((p) => ({ pkg: p, addCmi: false }));
-    const id = createProposal({ agentId: agent.id, customer: { ...customer, startDate: chk.trip.start }, options, discountPct: disc });
+    const id = createProposal({ agentId: agent.id, customer: { ...customer, startDate: chk.trip.start }, options, discountPct: disc, docs: docMeta(form.files) });
+    await storeFiles(id, form.files);
     if (mode === 'quote') return setMade(id);
     const caseId = acceptProposal(id, 0, 'agent', collect);
     if (caseId) onCase(caseId);

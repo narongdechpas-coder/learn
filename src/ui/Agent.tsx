@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { renewalText } from '../data/pa';
 import { subjectText } from '../data/travel';
 import { TravelKv, TravelSell } from './Travel';
+import { PaKv, PaSell, paPrefillFrom, type PaPrefill } from './Pa';
 import type { Agent, Case, CoverageType, Customer, Package, Proposal, RenewalItem, UsageCode, Vehicle } from '../types';
 import { CATALOGUE_CODES, brandsFor, modelById, modelsOf, siRange, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
 import { QUOTE_TYPES, cmiPremium } from '../data/packages';
@@ -70,9 +72,10 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const [tab, setTab] = useState<Tab>('sell');
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [focusCase, setFocusCase] = useState<string | null>(null);
-  const [sellLine, setSellLine] = useState<'motor' | 'travel'>('motor');
-  // Plan picked in the catalogue: the travel sell screen opens with it selected.
+  const [sellLine, setSellLine] = useState<'motor' | 'travel' | 'pa'>('motor');
+  // Plan picked in the catalogue: the travel or PA sell screen opens with it selected.
   const [travelPick, setTravelPick] = useState<string | null>(null);
+  const [paPrefill, setPaPrefill] = useState<PaPrefill | null>(null);
   const agent = s.agents.find((a) => a.id === agentId) ?? s.agents[0];
   const mkt = mktById(agent.mktId);
   const myOffers = s.proposals.filter((p) => p.agentId === agent.id);
@@ -81,6 +84,13 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const myRenewals = s.renewals.filter((r) => r.agentId === agent.id);
   const renewTodo = myRenewals.filter((r) => r.status === 'open' && r.expiry - now <= 30 * DAY_MS && r.expiry > now - 30 * DAY_MS).length;
   const startRenewal = (r: RenewalItem) => {
+    if (!r.vehicle) {
+      setPaPrefill(paPrefillFrom(r));
+      setTravelPick(null);
+      setSellLine('pa');
+      setTab('sell');
+      return;
+    }
     const md = modelById(r.vehicle.modelId);
     const si = suggestedSumInsured(md, r.vehicle.year);
     const [fn, ...ln] = r.customerName.split(' ');
@@ -125,12 +135,13 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
         ))}
       </div>
 
-      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type, productId) => { setSellLine(type === 'TRV' ? 'travel' : 'motor'); setTravelPick(type === 'TRV' ? productId ?? null : null); setTab('sell'); window.scrollTo({ top: 0 }); }} />}
+      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type, productId) => { setSellLine(type === 'TRV' ? 'travel' : type === 'PA' ? 'pa' : 'motor'); setTravelPick(type === 'TRV' || type === 'PA' ? productId ?? null : null); setPaPrefill(null); setTab('sell'); window.scrollTo({ top: 0 }); }} />}
       {tab === 'sell' && (
         <div className="ag-line">
-          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={(v) => { setSellLine(v); setTravelPick(null); }} options={[
+          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={(v) => { setSellLine(v); setTravelPick(null); setPaPrefill(null); }} options={[
             { value: 'motor', label: `🚗 ${t('lineMotor')}` },
             { value: 'travel', label: `✈️ ${t('lineTravel')}` },
+            { value: 'pa', label: `🩹 ${t('linePa')}` },
           ]} />
         </div>
       )}
@@ -141,6 +152,16 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
           initialPick={travelPick ?? undefined}
           onCase={(id) => { setFocusCase(id); setTab('cases'); }}
           renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={again} />}
+        />
+      )}
+      {tab === 'sell' && sellLine === 'pa' && (
+        <PaSell
+          key={`${travelPick ?? 'none'}-${paPrefill?.renewalOf ?? ''}`}
+          agent={agent}
+          initialPick={travelPick ?? undefined}
+          prefill={paPrefill}
+          onCase={(id) => { setFocusCase(id); setPaPrefill(null); setTab('cases'); }}
+          renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={() => { setPaPrefill(null); again(); }} />}
         />
       )}
       {tab === 'sell' && sellLine === 'motor' && (
@@ -665,6 +686,11 @@ function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
           <TravelKv c={c} />
           <p className="callout tone-info">✈️ {t('trInstant')}</p>
         </>
+      ) : c.coverage === 'PA' ? (
+        <>
+          <PaKv c={c} />
+          <p className="callout tone-info">{c.pkg?.accident?.referral ? `🔎 ${t('paReviewNote')}` : `⚡ ${t('paInstantNote')}`}</p>
+        </>
       ) : c.renewalOf ? (
         <p className="callout tone-info">↻ {t('renewNoDocs')}</p>
       ) : (
@@ -763,7 +789,7 @@ function Perf({ agent, cases, offers, renewals, onRenew, onReport }: { agent: Ag
                 return (
                   <li key={r.id}>
                     <div>
-                      <b>{r.customerName}</b> <span className="muted">· {vehicleText(r.vehicle)}</span>
+                      <b>{r.customerName}</b> <span className="muted">· {renewalText(r, lang)}</span>
                       <div className="hint num">{r.policyNo} · {COVERAGE_LABEL[lang][r.coverage]} · {fmtBaht(r.premium, lang)}</div>
                     </div>
                     <span className={`pill tone-${days <= 0 ? 'bad' : days <= 30 ? 'warn' : 'neutral'}`}>{days <= 0 ? t('agExpired', { n: -days }) : t('agExpiresIn', { n: days })}</span>

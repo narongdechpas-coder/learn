@@ -10,7 +10,9 @@ import { Field } from './common';
 /* ---------- photo → form (simulated OCR) ---------- */
 
 /** What the demo "reads" from each photo. */
-export const OCR_SAMPLE: { id: Partial<Customer>; reg: Partial<Customer> } = {
+export type OcrKind = 'id' | 'reg' | 'passport';
+
+export const OCR_SAMPLE: Record<OcrKind, Partial<Customer>> = {
   id: {
     firstName: 'วิภาวดี',
     lastName: 'ศรีสุข',
@@ -18,16 +20,35 @@ export const OCR_SAMPLE: { id: Partial<Customer>; reg: Partial<Customer> } = {
     address: '45/12 ซอยลาดพร้าว 71 แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพฯ 10230',
   },
   reg: { plate: '2กท 4589', province: 'กรุงเทพมหานคร', chassis: 'MR0JB8CD601234567' },
+  passport: { passport: 'AC4589123' },
 };
+
+/** Document each photo is attached as. */
+export const OCR_DOC: Record<OcrKind, DocKey> = { id: 'idcard', reg: 'regbook', passport: 'passport' };
+const OCR_LABEL: Record<OcrKind, [TKey, TKey]> = { id: ['ocrId', 'ocrDoneId'], reg: ['ocrReg', 'ocrDoneReg'], passport: ['ocrPassport', 'ocrDonePassport'] };
 
 const isJpg = (f: File) => /\.(jpe?g)$/i.test(f.name) && (f.type === '' || f.type === 'image/jpeg');
 
-export function OcrBox({ onRead }: { onRead: (kind: 'id' | 'reg', file: File) => void }) {
+/**
+ * Photo of an ID card, registration book or passport: the demo "reads" it, fills the form and keeps
+ * the photo as the document. Travel and PA use it for their required copies (title, lead and kinds).
+ */
+export function OcrBox({ onRead, kinds = ['id', 'reg'], idPrefix = 'ocr', title, lead, attached = [], invalid = false }: {
+  onRead: (kind: OcrKind, file: File) => void;
+  kinds?: OcrKind[];
+  idPrefix?: string;
+  title?: string;
+  lead?: string;
+  /** Already attached some other way (sample documents). */
+  attached?: OcrKind[];
+  invalid?: boolean;
+}) {
   const { t } = useT();
-  const [busy, setBusy] = useState<'id' | 'reg' | null>(null);
-  const [done, setDone] = useState<('id' | 'reg')[]>([]);
+  const [busy, setBusy] = useState<OcrKind | null>(null);
+  const [read, setRead] = useState<OcrKind[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const pick = (kind: 'id' | 'reg', file?: File) => {
+  const done = kinds.filter((k) => read.includes(k) || attached.includes(k));
+  const pick = (kind: OcrKind, file?: File) => {
     if (!file) return;
     if (!isJpg(file)) return setErr(t('errType', { file: file.name }));
     if (file.size > 3 * 1024 * 1024) return setErr(t('errSize', { file: file.name, size: `${(file.size / 1048576).toFixed(2)}MB` }));
@@ -36,31 +57,31 @@ export function OcrBox({ onRead }: { onRead: (kind: 'id' | 'reg', file: File) =>
     setTimeout(() => {
       onRead(kind, file);
       setBusy(null);
-      setDone((d) => (d.includes(kind) ? d : [...d, kind]));
+      setRead((d) => (d.includes(kind) ? d : [...d, kind]));
     }, 1100);
   };
   return (
-    <div className="ocr-box">
+    <div className={`ocr-box${invalid ? ' invalid' : ''}`}>
       <div className="ocr-head">
         <span className="ocr-ico" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" /></svg>
         </span>
         <div>
-          <b>{t('ocrTitle')}</b>
-          <p className="hint">{t('ocrLead')}</p>
+          <b>{title ?? t('ocrTitle')}</b>
+          <p className="hint">{lead ?? t('ocrLead')}</p>
         </div>
       </div>
       <div className="ocr-actions">
-        {(['id', 'reg'] as const).map((k) => (
-          <label key={k} htmlFor={`ocr-${k}`} className={`btn${done.includes(k) ? ' done' : ''}`}>
-            {busy === k ? <><span className="spinner" aria-hidden="true" /> {t('ocrReading')}</> : <>{done.includes(k) ? '✓ ' : ''}{t(k === 'id' ? 'ocrId' : 'ocrReg')}</>}
-            <input id={`ocr-${k}`} type="file" accept=".jpg,.jpeg,image/jpeg" className="sr-only" onChange={(e) => { pick(k, e.target.files?.[0]); e.target.value = ''; }} />
+        {kinds.map((k) => (
+          <label key={k} htmlFor={`${idPrefix}-${k}`} className={`btn${done.includes(k) ? ' done' : ''}`}>
+            {busy === k ? <><span className="spinner" aria-hidden="true" /> {t('ocrReading')}</> : <>{done.includes(k) ? '✓ ' : ''}{t(OCR_LABEL[k][0])}</>}
+            <input id={`${idPrefix}-${k}`} type="file" accept=".jpg,.jpeg,image/jpeg" className="sr-only" onChange={(e) => { pick(k, e.target.files?.[0]); e.target.value = ''; }} />
           </label>
         ))}
       </div>
       {err && <p className="error" role="alert">{err}</p>}
       {done.map((k) => (
-        <p key={k} className="ok-note" role="status">✓ {t(k === 'id' ? 'ocrDoneId' : 'ocrDoneReg')}</p>
+        <p key={k} className="ok-note" role="status">✓ {t(OCR_LABEL[k][1])}</p>
       ))}
       <p className="hint">{t('ocrNote')}</p>
     </div>
@@ -137,15 +158,21 @@ export async function fakePhoto(angle: DocKey): Promise<File> {
 }
 
 /** A sample scan of the registration book or ID card (clearly marked as a sample) as a JPEG file. */
-export async function fakeDoc(kind: 'regbook' | 'idcard', c: Case): Promise<File> {
+export async function fakeDoc(kind: 'regbook' | 'idcard' | 'passport', c: Pick<Case, 'customer' | 'vehicle'>): Promise<File> {
+  return fakeDocSync(kind, c);
+}
+
+/** Same sample document, made synchronously (sample buttons attach it straight away). */
+export function fakeDocSync(kind: 'regbook' | 'idcard' | 'passport', c: Pick<Case, 'customer' | 'vehicle'>): File {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
   canvas.height = 800;
   const g = canvas.getContext('2d')!;
   g.fillStyle = '#e9e4da';
   g.fillRect(0, 0, 1200, 800);
-  const card = kind === 'idcard';
-  g.fillStyle = card ? '#dcebf5' : '#f6f1e3';
+  const card = kind !== 'regbook';
+  const passport = kind === 'passport';
+  g.fillStyle = passport ? '#e4ecf6' : card ? '#dcebf5' : '#f6f1e3';
   g.strokeStyle = card ? '#7aa4c4' : '#b9a77a';
   g.lineWidth = 4;
   const [x, y, w, h] = card ? [150, 160, 900, 520] : [100, 60, 1000, 680];
@@ -155,10 +182,12 @@ export async function fakeDoc(kind: 'regbook' | 'idcard', c: Case): Promise<File
   g.stroke();
   g.fillStyle = '#2b3a44';
   g.font = 'bold 40px sans-serif';
-  g.fillText(card ? 'บัตรประจำตัวประชาชน' : 'สำเนาคู่มือจดทะเบียนรถ', x + 40, y + 70);
+  g.fillText(passport ? 'หนังสือเดินทาง PASSPORT' : card ? 'บัตรประจำตัวประชาชน' : 'สำเนาคู่มือจดทะเบียนรถ', x + 40, y + 70);
   g.font = '30px sans-serif';
   const v = c.vehicle;
-  const lines = card
+  const lines = passport
+    ? [`Passport No. ${c.customer.passport || 'AC4589123'}`, `ชื่อ ${c.customer.firstName} ${c.customer.lastName}`, `วันเกิด ${c.customer.birthDate ?? '-'}`]
+    : card
     ? [`เลขประจำตัว ${c.customer.idCard || '1 1037 00123 45 7'}`, `ชื่อ ${c.customer.firstName} ${c.customer.lastName}`, `ที่อยู่ ${c.customer.address.slice(0, 34)}`]
     : [`ทะเบียน ${c.customer.plate || '1กข 1234'} ${c.customer.province}`, `ยี่ห้อ/รุ่น ${v ? vehicleText(v) : '-'}`, `เลขตัวถัง ${c.customer.chassis || 'MR053REH105123456'}`, `ผู้ถือกรรมสิทธิ์ ${c.customer.firstName} ${c.customer.lastName}`];
   lines.forEach((l, i) => g.fillText(l, x + 40, y + 150 + i * 60));
@@ -175,14 +204,16 @@ export async function fakeDoc(kind: 'regbook' | 'idcard', c: Case): Promise<File
   g.textAlign = 'center';
   g.fillText('ตัวอย่าง SAMPLE', 0, 0);
   g.restore();
-  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.8));
-  return new File([blob], `${kind}-sample.jpg`, { type: 'image/jpeg' });
+  const bin = atob(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], `${kind}-sample.jpg`, { type: 'image/jpeg' });
 }
 
 /** Fills every missing document with sample images, for demos. */
 export async function attachSampleDocs(c: Case, missing: DocKey[], by?: string) {
   for (const k of missing) {
-    const file = ANGLES.includes(k) ? await fakePhoto(k) : await fakeDoc(k as 'regbook' | 'idcard', c);
+    const file = ANGLES.includes(k) ? await fakePhoto(k) : await fakeDoc(k as 'regbook' | 'idcard' | 'passport', c);
     await uploadDoc(c.id, k, file, by);
   }
 }

@@ -22,6 +22,7 @@ import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS
 import { packagesFor } from '../data/products';
 import { subjectText, tripRange } from '../data/travel';
 import { LineNav, ProductHome, TravelBuy, TravelCertificate } from './Travel';
+import { PaBuy, PaCertificate, PaKv, PaRenewBox } from './Pa';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { EXTRA_KEY, productName } from './Products';
 import { riderRows } from './riders';
@@ -33,7 +34,7 @@ import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
 import { attachSampleDocs } from './extras';
 import { SubmitDocsBar, SubmitDocsHost } from './SubmitDocs';
-import { AngleGuide, ANGLES, IssuedExtras, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
+import { AngleGuide, ANGLES, IssuedExtras, OCR_DOC, OCR_SAMPLE, OcrBox, PhoneCapture, quoteEtaText } from './extras';
 
 const BODY_KEY = { sedan: 'bodySedan', suv: 'bodySuv', pickup: 'bodyPickup', ev: 'bodyEv', van: 'bodyVan' } as const;
 
@@ -58,7 +59,7 @@ export const SAMPLE_CUSTOMER = (): CustomerT => ({
 });
 
 const isSelfType = (t: CoverageType) => SELF_SERVICE_TYPES.includes(t);
-const TYPE_DESC: Record<CoverageType, TKey> = { T1: 'descT1', T2P: 'descT2P', T3P: 'descT3P', T2: 'descT2', T3: 'descT3', CMI: 'descCMI', TRV: 'descTRV' };
+const TYPE_DESC: Record<CoverageType, TKey> = { T1: 'descT1', T2P: 'descT2P', T3P: 'descT3P', T2: 'descT2', T3: 'descT3', CMI: 'descCMI', TRV: 'descTRV', PA: 'descPA' };
 const CALLBACK_KEY: Record<CallbackSlot, TKey> = { none: 'cbNone', asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' };
 const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
@@ -110,6 +111,8 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
           <Buy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} onHome={() => setLine(null)} />
         ) : line === 'travel' ? (
           <TravelBuy key={flow} onHome={() => setLine(null)} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
+        ) : line === 'pa' ? (
+          <PaBuy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
         ) : (
           <ProductHome onPick={setLine} />
         )
@@ -689,7 +692,7 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
               const data = OCR_SAMPLE[kind];
               setCustomer((cu) => ({ ...cu, ...data }));
               setOcrFilled((f) => [...new Set([...f, ...(Object.keys(data) as (keyof CustomerT)[])])]);
-              setOcrFiles((o) => ({ ...o, [kind === 'id' ? 'idcard' : 'regbook']: file }));
+              setOcrFiles((o) => ({ ...o, [OCR_DOC[kind]]: file }));
             }}
           />
           <div className="form-grid">
@@ -699,7 +702,7 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
             {input('phone', 'phone', { inputMode: 'tel', type: 'tel' })}
             {input('email', 'email', { type: 'email', inputMode: 'email', wide: true })}
             <div className="span-2">
-              <Field htmlFor="f-address" label={t('address')} error={errors.address}>
+              <Field htmlFor="f-address" label={t('addrIdCard')} error={errors.address}>
                 <textarea id="f-address" rows={2} value={customer.address} onChange={set('address')} />
               </Field>
             </div>
@@ -1038,7 +1041,9 @@ function CheckoutById({ id, onRestart }: { id: string; onRestart?: () => void })
 function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () => void; embedded?: boolean }) {
   const { t, lang } = useT();
   const [method, setMethod] = useState<Delivery['method']>('pdf');
-  const [address, setAddress] = useState(c.customer.address);
+  // Paper policy: send it to the address on the ID card, or to one the customer types in.
+  const [addrMode, setAddrMode] = useState<'id' | 'custom'>(c.customer.address.trim() ? 'id' : 'custom');
+  const [address, setAddress] = useState('');
   const [email, setEmail] = useState(c.customer.email);
   const [pay, setPay] = useState<'qr' | 'card'>('qr');
   const [card, setCard] = useState({ no: '4242 4242 4242 4242', exp: '12/29', cvv: '123' });
@@ -1048,8 +1053,10 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
   const total = totalPremium(c) ?? 0;
   const plan = installmentPlan(total);
   const missing = docsMissing(c);
-  const travel = c.coverage === 'TRV';
-  const n0 = travel ? 0 : 1;
+  // Travel and PA documents were attached on the form; only what is still missing is asked for here.
+  const travel = c.coverage === 'TRV' || c.coverage === 'PA';
+  const n0 = travel && !missing.length ? 0 : 1;
+  const shipTo = addrMode === 'id' ? c.customer.address.trim() : address.trim();
   useEffect(() => {
     if (!missing.length) setErr(null);
   }, [missing.length]);
@@ -1058,12 +1065,12 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
 
   const doPay = () => {
     if (missing.length) return setErr(t('payNeedDocs'));
-    if (method === 'paper' ? !address.trim() : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErr(t('errShip'));
+    if (method === 'paper' ? !shipTo : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErr(t('errShip'));
     if (pay === 'card' && (card.no.replace(/\s/g, '').length < 15 || !/^\d{2}\/\d{2}$/.test(card.exp) || card.cvv.length < 3)) return setErr(t('errCard'));
     setErr(null);
     setBusy(true);
     setTimeout(() => {
-      payAndIssue(c.id, method === 'paper' ? { method, address: address.trim() } : { method, email: email.trim() }, {
+      payAndIssue(c.id, method === 'paper' ? { method, address: shipTo } : { method, email: email.trim() }, {
         method: pay,
         last4: pay === 'card' ? card.no.replace(/\s/g, '').slice(-4) : undefined,
         months: pay === 'card' && plan && months ? plan.months : undefined,
@@ -1083,7 +1090,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
       </div>
       <div className="checkout-grid">
         <div className="checkout-main">
-          {!travel && (
+          {(!travel || missing.length > 0) && (
             <div className="co-step">
               <div className="section-label"><span className="section-n">1</span>{t('uploadTitle')}</div>
               <Uploads c={c} bare />
@@ -1093,7 +1100,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
           <div className="co-step">
             <div className="section-label"><span className="section-n">{n0 + 1}</span>{t('deliveryTitle')}</div>
             <div className="option-grid" role="radiogroup" aria-label={t('deliveryTitle')}>
-              {(travel ? (['pdf'] as const) : (['pdf', 'paper'] as const)).map((m) => (
+              {(['pdf', 'paper'] as const).map((m) => (
                 <button key={m} type="button" role="radio" aria-checked={method === m} className={`option-card${method === m ? ' on' : ''}`} onClick={() => setMethod(m)}>
                   <span className="radio-dot" aria-hidden="true" />
                   <span>
@@ -1104,9 +1111,23 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
               ))}
             </div>
             {method === 'paper' ? (
-              <Field htmlFor={`ship-${c.id}`} label={t('shipTo')}>
-                <textarea id={`ship-${c.id}`} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
-              </Field>
+              <fieldset className="ship-choice">
+                <legend>{t('shipTo')}</legend>
+                <label className={`check${c.customer.address.trim() ? '' : ' disabled'}`}>
+                  <input type="radio" id={`ship-id-${c.id}`} name={`ship-${c.id}`} checked={addrMode === 'id'} disabled={!c.customer.address.trim()} onChange={() => setAddrMode('id')} />
+                  <span>
+                    <b>{t('shipIdAddr')}</b>
+                    <small className="hint">{c.customer.address.trim() || t('shipIdNone')}</small>
+                  </span>
+                </label>
+                <label className="check">
+                  <input type="radio" id={`ship-custom-${c.id}`} name={`ship-${c.id}`} checked={addrMode === 'custom'} onChange={() => setAddrMode('custom')} />
+                  <span><b>{t('shipCustom')}</b></span>
+                </label>
+                {addrMode === 'custom' && (
+                  <textarea id={`ship-${c.id}`} aria-label={t('shipCustom')} rows={2} value={address} placeholder={t('shipCustomPh')} onChange={(e) => setAddress(e.target.value)} />
+                )}
+              </fieldset>
             ) : (
               <Field htmlFor={`mail-${c.id}`} label={t('sendTo')}>
                 <input id={`mail-${c.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -1161,7 +1182,7 @@ function Checkout({ c, onRestart, embedded = false }: { c: Case; onRestart?: () 
         <aside className="order-summary">
           <div className="eyebrow">{t('orderSummary')}</div>
           <div className="os-car">{c.vehicle ? vehicleText(c.vehicle) : subjectText(c, lang)}</div>
-          <div className="muted os-sub">{c.vehicle ? usageText(c.vehicle.usage, lang) : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : ''}</div>
+          <div className="muted os-sub">{c.vehicle ? usageText(c.vehicle.usage, lang) : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : ''}</div>
           <dl>
             {c.pkg && (
               <div>
@@ -1212,13 +1233,14 @@ function SelfDone({ c, onRestart }: { c: Case; onRestart?: () => void }) {
         <button className="btn" type="button" onClick={() => setShow((v) => !v)}>{t(show ? 'hidePolicy' : 'viewPolicy')}</button>
         {onRestart && <button className="btn primary" type="button" onClick={onRestart}>{t('newRequest')}</button>}
       </div>
-      {show && (c.coverage === 'TRV' ? <TravelCertificate c={c} /> : <PolicyDoc c={c} />)}
+      {show && <PolicyDoc c={c} />}
     </section>
   );
 }
 
 function PolicyDoc({ c }: { c: Case }) {
   const { t, lang } = useT();
+  if (c.pkg?.accident) return <PaCertificate c={c} />;
   if (!c.vehicle) return <TravelCertificate c={c} />;
   const start = new Date(`${c.customer.startDate}T00:00:00+07:00`).getTime();
   const end = start + 365 * 86400000;
@@ -1349,13 +1371,13 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
         <div>
           <div className="eyebrow num">{c.id}</div>
           <h2>{subjectText(c, lang)}</h2>
-          <div className="muted">{c.vehicle ? `${usageText(c.vehicle.usage, lang)} · ${c.customer.plate}` : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : ''}</div>
+          <div className="muted">{c.vehicle ? `${usageText(c.vehicle.usage, lang)} · ${c.customer.plate}` : c.pkg?.travel ? tripRange(c.pkg.travel.trip, lang) : c.pkg?.accident ? tripRange(c.pkg.accident as never, lang) : ''}</div>
         </div>
         <StatusPill status={c.status} />
       </div>
       <dl className="kv-row">
         <div><dt>{t('coverage')}</dt><dd><TypeTag type={c.coverage} />{c.addCmi && <span className="muted"> {t('plusCmi')}</span>}</dd></div>
-        {c.coverage === 'TRV' && c.pkg ? (
+        {(c.coverage === 'TRV' || c.coverage === 'PA') && c.pkg ? (
           <div><dt>{t('trPlan')}</dt><dd>{productName(c.pkg, lang)}</dd></div>
         ) : (
           <div><dt>{t('sumInsured')}</dt><dd className="num">{c.vehicle && ['T1', 'T2P', 'T3P', 'T2'].includes(c.coverage) ? fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang) : '—'}</dd></div>
@@ -1388,6 +1410,8 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
       )}
       {showPolicy && c.status === 'ISSUED' && <PolicyDoc c={c} />}
       {c.status === 'ISSUED' && c.vehicle && <IssuedExtras c={c} />}
+      {c.status === 'ISSUED' && c.pkg?.accident && <PaRenewBox c={c} />}
+      {c.coverage === 'PA' && <PaKv c={c} />}
       {c.source === 'quote' && (c.status === 'NEW' || c.status === 'ACCEPTED') && (
         <div className="callout">
           <div>
@@ -1401,7 +1425,7 @@ function TrackDetail({ c, onOpenCase }: { c: Case; onOpenCase?: (id: string) => 
 
       <h3>{t('timeline')}</h3>
       <ol className="timeline">
-        {TIMELINE.filter((st) => (c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')) && (c.source === 'self' ? st !== 'accepted' : st !== 'paid') && !(c.coverage === 'TRV' && st === 'docsComplete')).map((st) => (
+        {TIMELINE.filter((st) => (c.source === 'quote' || (st !== 'quoted' && st !== 'confirmed')) && (c.source === 'self' ? st !== 'accepted' : st !== 'paid') && !((c.coverage === 'TRV' || c.coverage === 'PA') && st === 'docsComplete')).map((st) => (
           <li key={st} className={c.stamps[st] ? 'done' : ''}>
             <span className="dot" aria-hidden="true" />
             <span>{STAGE_LABEL[lang][st]}</span>
