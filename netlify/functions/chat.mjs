@@ -91,11 +91,18 @@ export default async (req, context) => {
         messages: p.messages,
       }),
     });
-  } catch {
-    return json({ error: 'upstream' }, 502);
+  } catch (e) {
+    console.error('chat: could not reach the Claude API', e);
+    return json({ error: 'upstream', detail: 'network' }, 502);
   }
-  if (!res.ok) return json({ error: 'upstream', status: res.status }, 502);
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // Pass the API's reason on (it never contains the key), so a wrong key, no credit or an
+    // unavailable model can be told apart from the chat window and the function log.
+    const detail = String(data?.error?.message ?? '').slice(0, 300);
+    console.error(`chat: Claude API ${res.status} ${data?.error?.type ?? ''} ${detail}`);
+    return json({ error: 'upstream', status: res.status, type: data?.error?.type ?? '', detail }, 502);
+  }
   const text = (data.content ?? []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
   if (!text) return json({ error: 'empty' }, 502);
   return json({ text });

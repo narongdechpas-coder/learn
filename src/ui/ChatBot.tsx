@@ -72,7 +72,11 @@ export function ChatBot() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && typeof data.text === 'string') setMsgs((m) => [...m, { role: 'assistant', content: data.text }]);
-      else notice(data.error === 'not_configured' ? 'cbNotSet' : data.error === 'rate_limited' ? 'cbBusy' : res.status === 404 ? 'cbOffline' : 'cbError');
+      else if (data.error === 'upstream' && (data.status || data.detail)) {
+        // Say why the API refused (wrong key, no credit, model not available) so it can be fixed.
+        const why = data.status === 401 ? t('cbErrKey') : /credit/i.test(data.detail ?? '') ? t('cbErrCredit') : data.status === 404 ? t('cbErrModel') : '';
+        setMsgs((m) => [...m, { role: 'assistant', content: `${t('cbError')}\n${why ? `${why} ` : ''}(${data.status ?? ''} ${data.detail ?? ''})`.trim(), local: true }]);
+      } else notice(data.error === 'not_configured' ? 'cbNotSet' : data.error === 'rate_limited' ? 'cbBusy' : res.status === 404 ? 'cbOffline' : 'cbError');
     } catch {
       notice('cbOffline');
     } finally {
