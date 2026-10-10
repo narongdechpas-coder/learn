@@ -1505,9 +1505,9 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
   .abc-side[hidden] { display: flex; }
   .abc-shell.side-hidden { gap: 12px; }
 }
-/* Side panel in navy (#305073), full height and flush with the left edge. Contrast on it:
-   titles #fff 8.3:1, items #e6edf5 7.1:1, hover #fff on #415e7e 6.7:1, current #fff on #516c89 5.5:1 (WCAG AA). */
-.abc-side { --side-bg: #305073; --side-ink: #e6edf5; --side-hover: #415e7e; --side-on: #516c89; background: var(--side-bg); border-radius: var(--r); padding: 14px 10px; box-shadow: 0 6px 18px rgba(20, 35, 55, 0.18); }
+/* Side panel in deep pine green (#1f4d3f) to sit with the green accent and page tint; full height and flush left.
+   Contrast on it: titles #fff 9.6:1, items #e3efe9 8.1:1, hover #fff on #2d5f50 7.3:1, current #fff on #3b6e5e 5.9:1 (WCAG AA). */
+.abc-side { --side-bg: #1f4d3f; --side-ink: #e3efe9; --side-hover: #2d5f50; --side-on: #3b6e5e; background: var(--side-bg); border-radius: var(--r); padding: 14px 10px; box-shadow: 0 6px 18px rgba(16, 45, 36, 0.18); }
 .abc-side .abc-group-label { color: #fff; }
 .abc-side .abc-item { color: var(--side-ink); }
 .abc-side .abc-item:hover { background: var(--side-hover); color: #fff; }
@@ -1515,8 +1515,8 @@ fieldset.pd-sec legend { font-weight: 700; font-size: 1rem; padding: 0 6px; marg
 .abc-side .side-hide { background: transparent; color: var(--side-ink); border-color: rgba(255, 255, 255, 0.35); }
 .abc-side .side-hide:hover { background: var(--side-hover); color: #fff; }
 .abc-side .abc-item:focus-visible, .abc-side .side-hide:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
-.side-show { background: #305073; color: #fff; border-color: #305073; }
-.side-show:hover { background: #415e7e; color: #fff; }
+.side-show { background: #1f4d3f; color: #fff; border-color: #1f4d3f; }
+.side-show:hover { background: #2d5f50; color: #fff; }
 @media (max-width: 900px) {
   .abc-side { padding: 6px; }
   .abc-group + .abc-group { border-left-color: rgba(255, 255, 255, 0.25); }
