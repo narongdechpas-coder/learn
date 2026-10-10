@@ -1,4 +1,4 @@
-import type { Case, CoverageType, Customer, Lead, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, UsageCode } from '../types';
+import type { Case, CoverageType, Customer, Lead, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, UsageCode, Visit } from '../types';
 import { CURRENT_YEAR, MODELS, PROVINCES, STAFF, suggestedSumInsured } from '../data/vehicles';
 import { packagesFor } from '../data/products';
 import { estimateQuote, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '../data/packages';
@@ -489,4 +489,21 @@ export function seedRenewals(now: number): RenewalItem[] {
     });
   }
   return out.sort((a, b) => a.expiry - b.expiry);
+}
+
+/** One earlier visit per partner (some with a next appointment), so the visit log and VP column have history. */
+export function seedVisits(now: number): Visit[] {
+  const notes: [string, string[]][] = [
+    ['คุยเป้าไตรมาสนี้ Partner ขอโปรชั้น 1 สำหรับรถ EV และขอใบเสนอราคาแบบเทียบ 3 แพ็กเกจ', ['ยอดเดือนที่แล้ว', 'งานต่ออายุค้าง']],
+    ['ยอดต่ำกว่าเป้าเพราะลูกค้าเลื่อนออกรถ นัดติดตามงานต่ออายุ 5 ราย', ['ยอดต่ำกว่าเป้า', 'งานต่ออายุ']],
+    ['สนใจขยายไปขาย 2+ กลุ่มรถกระบะ ขอเอกสารผลิตภัณฑ์เพิ่ม', ['ผลิตภัณฑ์ใหม่']],
+    ['เร่งนำส่งเบี้ยที่ค้าง 2 ราย ตกลงนำส่งภายในสัปดาห์นี้', ['เบี้ยค้างนำส่ง']],
+    ['ทบทวนค่าคอมพิเศษ Partner ขอเพิ่ม 1% หากทำได้เกินเป้า 3 เดือนติด', ['ค่าคอม', 'เป้าปีหน้า']],
+    ['แนะนำแพ็กเกจใหม่และวิธีส่งลิงก์ใบเสนอราคาทาง LINE', ['แนะนำแพ็กเกจใหม่']],
+  ];
+  return AGENTS.map((a, i) => {
+    const at = startOfBkkDay(now - (8 + i * 6) * DAY_MS) + 12 * 3600_000;
+    const [outcome, topics] = notes[i % notes.length];
+    return { id: `v-seed-${a.id}`, agentId: a.id, mktId: a.mktId, at, topics, outcome, nextAt: i % 3 === 2 ? undefined : startOfBkkDay(now + (5 + i * 4) * DAY_MS) + 10 * 3600_000, recordedAt: at };
+  }).sort((x, y) => y.at - x.at);
 }

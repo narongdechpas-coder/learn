@@ -3,6 +3,7 @@ import type { CoverageType, DocKey, EmailTemplate, Lang, Stage, Status, UsageCod
 import type { SlaKey, SlaState } from './lib/sla';
 import { agentEn, agentTh } from './i18nAgent';
 import { productEn, productTh } from './i18nProduct';
+import { visitEn, visitTh } from './i18nVisit';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -482,12 +483,13 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh, ...productTh };
+const th = { ...thBase, ...agentTh, ...productTh, ...visitTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
   ...agentEn,
   ...productEn,
+  ...visitEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',

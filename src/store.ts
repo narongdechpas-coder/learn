@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle } from './types';
-import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic } from './lib/seed';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle, Visit } from './types';
+import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
@@ -14,6 +14,8 @@ export const STAFF_EMAIL = 'motor-ops@jacky.example';
 
 export interface State {
   version: number;
+  /** Goes up on every save, so a tab can tell which of two copies is newer. */
+  rev?: number;
   seededAt: number;
   seq: number;
   cases: Case[];
@@ -30,10 +32,12 @@ export interface State {
   /** The product catalogue (current version of each) and every saved version. */
   products: Product[];
   productLog: ProductVersion[];
+  /** Marketing visits to partners, newest first. */
+  visits: Visit[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 10;
+const VERSION = 11;
 
 function fresh(): State {
   const now = Date.now();
@@ -58,6 +62,7 @@ function fresh(): State {
     monthly: seedMonthly(cases, now),
     products,
     productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
+    visits: seedVisits(now),
   };
 }
 
@@ -82,44 +87,58 @@ function save(s: State) {
   }
 }
 
-let state: State = load() ?? fresh();
-save(state);
+const rev = (s: State | null | undefined) => s?.rev ?? 0;
+
+const stored = load();
+let state: State = stored ?? fresh();
+// Only a brand-new demo is written here; re-saving a loaded copy could overwrite a newer one.
+if (!stored) save(state);
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
+
+/** Take another tab's copy if it is newer than ours. */
+function adopt(s: State | null) {
+  if (!s || s.version !== VERSION || rev(s) <= rev(state)) return;
+  state = s;
+  setCatalog(s.products);
+  emit();
+}
+
+/**
+ * The newest copy this tab knows. Chrome passes localStorage changes to other tabs asynchronously,
+ * so storage can briefly lag behind a copy another tab has already broadcast; writing on top of the
+ * stale one would silently undo that tab's change.
+ */
+function latest(): State {
+  const s = load();
+  if (s && rev(s) >= rev(state)) return s;
+  setCatalog(state.products);
+  return state;
+}
 
 let channel: BroadcastChannel | null = null;
 try {
   channel = new BroadcastChannel('abc-motor-demo');
-  channel.onmessage = () => {
-    const s = load();
-    if (s) {
-      state = s;
-      emit();
-    }
-  };
+  // Each save broadcasts the whole state, which arrives even when storage has not caught up yet.
+  channel.onmessage = (e: MessageEvent) => adopt(e.data && typeof e.data === 'object' ? (e.data as State) : load());
 } catch {
   channel = null;
 }
 try {
   window.addEventListener('storage', (e) => {
-    if (e.key !== KEY) return;
-    const s = load();
-    if (s) {
-      state = s;
-      emit();
-    }
+    if (e.key === KEY) adopt(load());
   });
 } catch {
   /* ignore */
 }
 
 function commit(next: State) {
-  state = next;
-  setCatalog(next.products);
+  state = { ...next, rev: Math.max(rev(next), rev(state)) + 1 };
+  setCatalog(state.products);
   save(state);
   emit();
   try {
-    channel?.postMessage('sync');
+    channel?.postMessage(state);
   } catch {
     /* ignore */
   }
@@ -158,7 +177,7 @@ function notify(s: State, kind: Notification['kind'], caseId: string, params?: N
 
 /** Apply a change to one case, starting from the latest stored state (another tab may have written). */
 function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
-  const base = load() ?? state;
+  const base = latest();
   const idx = base.cases.findIndex((c) => c.id === id);
   if (idx < 0) return;
   const c: Case = structuredClone(base.cases[idx]);
@@ -202,7 +221,7 @@ export interface SubmitInput {
 }
 
 export function submitCase(input: SubmitInput, mine = true): string {
-  const base = load() ?? state;
+  const base = latest();
   const now = Date.now();
   const seq = base.seq + 1;
   const p = bkkParts(now);
@@ -424,7 +443,7 @@ export function trackStep(step: keyof TrafficDay) {
     if (counted.has(flag)) return;
   }
   counted.add(flag);
-  const base = load() ?? state;
+  const base = latest();
   const cur = base.traffic[day] ?? { visit: 0, car: 0, pkg: 0, choose: 0 };
   commit({ ...base, traffic: { ...base.traffic, [day]: { ...cur, [step]: cur[step] + 1 } } });
 }
@@ -462,7 +481,7 @@ export interface LeadInput {
 
 /** "Send me this price": keep the contact so the team can follow up before the customer drops off. */
 export function captureLead(input: LeadInput): string {
-  const base = load() ?? state;
+  const base = latest();
   const now = Date.now();
   const lead: Lead = { id: `L-${uid().toUpperCase()}`, at: now, ...input };
   const email: Email = {
@@ -484,7 +503,7 @@ export function captureLead(input: LeadInput): string {
 }
 
 export function markLeadContacted(id: string) {
-  const base = load() ?? state;
+  const base = latest();
   commit({ ...base, leads: base.leads.map((l) => (l.id === id ? { ...l, contacted: Date.now() } : l)) });
 }
 
@@ -506,14 +525,14 @@ export function addNote(id: string, text: string, staffId: string) {
 }
 
 export function markNotificationsRead() {
-  const base = load() ?? state;
+  const base = latest();
   if (!base.notifications.some((n) => !n.read)) return;
   commit({ ...base, notifications: base.notifications.map((n) => ({ ...n, read: true })) });
 }
 
 /** Raise one alert (notification + staff email) the first time an open case breaches an SLA. */
 export function checkSlaBreaches() {
-  const base = load() ?? state;
+  const base = latest();
   const now = Date.now();
   let s: State | null = null;
   base.cases.forEach((c, i) => {
@@ -550,7 +569,7 @@ export interface ProposalInput {
 
 /** An agent's quotation (1-5 packages) for a customer. */
 export function createProposal(input: ProposalInput): string {
-  const base = load() ?? state;
+  const base = latest();
   const now = Date.now();
   const id = nextProposalId(base);
   const pr: Proposal = { id, ...input, createdAt: now, expiresAt: now + PROPOSAL_DAYS * 86_400_000, sentVia: [], status: 'open' };
@@ -560,13 +579,13 @@ export function createProposal(input: ProposalInput): string {
 }
 
 const updateProposal = (id: string, fn: (p: Proposal) => Proposal) => {
-  const base = load() ?? state;
+  const base = latest();
   commit({ ...base, proposals: base.proposals.map((p) => (p.id === id ? fn(p) : p)) });
 };
 
 /** Agent shared the quotation: link, PDF or LINE. The link also goes to the customer by email. */
 export function markProposalSent(id: string, via: Proposal['sentVia'][number]) {
-  const base = load() ?? state;
+  const base = latest();
   const pr = base.proposals.find((p) => p.id === id);
   if (!pr) return;
   const proposals = base.proposals.map((p) => (p.id === id && !p.sentVia.includes(via) ? { ...p, sentVia: [...p.sentVia, via] } : p));
@@ -578,7 +597,7 @@ export function markProposalSent(id: string, via: Proposal['sentVia'][number]) {
 
 /** The customer opened the link (the agent's own preview does not count). */
 export function viewProposal(id: string) {
-  const base = load() ?? state;
+  const base = latest();
   if (base.proposals.find((p) => p.id === id)?.viewedAt) return;
   updateProposal(id, (p) => ({ ...p, viewedAt: Date.now() }));
 }
@@ -592,7 +611,7 @@ export function declineProposal(id: string) {
  * The sale then runs through the back office like any package sale.
  */
 export function acceptProposal(id: string, choice: number, by: 'customer' | 'agent', collect: 'link' | 'agent'): string | null {
-  const base = load() ?? state;
+  const base = latest();
   const pr = base.proposals.find((p) => p.id === id);
   if (!pr || pr.status !== 'open' || Date.now() > pr.expiresAt) return null;
   const o = pr.options[choice];
@@ -613,7 +632,7 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
     },
     by === 'customer',
   );
-  const after = load() ?? state;
+  const after = latest();
   const now = Date.now();
   commit({
     ...after,
@@ -681,7 +700,7 @@ export function agentRemitNotice(id: string) {
 
 /** Marketing reminds an agent about a renewal due or a late remittance. */
 export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: string) {
-  const base = load() ?? state;
+  const base = latest();
   const now = Date.now();
   if (kind === 'renewal') {
     const r = base.renewals.find((x) => x.id === refId);
@@ -705,8 +724,15 @@ export function nudgeAgent(kind: 'renewal' | 'remit', refId: string, mktId: stri
   });
 }
 
+export function addVisit(v: Omit<Visit, 'id' | 'recordedAt'>) {
+  const base = latest();
+  const visit: Visit = { ...v, id: `v${Date.now().toString(36)}`, recordedAt: Date.now() };
+  commit({ ...base, visits: [visit, ...base.visits].sort((a, b) => b.at - a.at) });
+  return visit;
+}
+
 export function updateAgent(id: string, patch: Partial<Pick<Agent, 'target' | 'active' | 'mktId'>>) {
-  const base = load() ?? state;
+  const base = latest();
   commit({ ...base, agents: base.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)) });
 }
 
@@ -739,7 +765,7 @@ function withVersions(base: State, items: { p: Product; note: string }[], by: st
 
 /** Save a product as a new version. Offers already made keep the version they were priced on. */
 export function saveProduct(p: Product, by: string, note = ''): boolean {
-  const base = load() ?? state;
+  const base = latest();
   const next = withVersions(base, [{ p, note }], by, Date.now());
   if (next) commit(next);
   return !!next;
@@ -747,7 +773,7 @@ export function saveProduct(p: Product, by: string, note = ''): boolean {
 
 /** Save several products in one go (Excel import). Returns how many actually changed. */
 export function saveProducts(items: { p: Product; note: string }[], by: string): number {
-  const base = load() ?? state;
+  const base = latest();
   const next = withVersions(base, items, by, Date.now());
   if (!next) return 0;
   commit(next);
@@ -756,7 +782,7 @@ export function saveProducts(items: { p: Product; note: string }[], by: string):
 
 /** Bring back an earlier version; it is saved as the newest version so history stays intact. */
 export function rollbackProduct(id: string, ver: number, by: string) {
-  const base = load() ?? state;
+  const base = latest();
   const old = base.productLog.find((v) => v.id === id && v.ver === ver);
   if (!old) return;
   saveProduct({ ...old.snapshot }, by, `rollback:${ver}`);

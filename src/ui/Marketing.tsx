@@ -8,8 +8,9 @@ import { DAY_MS, bkkParts, bkkTime } from '../lib/time';
 import { NumberInput, Segmented, useNow } from './common';
 import { proposalState } from './Agent';
 import { RenewalReport } from './AgentRenewals';
+import { VisitTab } from './Visits';
 
-type Tab = 'perf' | 'renew' | 'manage' | 'follow';
+type Tab = 'perf' | 'visit' | 'renew' | 'manage' | 'follow';
 
 /** Per-agent numbers over a period: quotations, close rate, discount, production and commission. */
 export function agentStats(a: Agent, cases: Case[], proposals: Proposal[], from: number, to: number) {
@@ -64,6 +65,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
 
       <div className="subtabs" role="tablist">
         <button role="tab" aria-selected={tab === 'perf'} className={tab === 'perf' ? 'on' : ''} onClick={() => setTab('perf')}>{t('mktTabPerf')}</button>
+        <button role="tab" aria-selected={tab === 'visit'} className={tab === 'visit' ? 'on' : ''} onClick={() => setTab('visit')}>{t('mktTabVisit')}</button>
         <button role="tab" aria-selected={tab === 'renew'} className={tab === 'renew' ? 'on' : ''} onClick={() => setTab('renew')}>{t('mktTabRenew')}</button>
         <button role="tab" aria-selected={tab === 'manage'} className={tab === 'manage' ? 'on' : ''} onClick={() => setTab('manage')}>{t('mktTabManage')}</button>
         <button role="tab" aria-selected={tab === 'follow'} className={tab === 'follow' ? 'on' : ''} onClick={() => setTab('follow')}>
@@ -72,6 +74,7 @@ export function MarketingApp({ mktId, setMktId }: { mktId: string; setMktId: (id
       </div>
 
       {tab === 'perf' && <MktPerf agents={agents} now={now} />}
+      {tab === 'visit' && <VisitTab agents={agents} mktId={mktId} />}
       {tab === 'renew' && (
         <RenewalReport
           renewals={s.renewals.filter((r) => r.agentId && ids.has(r.agentId))}
