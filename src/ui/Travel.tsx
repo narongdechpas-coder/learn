@@ -29,7 +29,7 @@ const LINES: { line: Line; icon: string; title: TKey; desc: TKey; live: boolean 
   { line: 'motor', icon: '🚗', title: 'lineMotor', desc: 'lineMotorDesc', live: true },
   { line: 'travel', icon: '✈️', title: 'lineTravel', desc: 'lineTravelDesc', live: true },
   { line: 'pa', icon: '🩹', title: 'linePa', desc: 'linePaDesc', live: true },
-  { line: 'fire', icon: '🏠', title: 'lineFire', desc: 'lineFireDesc', live: false },
+  { line: 'fire', icon: '🏠', title: 'lineFire', desc: 'lineFireDesc', live: true },
 ];
 
 /** Customer navigation between lines of business; lines not on sale yet are shown but disabled. */

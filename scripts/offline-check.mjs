@@ -75,6 +75,22 @@ const paNo = (await pa.locator('.ref-big').innerText()).trim();
 assert.match(paNo, /^PA/, 'PA policy issued offline');
 console.log(`  PA policy ${paNo} issued offline`);
 
+// Fire too: a sample house, buy, policy issued.
+const fi = await ctx.newPage();
+fi.on('pageerror', (e) => errors.push(e.message));
+await fi.goto(file + '#customer');
+await fi.locator('.line-card.line-fire').click();
+await fi.locator('.fi-samples').getByRole('button', { name: 'ออกทันที' }).click();
+await fi.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await fi.locator('.fire-plan').first().getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await fi.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await fi.locator('#ff-declare').check();
+await fi.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await fi.locator('.pay-btn').click();
+const fiNo = (await fi.locator('.ref-big').innerText()).trim();
+assert.match(fiNo, /^FI/, 'fire policy issued offline');
+console.log(`  fire policy ${fiNo} issued offline`);
+
 await office.bringToFront();
 await office.locator('.toast', { hasText: ref }).waitFor({ timeout: 5000 });
 console.log('  back-office tab got the real-time alert');

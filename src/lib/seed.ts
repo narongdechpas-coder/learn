@@ -7,6 +7,8 @@ import { SLA_KEYS, slaFor } from './sla';
 import { AGENTS, PAY_DAYS, PROPOSAL_DAYS, optionPrice } from '../data/agents';
 import { makeTrip, travelPackages } from '../data/travel';
 import { OCCUPATIONS, getPaProducts, paPackage } from '../data/pa';
+import { BUILDINGS, PROVINCES_ALL, firePackages, getFireSettings, suggestBuildingSi, type FireApplicant } from '../data/fire';
+import type { FirePeril } from '../types';
 
 function mulberry32(seed: number) {
   return () => {
@@ -807,6 +809,184 @@ export function seedPaRenewals(now: number): RenewalItem[] {
       phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
       pa: { productId: prod.id, occupation: occ.id, motorcycle, birthDate: birth, idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`, email: `renew${n}@example.com` },
       coverage: 'PA',
+      premium: pkg.premium,
+      expiry,
+      status,
+      ...(status === 'renewed' ? { renewedPremium: pkg.premium, renewedAt: Math.min(now, expiry - Math.round(rnd() * 25) * DAY_MS) } : {}),
+    });
+  }
+  return out;
+}
+
+/** A random property for the fire seeds (mostly concrete homes in and around Bangkok). */
+function fireProperty(rnd: () => number, start: string): FireApplicant {
+  const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
+  const occupancy = rnd() < 0.75 ? 'home' : 'shop';
+  const building = pick(BUILDINGS[occupancy]);
+  const area = building === 'condo' ? 30 + Math.round(rnd() * 70) : 80 + Math.round(rnd() * 220);
+  const flood = getFireSettings().floodProvinces;
+  const province = rnd() < 0.12 ? pick(flood) : rnd() < 0.6 ? pick(['กรุงเทพมหานคร', 'สมุทรปราการ', 'ชลบุรี']) : pick(PROVINCES_ALL.filter((x) => !flood.includes(x)));
+  const buildingSi = suggestBuildingSi(building, area);
+  const perils = (['flood', 'storm', 'quake', 'hail'] as FirePeril[]).filter((x) => rnd() < (x === 'flood' ? 0.35 : x === 'storm' ? 0.4 : 0.15));
+  return {
+    occupancy,
+    building,
+    construction: rnd() < 0.05 ? 'wood' : rnd() < 0.12 ? 'mixed' : 'concrete',
+    area,
+    yearBuilt: 2026 - Math.floor(rnd() * 30),
+    owner: rnd() < 0.8 ? 'owner' : 'tenant',
+    address: `${1 + Math.floor(rnd() * 300)}/${1 + Math.floor(rnd() * 90)} หมู่บ้านตัวอย่าง`,
+    province,
+    buildingSi,
+    contentsSi: Math.round((buildingSi * (0.1 + rnd() * 0.2)) / 10_000) * 10_000,
+    perils,
+    priorLoss: rnd() < 0.03,
+    ...(rnd() < 0.35 ? { beneficiary: pick(['ธนาคารกรุงไทย', 'ธนาคารกสิกรไทย', 'ธนาคารอาคารสงเคราะห์']) } : {}),
+    start,
+  };
+}
+
+/**
+ * Three months of fire policies, bought online or sold by partners. Most are issued on payment;
+ * high sums, wooden buildings, earlier losses and flood-zone provinces were reviewed first, and the
+ * newest of those are still waiting.
+ */
+export function seedFire(now: number, startSeq: number): { cases: Case[]; proposals: Proposal[]; seq: number } {
+  const rnd = mulberry32(7070);
+  const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
+  const agents = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6'];
+  const cases: Case[] = [];
+  const proposals: Proposal[] = [];
+  let seq = startSeq;
+  let qn = 700;
+  const startDay = startOfBkkDay(now) - 91 * DAY_MS;
+  for (let day = startDay; day <= startOfBkkDay(now); day += DAY_MS) {
+    if (rnd() > 0.38) continue;
+    const p = bkkParts(day);
+    const submitted = bkkTime(p.y, p.mo, p.d, 0, Math.floor(8 * 60 + rnd() * 780));
+    if (submitted > now - 30 * 60_000) continue;
+    const a = fireProperty(rnd, dayKey(submitted + (1 + Math.floor(rnd() * 10)) * DAY_MS));
+    const pkg = firePackages(a)[0];
+    if (!pkg?.fire) continue;
+    const referral = pkg.fire.referral.length > 0;
+    seq++;
+    const sp = bkkParts(submitted);
+    const id = `JKY-${String(sp.y).slice(2)}${String(sp.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+    const customer: Customer = {
+      firstName: pick(FIRST),
+      lastName: pick(LAST),
+      idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`,
+      phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
+      email: `fire${seq}@example.com`,
+      address: `${a.address} ${a.province}`,
+      plate: '',
+      province: a.province,
+      chassis: '',
+      startDate: a.start,
+      driver1: '',
+      driver2: '',
+    };
+    const viaAgent = rnd() < 0.45;
+    const pending = referral && now - submitted < 2 * DAY_MS;
+    const accepted = referral ? submitted + (0.5 + rnd() * 4) * 3600_000 : submitted;
+    const issued = referral ? accepted + (1 + rnd() * 6) * 3600_000 : submitted + (3 + rnd() * 40) * 60_000;
+    const staff = STAFF[Math.floor(rnd() * STAFF.length)].id;
+    const c: Case = {
+      id,
+      source: viaAgent || referral ? 'package' : 'self',
+      createdAt: submitted,
+      coverage: 'FIRE',
+      pkg,
+      addCmi: false,
+      customer,
+      status: 'ISSUED',
+      stamps: { submitted, quoted: submitted, confirmed: submitted, accepted, docsComplete: submitted, paid: issued, issued },
+      docs: Object.fromEntries((pkg.docs ?? []).map((k) => [k, { name: `${k}.jpg`, size: 180_000, at: submitted }])),
+      log: [],
+      policyNo: `FI${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`,
+      premium: pkg.premium,
+      delivery: { method: 'pdf', email: customer.email },
+      ...(referral ? { assignee: staff } : {}),
+      seeded: true,
+    };
+    if (pending) {
+      const taken = now - submitted > 3 * 3600_000;
+      c.status = taken ? 'DOCS_REVIEW' : 'NEW';
+      c.stamps = { submitted, quoted: submitted, confirmed: submitted, docsComplete: submitted, ...(taken ? { accepted } : {}) };
+      if (!taken) delete c.assignee;
+      delete c.policyNo;
+      delete c.premium;
+      delete c.delivery;
+    }
+    if (!viaAgent) {
+      if (!pending) c.payment = { method: rnd() < 0.6 ? 'qr' : 'card', at: issued };
+    } else {
+      const agentId = pick(agents);
+      c.agentId = agentId;
+      c.collect = rnd() < 0.7 ? 'link' : 'agent';
+      const discountPct = pick([0, 0, 3, 5]);
+      const options: ProposalOption[] = [{ pkg, addCmi: false }];
+      const price = optionPrice(options[0], discountPct);
+      c.discount = price.discount || undefined;
+      if (c.premium !== undefined) c.premium = Math.round((pkg.premium - (c.discount ?? 0)) * 100) / 100;
+      c.paidAt = pending ? undefined : issued;
+      if (!pending && c.collect === 'link') c.payment = { method: 'qr', at: issued };
+      if (!pending && c.collect === 'agent') {
+        const remittedAt = issued + (1 + rnd() * 14) * DAY_MS;
+        if (remittedAt < now) c.remittedAt = remittedAt;
+      }
+      const createdAt = submitted - (0.5 + rnd() * 30) * 3600_000;
+      qn++;
+      const qp = bkkParts(createdAt);
+      const pr: Proposal = {
+        id: `Q-${String(qp.y).slice(2)}${String(qp.mo + 1).padStart(2, '0')}-F${String(qn).padStart(4, '0')}`,
+        agentId,
+        createdAt,
+        expiresAt: createdAt + PROPOSAL_DAYS * DAY_MS,
+        customer,
+        options,
+        docs: c.docs,
+        discountPct,
+        sentVia: ['link', 'line'],
+        viewedAt: createdAt + 3600_000,
+        status: 'accepted',
+        acceptedAt: submitted,
+        acceptedBy: c.collect === 'agent' ? 'agent' : 'customer',
+        chosen: 0,
+        caseId: id,
+        seeded: true,
+      };
+      c.proposalId = pr.id;
+      proposals.push(pr);
+    }
+    cases.push(c);
+  }
+  return { cases, proposals, seq };
+}
+
+/** Last year's fire policies coming up for renewal (one-year cover, like motor and PA). */
+export function seedFireRenewals(now: number): RenewalItem[] {
+  const rnd = mulberry32(7171);
+  const out: RenewalItem[] = [];
+  for (let i = 0; i < 45; i++) {
+    const expiry = startOfBkkDay(now) + Math.round(-30 + rnd() * 120) * DAY_MS;
+    const a = { ...fireProperty(rnd, dayKey(expiry + DAY_MS)), renewal: true, priorLoss: false };
+    const pkg = firePackages(a)[0];
+    if (!pkg?.fire) continue;
+    const { referral: _r, start: _s, end: _e, priorLoss: _p, ...fire } = pkg.fire;
+    const days = (expiry - now) / DAY_MS;
+    const r = rnd();
+    const status: RenewalItem['status'] =
+      days < 0 ? (r < 0.8 ? 'renewed' : 'lost') : days < 30 ? (r < 0.4 ? 'renewed' : r < 0.65 ? 'quoted' : 'open') : r < 0.1 ? 'renewed' : r < 0.25 ? 'quoted' : 'open';
+    const agentId = rnd() < 0.7 ? AGENTS[Math.floor(rnd() * AGENTS.length)].id : undefined;
+    out.push({
+      id: `RF-${String(i + 1).padStart(4, '0')}`,
+      agentId,
+      policyNo: `FI${(CURRENT_YEAR - 1) % 100}-${String(10000 + Math.floor(rnd() * 89999))}`,
+      customerName: `${FIRST[Math.floor(rnd() * FIRST.length)]} ${LAST[Math.floor(rnd() * LAST.length)]}`,
+      phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
+      fire: { ...fire, idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`, email: `home${i + 1}@example.com` },
+      coverage: 'FIRE',
       premium: pkg.premium,
       expiry,
       status,

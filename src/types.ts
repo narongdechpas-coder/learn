@@ -6,9 +6,9 @@ export type BodyType = 'sedan' | 'suv' | 'pickup' | 'ev' | 'van';
 export type UsageCode = '110' | '120' | '210' | '220' | '320' | '340';
 
 /** Motor classes, plus TRV for travel and PA for personal accident (their packages carry their own cover). */
-export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI' | 'TRV' | 'PA';
+export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI' | 'TRV' | 'PA' | 'FIRE';
 
-/** Lines of business on the customer home page; fire is not on sale yet. */
+/** Lines of business on the customer home page. */
 export type Line = 'motor' | 'travel' | 'pa' | 'fire';
 
 /** Single trip (1-180 days) or annual multi-trip (any number of trips, up to 90 days each). */
@@ -193,6 +193,104 @@ export interface PaProductVersion {
   snapshot: PaProduct;
 }
 
+/** Fire insurance: what is insured (separate packages), the building and how it is built. */
+export type FireOccupancy = 'home' | 'shop';
+export type BuildingType = 'house' | 'townhouse' | 'condo' | 'shophouse' | 'office';
+/** Construction class: concrete (class 1), half brick half wood (class 2), wood (class 3). */
+export type Construction = 'concrete' | 'mixed' | 'wood';
+/** Optional perils on top of fire, lightning and explosion. */
+export type FirePeril = 'flood' | 'storm' | 'quake' | 'hail';
+/** Rate mode: the customer sets the sums and pays a rate; plan mode: ready-made plans at a fixed price. */
+export type FireMode = 'rate' | 'plan';
+
+/** A fire policy priced for one property, kept on the package (and so on the case). */
+export interface FireOffer {
+  productId: string;
+  mode: FireMode;
+  occupancy: FireOccupancy;
+  building: BuildingType;
+  construction: Construction;
+  /** Floor area m², year built. */
+  area: number;
+  yearBuilt: number;
+  owner: 'owner' | 'tenant';
+  /** Where the property is. */
+  address: string;
+  province: string;
+  /** Sums insured, THB. */
+  buildingSi: number;
+  contentsSi: number;
+  perils: FirePeril[];
+  /** Fire or a claim on this property in the last 3 years. */
+  priorLoss: boolean;
+  /** Bank or other beneficiary (mortgage), if any. */
+  beneficiary?: string;
+  /** Reasons the back office has to review before issuing (empty = issued on payment). */
+  referral: ('si' | 'wood' | 'loss' | 'flood')[];
+  start: string;
+  end: string;
+}
+
+/** A fire product the back office sets up (rate-based or a ready-made plan). */
+export interface FireProduct {
+  id: string;
+  ver: number;
+  updatedAt: number;
+  updatedBy: string;
+  mode: FireMode;
+  occupancy: FireOccupancy;
+  nameTh: string;
+  nameEn: string;
+  tagTh: string;
+  tagEn: string;
+  highlightsTh: string[];
+  highlightsEn: string[];
+  badge?: 'recommended' | 'new';
+  channels: { self: boolean; partner: boolean };
+  partners: 'all' | string[];
+  saleUntil?: string;
+  /** Rate mode: yearly rate per mille of the total sum insured, by construction; add-on rates per mille. */
+  rates: Record<Construction, number>;
+  perilRates: Record<FirePeril, number>;
+  minPremium: number;
+  /** Plan mode: fixed sums and a fixed price, add-ons at a fixed price. */
+  planBuildingSi: number;
+  planContentsSi: number;
+  planPrice: number;
+  perilPrices: Record<FirePeril, number>;
+  /** Add-ons offered with this product. */
+  perils: FirePeril[];
+  commission?: number;
+  partnerCommission: Record<string, number>;
+  termsTh: string;
+  termsEn: string;
+  exclusionsTh: string[];
+  exclusionsEn: string[];
+  archived?: boolean;
+}
+
+export interface FireProductVersion {
+  id: string;
+  ver: number;
+  at: number;
+  by: string;
+  note: string;
+  changes: string[];
+  snapshot: FireProduct;
+}
+
+/** Fire settings for the whole line (back office). */
+export interface FireSettings {
+  /** Which kind of product is on sale: customer-set sums at a rate, or ready-made plans. */
+  mode: FireMode;
+  /** Total sum insured above which the back office reviews before issuing. */
+  referralSi: number;
+  /** Provinces that flood often: always reviewed. */
+  floodProvinces: string[];
+  /** Rebuild cost per m² by building type, used to suggest the building sum insured. */
+  costPerSqm: Record<BuildingType, number>;
+}
+
 export type Source = 'package' | 'quote' | 'self';
 
 export type Status =
@@ -208,7 +306,7 @@ export type Status =
 /** Milestones recorded on a case; the funnel and SLA are computed from these. */
 export type Stage = 'submitted' | 'accepted' | 'quoted' | 'confirmed' | 'docsComplete' | 'paid' | 'issued' | 'cancelled';
 
-export type DocKey = 'front' | 'back' | 'left' | 'right' | 'regbook' | 'idcard' | 'passport';
+export type DocKey = 'front' | 'back' | 'left' | 'right' | 'regbook' | 'idcard' | 'passport' | 'house';
 
 export interface Brand {
   id: string;
@@ -283,6 +381,8 @@ export interface Package {
   travel?: TravelOffer;
   /** Personal accident packages only (type PA): occupation, add-ons and the plan's cover. */
   accident?: PaOffer;
+  /** Fire packages only (type FIRE): the property, sums insured and perils. */
+  fire?: FireOffer;
 }
 
 /** Extra benefits a product includes in its premium. */
@@ -532,6 +632,8 @@ export interface RenewalItem {
   /** Motor renewals; PA renewals carry the insured person instead. */
   vehicle?: Vehicle;
   pa?: { productId: string; occupation: string; occupationText?: string; motorcycle: boolean; birthDate: string; idCard: string; email: string };
+  /** Fire renewals: last year's property and cover. */
+  fire?: Omit<FireOffer, 'referral' | 'start' | 'end' | 'priorLoss'> & { idCard: string; email: string };
   coverage: CoverageType;
   premium: number;
   expiry: number;

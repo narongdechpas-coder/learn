@@ -20,7 +20,7 @@ type Metric = 'policies' | 'gwp';
 const FUNNEL: Stage[] = ['submitted', 'accepted', 'quoted', 'confirmed', 'docsComplete', 'issued'];
 
 /** Line of business of a case, for the line filter and the by-line chart. */
-const lineOf = (ct: CoverageType) => (ct === 'TRV' ? 'travel' : ct === 'PA' ? 'pa' : 'motor');
+const lineOf = (ct: CoverageType) => (ct === 'TRV' ? 'travel' : ct === 'PA' ? 'pa' : ct === 'FIRE' ? 'fire' : 'motor');
 
 export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) {
   const { t, lang } = useT();
@@ -36,7 +36,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const [table, setTable] = useState(false);
   const [channel, setChannel] = useState<'all' | 'direct' | 'agent'>('all');
   const [mkt, setMkt] = useState('all');
-  const [line, setLine] = useState<'all' | 'motor' | 'travel' | 'pa'>('all');
+  const [line, setLine] = useState<'all' | 'motor' | 'travel' | 'pa' | 'fire'>('all');
   const mktAgents = s.agents.filter((a) => mkt === 'all' || a.mktId === mkt);
   const inChannel = (agentId?: string) =>
     mkt !== 'all' ? !!agentId && mktAgents.some((a) => a.id === agentId) : channel === 'all' || (channel === 'agent' ? !!agentId : !agentId);
@@ -160,6 +160,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           <option value="motor">{t('lineMotor')}</option>
           <option value="travel">{t('lineTravel')}</option>
           <option value="pa">{t('linePa')}</option>
+          <option value="fire">{t('lineFire')}</option>
         </select>
         <select id="d-type" aria-label={t('filterType')} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
@@ -203,7 +204,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
         <section className="card dash-lines">
           <h3>{t('dashByLine')}</h3>
           <HBars
-            rows={([['motor', 'lineMotor'], ['travel', 'lineTravel'], ['pa', 'linePa']] as const).map(([k, label]) => {
+            rows={([['motor', 'lineMotor'], ['travel', 'lineTravel'], ['pa', 'linePa'], ['fire', 'lineFire']] as const).map(([k, label]) => {
               const cs = issued.filter((c) => lineOf(c.coverage) === k);
               return { key: k, label: t(label), value: value(cs), sub: metric === 'gwp' ? `${fmtNum(cs.length, lang)} ${t('mPolicies')}` : fmtBaht(Math.round(sum(cs.map((c) => c.premium ?? 0))), lang) };
             })}

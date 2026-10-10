@@ -1,5 +1,6 @@
 import type { Lang, Package, TravelCover, TravelProduct, TravelRateRow, TravelZone, Trip, TripType, Vehicle } from '../types';
 import { vehicleText } from './vehicles';
+import { fireText } from './fire';
 
 const DAY = 86_400_000;
 
@@ -198,9 +199,11 @@ export function tripText(trip: Trip, lang: Lang) {
 }
 export const tripRange = (trip: Trip, lang: Lang) => `${fmtD(trip.start, lang)} – ${fmtD(trip.end, lang)}`;
 
-/** What a case or quotation is about: the car, the trip for travel, or the plan for personal accident. */
+/** What a case or quotation is about: the car, the trip for travel, the plan for PA, or the property for fire. */
 export function subjectText(x: { vehicle?: Vehicle; pkg?: Package; options?: { pkg: Package }[] }, lang: Lang) {
   if (x.vehicle) return vehicleText(x.vehicle);
+  const fire = x.pkg?.fire ?? x.options?.[0]?.pkg.fire;
+  if (fire) return fireText(fire, lang);
   const pa = x.pkg?.accident ?? x.options?.[0]?.pkg.accident;
   if (pa) return `${lang === 'th' ? 'ประกันอุบัติเหตุ' : 'Personal accident'} · ${(lang === 'th' ? x.pkg?.nameTh ?? x.options?.[0]?.pkg.nameTh : x.pkg?.nameEn ?? x.options?.[0]?.pkg.nameEn) || `PA ${pa.cover.death.toLocaleString('en-US')}`}`;
   const trip = x.pkg?.travel?.trip ?? x.options?.[0]?.pkg.travel?.trip;
