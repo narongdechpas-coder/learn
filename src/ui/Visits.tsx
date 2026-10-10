@@ -8,7 +8,7 @@ import { last13Months, rolling12 } from '../lib/history';
 import { ach, addRow, lossRatio, perfCells, renewRate, zeroRow, type PerfRow } from '../lib/perf';
 import { DAY_MS, bkkParts, bkkTime, dayKey, monthKey, startOfBkkDay } from '../lib/time';
 import { ClusteredBarChart } from './charts';
-import { useNow } from './common';
+import { useNow, DateInput } from './common';
 import { agentStats } from './Marketing';
 import { productName } from './Products';
 
@@ -184,7 +184,7 @@ function VisitForm({ a, mktId, topics, onClose, onSaved }: { a: Agent; mktId: st
         </div>
         <div className="vs-form-grid">
           <label htmlFor="vf-date">{t('vfDate')}</label>
-          <input id="vf-date" type="date" value={date} max={dayKey(Date.now())} onChange={(e) => setDate(e.target.value)} />
+          <DateInput id="vf-date" value={date} max={dayKey(Date.now())} onChange={(v) => setDate(v)} />
           <label htmlFor="vf-topics">{t('vfTopics')}</label>
           <textarea id="vf-topics" rows={3} value={tp} onChange={(e) => setTp(e.target.value)} />
           <label htmlFor="vf-outcome">{t('vfOutcome')} *</label>
@@ -194,7 +194,7 @@ function VisitForm({ a, mktId, topics, onClose, onSaved }: { a: Agent; mktId: st
           </div>
           <label htmlFor="vf-next">{t('vfNext')}</label>
           <div>
-            <input id="vf-next" type="date" value={next} min={date} aria-invalid={err && !!next && next < date} onChange={(e) => setNext(e.target.value)} />
+            <DateInput id="vf-next" value={next} min={date} invalid={err && !!next && next < date} onChange={(v) => setNext(v)} />
             {err && next && next < date ? <div className="vs-err" role="alert">{t('vfNextBefore')}</div> : <div className="hint">{t('vfNextHint')}</div>}
           </div>
         </div>

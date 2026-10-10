@@ -22,6 +22,7 @@ import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS
 import { packagesFor } from '../data/products';
 import { subjectText, tripRange } from '../data/travel';
 import { LineNav, ProductHome, TravelBuy, TravelCertificate } from './Travel';
+import { ChatBot } from './ChatBot';
 import { PaBuy, PaCertificate, PaKv, PaRenewBox } from './Pa';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { EXTRA_KEY, productName } from './Products';
@@ -29,7 +30,7 @@ import { riderRows } from './riders';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
 import { requiredDocs, needsDocConfirm, canUpload, captureLead, trackStep, customerConfirm, customerDecline, docsMissing, payAndIssue, submitCase, totalPremium, uploadDoc, useStore } from '../store';
 import { getFile } from '../files';
-import { Field, NumberInput, StatusPill, TypeTag } from './common';
+import { DateInput, Field, NumberInput, StatusPill, TypeTag } from './common';
 import { BrandIcon, CarArt, FakeQr, UsageIcon } from './icons';
 import { PartnerLogin } from './PartnerLogin';
 import { attachSampleDocs } from './extras';
@@ -120,7 +121,7 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
         <Track selected={trackId} setSelected={setTrackId} onOpenCase={onOpenCase} />
       )}
       <SubmitDocsHost />
-      <ChatBubble />
+      <ChatBot />
     </div>
   );
 }
@@ -717,7 +718,11 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
               </Field>
             </div>
             {input('chassis', 'chassis')}
-            {input('startDate', 'startDate', { type: 'date' })}
+            <div>
+              <Field htmlFor="f-startDate" label={t('startDate')} error={errors.startDate}>
+                <DateInput id="f-startDate" value={customer.startDate} onChange={(v) => setCustomer((c) => ({ ...c, startDate: v }))} invalid={!!errors.startDate} />
+              </Field>
+            </div>
             {input('driver1', 'driver1', { optional: true })}
             {input('driver2', 'driver2', { optional: true })}
           </div>
@@ -1002,30 +1007,6 @@ function Hero() {
       </ul>
       <p className="trust-note">{t('trustNote')}</p>
     </HeroBanner>
-  );
-}
-
-function ChatBubble() {
-  const { t } = useT();
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="chat">
-      {open && (
-        <div className="chat-panel" role="dialog" aria-label={t('chatTitle')}>
-          <b>{t('chatTitle')}</b>
-          <p className="muted">{t('chatLead')}</p>
-          <ul>
-            <li><span className="chat-ico line" aria-hidden="true">L</span> LINE <b>@jacky-demo</b></li>
-            <li><span className="chat-ico" aria-hidden="true">☎</span> <b className="num">02-000-0000</b></li>
-          </ul>
-          <p className="hint">{t('chatNote')}</p>
-        </div>
-      )}
-      <button type="button" className="chat-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 6.5a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Z" /></svg>
-        <span>{open ? t('close') : t('chatBtn')}</span>
-      </button>
-    </div>
   );
 }
 

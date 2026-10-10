@@ -6,6 +6,7 @@ import { productEn, productTh } from './i18nProduct';
 import { visitEn, visitTh } from './i18nVisit';
 import { travelEn, travelTh } from './i18nTravel';
 import { paEn, paTh } from './i18nPa';
+import { chatEn, chatTh } from './i18nChat';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -492,7 +493,7 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh, ...paTh };
+const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh, ...paTh, ...chatTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
@@ -501,6 +502,7 @@ const en: Dict = {
   ...visitEn,
   ...travelEn,
   ...paEn,
+  ...chatEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',

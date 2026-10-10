@@ -1988,3 +1988,35 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
 .ship-choice .check.disabled { opacity: 0.6; }
 .ship-choice textarea { width: 100%; }
 .ocr-box.invalid { border-color: var(--bad); }
+
+/* ---------- Customer chatbot ---------- */
+.chatbot { width: min(380px, calc(100vw - 32px)); padding: 0; gap: 0; overflow: hidden; }
+.cb-head { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--accent-soft); }
+.cb-head > div { flex: 1; min-width: 0; }
+.cb-head .hint { margin: 0; }
+.cb-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 800; flex: none; }
+.cb-badge { font-size: 0.7rem; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); vertical-align: middle; font-family: var(--f-body, inherit); }
+.cb-clear { font-size: 0.82rem; flex: none; }
+.cb-log { display: grid; gap: 8px; align-content: start; padding: 12px 14px; max-height: min(52vh, 420px); min-height: 160px; overflow-y: auto; }
+.cb-msg { max-width: 88%; padding: 8px 12px; border-radius: 14px; font-size: 0.9rem; line-height: 1.5; overflow-wrap: anywhere; }
+.cb-msg p { margin: 0 0 4px; }
+.cb-msg p:last-child { margin-bottom: 0; }
+.cb-msg ul { margin: 2px 0 4px; padding-left: 18px; }
+.cb-msg.bot { justify-self: start; background: var(--surface-2); border-bottom-left-radius: 4px; }
+.cb-msg.me { justify-self: end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.cb-msg.local.bot { background: var(--warn-bg); color: var(--warn); }
+.cb-msg.typing { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+.cb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cb-chips .filter-chip { font-size: 0.82rem; text-align: left; }
+.cb-form { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.cb-form input { flex: 1; min-width: 0; }
+.cb-foot { padding: 0 14px 12px; display: grid; gap: 6px; }
+.cb-foot .hint { margin: 0; font-size: 0.75rem; }
+.cb-foot .link { justify-self: start; font-size: 0.85rem; }
+.date-input { position: relative; display: flex; align-items: stretch; }
+.date-input > input[type='text'] { flex: 1; min-width: 0; padding-right: 40px; }
+.date-pick { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border: 0; border-radius: 8px; background: none; color: var(--ink-2); cursor: pointer; display: grid; place-items: center; }
+.date-pick:hover { background: var(--surface-2); }
+.date-native { position: absolute; right: 4px; bottom: 0; width: 34px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.cb-msg li { display: list-item; }
+.cb-msg ul { list-style: disc; }

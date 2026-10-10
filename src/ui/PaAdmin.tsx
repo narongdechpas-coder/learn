@@ -3,7 +3,7 @@ import type { OccClass, PaCover, PaProduct } from '../types';
 import { OCCUPATIONS, PA_COMMISSION, PA_COVER_KEYS, blankPaProduct, paExpired, paPriceRange } from '../data/pa';
 import { fmtBaht, fmtDateTime, fmtNum, useT, type TKey } from '../i18n';
 import { rollbackPaProduct, savePaProduct, travelChanges, useStore } from '../store';
-import { NumberInput } from './common';
+import { NumberInput, DateInput, toDmy } from './common';
 import { PA_COVER_LABEL } from './Pa';
 import { staffById } from '../data/vehicles';
 
@@ -73,7 +73,7 @@ export function PaAdmin({ staffId }: { staffId: string }) {
                   <td>
                     <b>{lang === 'en' ? p.nameEn || p.nameTh : p.nameTh}</b>
                     {p.badge && <span className={`mini-badge badge-${p.badge} pa-badge`}>{t(p.badge === 'new' ? 'pdBadgeNew' : 'pdBadgeRec')}</span>}
-                    <div className="hint num">{p.id} · v{p.ver}{p.saleUntil ? ` · ${t(expired ? 'pdEnded' : 'pdUntil', { date: p.saleUntil })}` : ''}</div>
+                    <div className="hint num">{p.id} · v{p.ver}{p.saleUntil ? ` · ${t(expired ? 'pdEnded' : 'pdUntil', { date: toDmy(p.saleUntil) })}` : ''}</div>
                   </td>
                   {(['self', 'partner'] as const).map((ch) => (
                     <td key={ch}>
@@ -197,7 +197,7 @@ function PaEditor({ initial, isNew, staffId, onClose }: { initial: PaProduct; is
             </div>
             <div className="field">
               <label htmlFor="pa-until">{t('pdSaleUntil')}</label>
-              <input id="pa-until" type="date" value={d.saleUntil ?? ''} onChange={(e) => set('saleUntil', e.target.value || undefined)} />
+              <DateInput id="pa-until" value={d.saleUntil ?? ''} onChange={(v) => set('saleUntil', v || undefined)} />
             </div>
           </div>
         </section>

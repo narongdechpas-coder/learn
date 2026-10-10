@@ -58,9 +58,37 @@ watch(office);
 await office.goto(url + '#backoffice');
 await office.getByRole('heading', { name: 'งานเข้า' }).waitFor();
 log('customer and back-office tabs open');
-await customer.getByRole('button', { name: 'คุยกับเจ้าหน้าที่' }).click();
+// Chatbot: the page sends the conversation and the live catalogue to /api/chat (mocked here; the
+// real one is a Netlify function calling Claude). Personal data never leaves the page.
+const chatCalls = [];
+let chatReply = { status: 200, body: { text: 'PA 500,000 คุ้มครองสูงกว่า:\n- ค่ารักษา **50,000 บาท** ต่ออุบัติเหตุ\n- ชดเชยรายวัน 1,000 บาท' } };
+await customer.route('**/api/chat', async (route) => {
+  chatCalls.push(route.request().postDataJSON());
+  await route.fulfill({ status: chatReply.status, contentType: 'application/json', body: JSON.stringify(chatReply.body) });
+});
+await customer.locator('.chat-btn').click();
+await customer.locator('.chatbot').getByRole('button', { name: 'PA 300,000 กับ 500,000 ต่างกันยังไง' }).click();
+await customer.locator('.cb-msg.bot li b', { hasText: '50,000 บาท' }).waitFor();
+assert.equal(chatCalls.length, 1);
+assert.deepEqual(chatCalls[0].messages, [{ role: 'user', content: 'PA 300,000 กับ 500,000 ต่างกันยังไง' }]);
+assert.equal(chatCalls[0].lang, 'th');
+for (const x of ['PA 300,000', 'เดินทาง Plus', 'ชั้น 1', 'ขั้น 3', 'เชงเก้น']) assert.ok(chatCalls[0].knowledge.includes(x), `knowledge has ${x}`);
+assert.ok(!/ค่าคอม|commission/i.test(chatCalls[0].knowledge), 'no partner commission in the customer knowledge');
+await customer.locator('#cb-input').fill('เลขบัตร 1103700123457 ซื้อได้ไหม');
+await customer.locator('.cb-form').getByRole('button', { name: 'ส่ง' }).click();
+await customer.locator('.cb-msg.local', { hasText: 'ไม่ต้องส่งเลขบัตรประชาชน' }).waitFor();
+assert.equal(chatCalls.length, 1, 'a message with an ID number is not sent');
+// (The real function answers 503; a 200 here keeps the browser console clean for the error check.)
+chatReply = { status: 200, body: { error: 'not_configured' } };
+await customer.locator('#cb-input').fill('ผ่อนได้ไหม');
+await customer.locator('#cb-input').press('Enter');
+await customer.locator('.cb-msg.local', { hasText: 'ยังไม่ได้ตั้งค่าแชทบอท' }).waitFor();
+assert.deepEqual(chatCalls[1].messages.map((m) => m.role), ['user', 'assistant', 'user'], 'conversation sent without local notices');
+await customer.locator('.chatbot').getByRole('button', { name: 'คุยกับเจ้าหน้าที่' }).click();
 await customer.getByText('@jacky-demo').waitFor();
 await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
+await customer.unroute('**/api/chat');
+log('chatbot: product question answered from the live catalogue (mocked API), ID numbers kept out, setup and contact fallbacks');
 
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
@@ -1108,14 +1136,18 @@ await paCust.locator('#pa-occ').selectOption('other');
 await paCust.getByText('กรุณาระบุอาชีพ').first().waitFor();
 await paCust.locator('#pa-occ').selectOption('office');
 // Cover starts today at the earliest.
-assert.equal(await paCust.locator('#pa-start').inputValue(), isoIn(0), 'PA cover starts today by default');
+const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+assert.equal(await paCust.locator('#pa-start').inputValue(), dmy(isoIn(0)), 'PA cover starts today by default, shown as dd/mm/yyyy');
 await paCust.locator('#pa-start').fill(isoIn(-1));
 await paCust.getByText('วันเริ่มคุ้มครองต้องเป็นวันนี้หรือหลังจากนี้').waitFor();
 await paCust.locator('#pa-start').fill(isoIn(0));
-await paCust.locator('#pa-birth').fill('1950-01-01');
+await paCust.locator('#pa-birth').fill('01/01/1950');
 for (const i of [0, 1, 2]) await paCust.locator(`#pa-q${i}-no`).check();
 await paCust.getByText('รับประกันผู้มีอายุ 15–65 ปี').waitFor();
-await paCust.locator('#pa-birth').fill('1990-05-15');
+// Typing digits only adds the slashes: 15051990 → 15/05/1990.
+await paCust.locator('#pa-birth').fill('');
+await paCust.locator('#pa-birth').pressSequentially('15051990');
+assert.equal(await paCust.locator('#pa-birth').inputValue(), '15/05/1990', 'date typed as dd/mm/yyyy');
 await paCust.locator('.pa-instant-note').waitFor();
 await paCust.getByRole('button', { name: /ดูแผนและราคา/ }).click();
 assert.equal(await paCust.locator('.pa-plan').count(), 3, 'three PA plans');

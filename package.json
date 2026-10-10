@@ -7,7 +7,8 @@
     "typecheck": "tsc -p .",
     "test": "node scripts/e2e.mjs",
     "test:offline": "node scripts/offline-check.mjs",
-    "package:offline": "npm run build && cd dist/offline && python3 -c \"import zipfile; z=zipfile.ZipFile('../abc-motor-insurance-demo-offline.zip','w',zipfile.ZIP_DEFLATED,compresslevel=9); [z.write(f,'abc-motor-insurance-demo-offline/'+f) for f in ['abc-motor-insurance-demo.html','README.txt']]; z.close()\""
+    "package:offline": "npm run build && cd dist/offline && python3 -c \"import zipfile; z=zipfile.ZipFile('../abc-motor-insurance-demo-offline.zip','w',zipfile.ZIP_DEFLATED,compresslevel=9); [z.write(f,'abc-motor-insurance-demo-offline/'+f) for f in ['abc-motor-insurance-demo.html','README.txt']]; z.close()\"",
+    "test:chat": "node scripts/chat-check.mjs"
   },
   "repository": {
     "type": "git",

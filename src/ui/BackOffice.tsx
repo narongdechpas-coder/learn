@@ -22,7 +22,7 @@ import {
   useStore,
 } from '../store';
 import { SLA_KEYS, slaFor } from '../lib/sla';
-import { BizClock, CaseSla, Field, NumberInput, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow } from './common';
+import { BizClock, CaseSla, Field, NumberInput, SOURCE_KEY, SlaChip, StatusPill, TypeTag, useNow, toDmy } from './common';
 import { useFileUrl } from './Customer';
 import { AGENTS, caseCommission, mktById, payInfo, settled } from '../data/agents';
 import { PAY_TONE, payKey } from './Agent';
@@ -439,7 +439,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle!.sumInsured, lang)}{c.vehicle!.suggestedSI && <div className="hint">{t('siAdjusted', { pct: `${c.vehicle!.sumInsured > c.vehicle!.suggestedSI ? '+' : ''}${(((c.vehicle!.sumInsured - c.vehicle!.suggestedSI) / c.vehicle!.suggestedSI) * 100).toFixed(1)}`, v: fmtBaht(c.vehicle!.suggestedSI, lang) })}</div>}</dd>
             {c.pkg?.repair && (<><dt>{t('coverage')}</dt><dd>{t(c.pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage')} · {t('deductible')} {c.pkg.deductible ? fmtBaht(c.pkg.deductible, lang) : t('none')}</dd></>)}
             <dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('waitingQuote')}</dd>
-            <dt>{t('startDate')}</dt><dd>{c.customer.startDate}</dd>
+            <dt>{t('startDate')}</dt><dd>{toDmy(c.customer.startDate) || c.customer.startDate}</dd>
             {c.policyNo && (<><dt>Policy</dt><dd className="num">{c.policyNo}</dd></>)}
             {c.payment && (<><dt>{t('paidBy')}</dt><dd>{t(c.payment.method === 'qr' ? 'payQr' : 'payCard')}{c.payment.months ? ` · ${t('paidInstall', { months: c.payment.months })}` : ''}</dd></>)}
             {c.delivery && (<><dt>{t('deliveryLabel')}</dt><dd>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</dd></>)}

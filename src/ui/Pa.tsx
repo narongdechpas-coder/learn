@@ -7,7 +7,7 @@ import { acceptProposal, createProposal, docMeta, sendRenewalPreview, setReminde
 import { OCR_DOC, OCR_SAMPLE, OcrBox, fakeDocSync } from './extras';
 import { optionPrice, rateOf } from '../data/agents';
 import { dayKey } from '../lib/time';
-import { Field, Segmented } from './common';
+import { Field, Segmented, DateInput, toDmy } from './common';
 import { productName } from './Products';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { coverValue } from './Travel';
@@ -102,7 +102,7 @@ export function PaKv({ c }: { c: Case }) {
         <dt>{t('trPeriod')}</dt>
         <dd>{periodText(a.start, a.end, lang)}</dd>
         <dt>{t('paBirth')}</dt>
-        <dd>{c.customer.birthDate ?? '—'}{Number.isFinite(age) ? <span className="muted"> · {t('trAge', { n: age })}</span> : null}</dd>
+        <dd>{c.customer.birthDate ? toDmy(c.customer.birthDate) : '—'}{Number.isFinite(age) ? <span className="muted"> · {t('trAge', { n: age })}</span> : null}</dd>
         <dt>{t('trBeneficiary')}</dt>
         <dd>{c.customer.beneficiary || '—'}</dd>
         <dt>{t('paHealth')}</dt>
@@ -135,7 +135,7 @@ export function PaCertificate({ c }: { c: Case }) {
       <dl>
         <div><dt>{t('insured')}</dt><dd>{c.customer.firstName} {c.customer.lastName}</dd></div>
         <div><dt>{t('idCard')}</dt><dd className="num">{c.customer.idCard}</dd></div>
-        <div><dt>{t('paBirth')}</dt><dd className="num">{c.customer.birthDate ?? '—'}</dd></div>
+        <div><dt>{t('paBirth')}</dt><dd className="num">{c.customer.birthDate ? toDmy(c.customer.birthDate) : '—'}</dd></div>
         <div><dt>{t('paOccupation')}</dt><dd>{occName(a.occupation, lang, a.occupationText)} ({t(CLASS_KEY[a.occClass])})</dd></div>
         <div><dt>{t('trBeneficiary')}</dt><dd>{c.customer.beneficiary || '—'}</dd></div>
         <div><dt>{t('trPlan')}</dt><dd>{paName(c.pkg!, lang)}</dd></div>
@@ -224,10 +224,10 @@ export function PaFields({ f, set, errors, idPrefix = 'pa', renewal = false }: {
         <div className="section-label"><span className="section-n">1</span>{t('paAboutYou')}</div>
         <div className="tr-date-grid">
           <Field htmlFor={`${idPrefix}-birth`} label={t('paBirth')} error={errors.birth} hint={Number.isFinite(age) ? t('trAge', { n: age }) : undefined}>
-            <input id={`${idPrefix}-birth`} type="date" value={f.birth} max={dayKey(Date.now())} onChange={(e) => set({ birth: e.target.value })} aria-invalid={!!errors.birth} />
+            <DateInput id={`${idPrefix}-birth`} value={f.birth} max={dayKey(Date.now())} onChange={(v) => set({ birth: v })} invalid={!!errors.birth} />
           </Field>
           <Field htmlFor={`${idPrefix}-start`} label={t('paStart')} error={errors.start} hint={f.start ? t('paCoverTo', { date: fmtDate(new Date(`${paEnd(f.start)}T12:00:00+07:00`).getTime(), lang, { day: 'numeric', month: 'short', year: 'numeric' }) }) : undefined}>
-            <input id={`${idPrefix}-start`} type="date" value={f.start} min={dayKey(Date.now())} onChange={(e) => set({ start: e.target.value })} aria-invalid={!!errors.start} />
+            <DateInput id={`${idPrefix}-start`} value={f.start} min={dayKey(Date.now())} onChange={(v) => set({ start: v })} invalid={!!errors.start} />
           </Field>
           <Field htmlFor={`${idPrefix}-occ`} label={t('paOccupation')} error={errors.occupation} hint={occ ? (occ.other ? t('paOtherHint') : t(CLASS_KEY[occ.cls])) : undefined}>
             <select id={`${idPrefix}-occ`} value={f.occupation} onChange={(e) => set({ occupation: e.target.value })} aria-invalid={!!errors.occupation}>

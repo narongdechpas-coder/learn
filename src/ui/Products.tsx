@@ -9,7 +9,7 @@ import { productStats } from '../lib/productStats';
 import { planImport, productsToSheets, type ImportItem } from '../lib/productSheets';
 import { readXlsx, writeXlsx } from '../lib/xlsx';
 import { putFile } from '../files';
-import { NumberInput, TypeTag } from './common';
+import { NumberInput, TypeTag, DateInput } from './common';
 
 const DOC_KEYS: DocKey[] = ['front', 'back', 'left', 'right', 'regbook', 'idcard'];
 export const EXTRA_KEY: Record<ProductExtra, TKey> = {
@@ -855,7 +855,7 @@ function ProductEditor({ initial, isNew, staffId, onClose }: { initial: Product;
                 <div className="field">
                   <label htmlFor="pd-until">{t('pdSaleUntil')}</label>
                   <div className="pd-inline">
-                    <input id="pd-until" type="date" value={d.saleUntil ?? ''} onChange={(e) => set('saleUntil', e.target.value || undefined)} />
+                    <DateInput id="pd-until" value={d.saleUntil ?? ''} onChange={(v) => set('saleUntil', v || undefined)} />
                     <button type="button" className="btn" disabled={!d.saleUntil} onClick={() => set('saleUntil', undefined)}>{t('pdNoEnd')}</button>
                   </div>
                   <span className="hint">{t('pdSaleUntilHint')}</span>
