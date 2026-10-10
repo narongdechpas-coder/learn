@@ -160,7 +160,7 @@ export async function fakeDoc(kind: 'regbook' | 'idcard', c: Case): Promise<File
   const v = c.vehicle;
   const lines = card
     ? [`เลขประจำตัว ${c.customer.idCard || '1 1037 00123 45 7'}`, `ชื่อ ${c.customer.firstName} ${c.customer.lastName}`, `ที่อยู่ ${c.customer.address.slice(0, 34)}`]
-    : [`ทะเบียน ${c.customer.plate || '1กข 1234'} ${c.customer.province}`, `ยี่ห้อ/รุ่น ${vehicleText(v)}`, `เลขตัวถัง ${c.customer.chassis || 'MR053REH105123456'}`, `ผู้ถือกรรมสิทธิ์ ${c.customer.firstName} ${c.customer.lastName}`];
+    : [`ทะเบียน ${c.customer.plate || '1กข 1234'} ${c.customer.province}`, `ยี่ห้อ/รุ่น ${v ? vehicleText(v) : '-'}`, `เลขตัวถัง ${c.customer.chassis || 'MR053REH105123456'}`, `ผู้ถือกรรมสิทธิ์ ${c.customer.firstName} ${c.customer.lastName}`];
   lines.forEach((l, i) => g.fillText(l, x + 40, y + 150 + i * 60));
   if (card) {
     g.fillStyle = '#b8c9d6';
@@ -269,6 +269,8 @@ export function quoteEtaText(from: number, t: (k: TKey, p?: Record<string, strin
 
 export function IssuedExtras({ c }: { c: Case }) {
   const { t, lang } = useT();
+  // Only shown for motor policies (the digital card is a car card).
+  const vh = c.vehicle!;
   const [claimOpen, setClaimOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -295,12 +297,12 @@ export function IssuedExtras({ c }: { c: Case }) {
           <span className="dc-type">{COVERAGE_LABEL[lang][c.coverage]}{c.addCmi ? ` ${t('plusCmi')}` : ''}</span>
         </div>
         <div className="dc-car">
-          <CarArt kind={c.vehicle.usage === '320' ? 'pickup' : c.vehicle.usage === '210' ? 'van' : 'sedan'} />
+          <CarArt kind={vh.usage === '320' ? 'pickup' : vh.usage === '210' ? 'van' : 'sedan'} />
         </div>
         <div className="dc-plate">{c.customer.plate}</div>
         <div className="dc-meta">
-          <span>{vehicleText(c.vehicle)}</span>
-          <span>{usageText(c.vehicle.usage, lang)}</span>
+          <span>{vehicleText(vh)}</span>
+          <span>{usageText(vh.usage, lang)}</span>
         </div>
         <div className="dc-bottom">
           <span className="num">{c.policyNo}</span>

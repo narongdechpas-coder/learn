@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { subjectText } from '../data/travel';
+import { TravelKv, TravelSell } from './Travel';
 import type { Agent, Case, CoverageType, Customer, Package, Proposal, RenewalItem, UsageCode, Vehicle } from '../types';
 import { CATALOGUE_CODES, brandsFor, modelById, modelsOf, siRange, suggestedSumInsured, vehicleText, yearsOf } from '../data/vehicles';
 import { QUOTE_TYPES, cmiPremium } from '../data/packages';
@@ -68,6 +70,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const [tab, setTab] = useState<Tab>('sell');
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [focusCase, setFocusCase] = useState<string | null>(null);
+  const [sellLine, setSellLine] = useState<'motor' | 'travel'>('motor');
   const agent = s.agents.find((a) => a.id === agentId) ?? s.agents[0];
   const mkt = mktById(agent.mktId);
   const myOffers = s.proposals.filter((p) => p.agentId === agent.id);
@@ -80,6 +83,7 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
     const si = suggestedSumInsured(md, r.vehicle.year);
     const [fn, ...ln] = r.customerName.split(' ');
     setPrefill({ vehicle: { ...r.vehicle, sumInsured: si }, customer: { firstName: fn, lastName: ln.join(' '), phone: r.phone }, renewalOf: r.id });
+    setSellLine('motor');
     setTab('sell');
   };
   const todo = myCases.filter((c) => ['AWAITING_DOCS', 'QUOTED'].includes(c.status) || payInfo(c, now)?.state === 'overdue').length;
@@ -119,8 +123,23 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
         ))}
       </div>
 
-      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={() => setTab('sell')} />}
+      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type) => { setSellLine(type === 'TRV' ? 'travel' : 'motor'); setTab('sell'); }} />}
       {tab === 'sell' && (
+        <div className="ag-line">
+          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={setSellLine} options={[
+            { value: 'motor', label: `🚗 ${t('lineMotor')}` },
+            { value: 'travel', label: `✈️ ${t('lineTravel')}` },
+          ]} />
+        </div>
+      )}
+      {tab === 'sell' && sellLine === 'travel' && (
+        <TravelSell
+          agent={agent}
+          onCase={(id) => { setFocusCase(id); setTab('cases'); }}
+          renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={again} />}
+        />
+      )}
+      {tab === 'sell' && sellLine === 'motor' && (
         <Sell
           key={`${agent.id}-${prefill?.renewalOf ?? ''}`}
           agent={agent}
@@ -222,20 +241,7 @@ function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: 
     onCase(id);
   };
 
-  if (made) {
-    return (
-      <div className="ag-made card">
-        <div className="done-mark" aria-hidden="true">✓</div>
-        <h3>{t('agMade', { id: made })}</h3>
-        <p className="muted">{t('agMadeLead')}</p>
-        <ShareBox id={made} />
-        <div className="actions">
-          <button type="button" className="btn ghost" onClick={() => onOpenOffer(made, true)}>{t('agPreview')}</button>
-          <button type="button" className="btn" onClick={() => { setMade(null); setPicked([]); }}>{t('agNewQuote')}</button>
-        </div>
-      </div>
-    );
-  }
+  if (made) return <MadeCard id={made} onOpenOffer={onOpenOffer} again={() => { setMade(null); setPicked([]); }} />;
 
   return (
     <div className="ag-sell">
@@ -417,6 +423,23 @@ function Sell({ agent, prefill, onOpenOffer, onCase }: { agent: Agent; prefill: 
   );
 }
 
+/** A quotation was made: share it, preview it, or start another. */
+function MadeCard({ id, onOpenOffer, again }: { id: string; onOpenOffer: (id: string, asAgent: boolean) => void; again: () => void }) {
+  const { t } = useT();
+  return (
+    <div className="ag-made card">
+      <div className="done-mark" aria-hidden="true">✓</div>
+      <h3>{t('agMade', { id })}</h3>
+      <p className="muted">{t('agMadeLead')}</p>
+      <ShareBox id={id} />
+      <div className="actions">
+        <button type="button" className="btn ghost" onClick={() => onOpenOffer(id, true)}>{t('agPreview')}</button>
+        <button type="button" className="btn" onClick={again}>{t('agNewQuote')}</button>
+      </div>
+    </div>
+  );
+}
+
 function CustomerFields({ cust, setC, full = false }: { cust: Customer; setC: (k: keyof Customer, v: string) => void; full?: boolean }) {
   const { t } = useT();
   const keys: (keyof Customer)[] = full ? ['firstName', 'lastName', 'phone', 'email', 'idCard', 'plate', 'province', 'address'] : ['firstName', 'lastName', 'phone', 'email'];
@@ -486,7 +509,7 @@ function Offers({ offers, onOpenOffer }: { offers: Proposal[]; onOpenOffer: (id:
                   <tr key={p.id}>
                     <td className="num">{p.id}</td>
                     <td>{p.customer.firstName} {p.customer.lastName}</td>
-                    <td className="muted">{vehicleText(p.vehicle)}</td>
+                    <td className="muted">{subjectText(p, lang)}</td>
                     <td className="r num">{p.options.length}{p.discountPct ? <span className="muted"> · −{p.discountPct}%</span> : null}</td>
                     <td className="num">{fmtDate(p.expiresAt, lang)}</td>
                     <td>
@@ -554,7 +577,7 @@ function MyCases({ agent, cases, focus, setFocus }: { agent: Agent; cases: Case[
                   </div>
                   <div className="cr-mid">
                     <b>{x.customer.firstName} {x.customer.lastName}</b>
-                    <span className="muted">{vehicleText(x.vehicle)}</span>
+                    <span className="muted">{subjectText(x, lang)}</span>
                   </div>
                   <div className="cr-bot">
                     <TypeTag type={x.coverage} />
@@ -595,7 +618,7 @@ function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
         </div>
       </header>
       <dl className="ag-kv">
-        <div><dt>{t('agCar')}</dt><dd>{vehicleText(c.vehicle)} · {fmtBaht(c.vehicle.sumInsured, lang)}</dd></div>
+        {c.vehicle ? <div><dt>{t('agCar')}</dt><dd>{vehicleText(c.vehicle)} · {fmtBaht(c.vehicle.sumInsured, lang)}</dd></div> : <div><dt>{t('trTrip')}</dt><dd>{subjectText(c, lang)}</dd></div>}
         <div><dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('agWaitQuote')}{c.discount ? <span className="muted"> ({t('agInclDisc', { v: fmtBaht(c.discount, lang) })})</span> : null}</dd></div>
         {total !== undefined && (
           <div className="ag-int"><dt>{t('agCommission')}</dt><dd className="num">{fmtBaht(Math.round(com.net), lang)} <span className="muted">{commissionReceived(c) ? t('comReceived') : t('comPending')}</span></dd></div>
@@ -633,7 +656,16 @@ function AgentCase({ c, agent, now }: { c: Case; agent: Agent; now: number }) {
         </div>
       )}
 
-      {c.renewalOf ? <p className="callout tone-info">↻ {t('renewNoDocs')}</p> : <Uploads c={c} by={agent.id} />}
+      {c.coverage === 'TRV' ? (
+        <>
+          <TravelKv c={c} />
+          <p className="callout tone-info">✈️ {t('trInstant')}</p>
+        </>
+      ) : c.renewalOf ? (
+        <p className="callout tone-info">↻ {t('renewNoDocs')}</p>
+      ) : (
+        <Uploads c={c} by={agent.id} />
+      )}
     </article>
   );
 }

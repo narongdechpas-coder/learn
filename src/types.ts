@@ -5,7 +5,115 @@ export type BodyType = 'sedan' | 'suv' | 'pickup' | 'ev' | 'van';
 /** Thai motor insurance vehicle code (รหัสรถ). The catalogue sells 110, 210 and 320; the rest are quote-only. */
 export type UsageCode = '110' | '120' | '210' | '220' | '320' | '340';
 
-export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI';
+/** Motor classes, plus TRV for travel insurance (its packages carry the trip and travel cover). */
+export type CoverageType = 'T1' | 'T2P' | 'T3P' | 'T2' | 'T3' | 'CMI' | 'TRV';
+
+/** Lines of business on the customer home page; only motor and travel are on sale so far. */
+export type Line = 'motor' | 'travel' | 'pa' | 'fire';
+
+/** Single trip (1-180 days) or annual multi-trip (any number of trips, up to 90 days each). */
+export type TripType = 'single' | 'annual';
+
+/** A trip being insured: cover runs from start to end (annual: one year from start). */
+export interface Trip {
+  type: TripType;
+  zoneId: string;
+  zoneTh: string;
+  zoneEn: string;
+  /** Main destination, free text (shown on the certificate). */
+  dest: string;
+  /** YYYY-MM-DD. */
+  start: string;
+  end: string;
+  days: number;
+}
+
+/** Benefits of a travel plan, THB (0 = not covered). */
+export interface TravelCover {
+  /** Medical expenses abroad (incl. hospital) per trip; Schengen visas need at least 30,000 EUR. */
+  medical: number;
+  /** Accidental death or permanent disability. */
+  death: number;
+  /** Emergency evacuation and repatriation. */
+  evacuation: number;
+  tripCancel: number;
+  /** Baggage loss or damage, and personal effects. */
+  baggage: number;
+  baggageDelay: number;
+  flightDelay: number;
+  /** Liability to third parties. */
+  liability: number;
+}
+
+/** A travel plan's price and cover for one trip, kept on the package (and so on the case). */
+export interface TravelOffer {
+  productId: string;
+  trip: Trip;
+  cover: TravelCover;
+  schengen: boolean;
+}
+
+/** Travel destination zone, set up by the back office. */
+export interface TravelZone {
+  id: string;
+  nameTh: string;
+  nameEn: string;
+  /** Countries in the zone, shown to the customer. */
+  noteTh: string;
+  noteEn: string;
+  /** Plans for this zone can carry a Schengen visa letter. */
+  schengen: boolean;
+}
+
+/** One trip-length band of a travel rate table: gross premium by zone id. */
+export interface TravelRateRow {
+  dayFrom: number;
+  dayTo: number;
+  prices: Record<string, number>;
+}
+
+/** A travel plan the back office sets up (like a motor product, with zone × days rates). */
+export interface TravelProduct {
+  id: string;
+  ver: number;
+  updatedAt: number;
+  updatedBy: string;
+  nameTh: string;
+  nameEn: string;
+  tagTh: string;
+  tagEn: string;
+  highlightsTh: string[];
+  highlightsEn: string[];
+  badge?: 'recommended' | 'new';
+  channels: { self: boolean; partner: boolean };
+  partners: 'all' | string[];
+  saleUntil?: string;
+  cover: TravelCover;
+  /** Single-trip rates by trip length; annual rates by zone (absent zone = not sold annually). */
+  single: TravelRateRow[];
+  annual: Record<string, number>;
+  /** Oldest traveller accepted; travellers above loadAge pay loadPct more. */
+  maxAge: number;
+  loadAge: number;
+  loadPct: number;
+  commission?: number;
+  partnerCommission: Record<string, number>;
+  termsTh: string;
+  termsEn: string;
+  exclusionsTh: string[];
+  exclusionsEn: string[];
+  archived?: boolean;
+}
+
+export interface TravelProductVersion {
+  id: string;
+  ver: number;
+  at: number;
+  by: string;
+  note: string;
+  changes: string[];
+  snapshot: TravelProduct;
+}
 
 export type Source = 'package' | 'quote' | 'self';
 
@@ -93,6 +201,8 @@ export interface Package {
   comRate?: number;
   /** CMI price for this car when the package was offered (used when CMI is added). */
   cmi?: number;
+  /** Travel packages only (type TRV): the trip and the plan's cover. */
+  travel?: TravelOffer;
 }
 
 /** Extra benefits a product includes in its premium. */
@@ -196,6 +306,10 @@ export interface Customer {
   startDate: string;
   driver1: string;
   driver2: string;
+  /** Travel: traveller's passport number, date of birth (YYYY-MM-DD) and beneficiary. */
+  passport?: string;
+  birthDate?: string;
+  beneficiary?: string;
 }
 
 export interface DocMeta {
@@ -215,7 +329,8 @@ export interface Case {
   id: string;
   source: Source;
   createdAt: number;
-  vehicle: Vehicle;
+  /** Motor cases only; travel cases carry their trip on the package. */
+  vehicle?: Vehicle;
   coverage: CoverageType;
   pkg?: Package;
   addCmi: boolean;
@@ -293,7 +408,8 @@ export interface Proposal {
   agentId: string;
   createdAt: number;
   expiresAt: number;
-  vehicle: Vehicle;
+  /** Motor quotations only; travel quotations carry the trip on each option. */
+  vehicle?: Vehicle;
   customer: Customer;
   options: ProposalOption[];
   /** Discount as % of net premium; each option is capped at its commission rate. */

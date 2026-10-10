@@ -20,7 +20,7 @@ export const AGENTS: Agent[] = [
 export const mktById = (id?: string) => MARKETING.find((m) => m.id === id);
 
 /** Commission as a share of net premium (excl. VAT and stamp duty), by cover type. */
-export const COMMISSION_RATE: Record<CoverageType, number> = { T1: 0.18, T2P: 0.15, T3P: 0.15, T2: 0.15, T3: 0.15, CMI: 0.12 };
+export const COMMISSION_RATE: Record<CoverageType, number> = { T1: 0.18, T2P: 0.15, T3P: 0.15, T2: 0.15, T3: 0.15, CMI: 0.12, TRV: 0.2 };
 
 /** Quotations stay valid this many days; agents remit collected premium within this many days of issue. */
 export const PROPOSAL_DAYS = 15;
@@ -35,9 +35,9 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export const rateOf = (pkg: { type: CoverageType; comRate?: number }) => pkg.comRate ?? COMMISSION_RATE[pkg.type];
 
 /** Price of one quoted option: voluntary premium after discount, plus CMI (never discounted). */
-export function optionPrice(o: ProposalOption, discountPct: number, usage: UsageCode) {
+export function optionPrice(o: ProposalOption, discountPct: number, usage?: UsageCode) {
   const vol = o.pkg.premium;
-  const cmi = o.addCmi && o.pkg.type !== 'CMI' ? (o.pkg.cmi ?? cmiPremium(usage) ?? 0) : 0;
+  const cmi = o.addCmi && o.pkg.type !== 'CMI' ? (o.pkg.cmi ?? (usage && cmiPremium(usage)) ?? 0) : 0;
   const rate = rateOf(o.pkg);
   const pct = Math.min(discountPct / 100, rate);
   const discount = o.pkg.type === 'CMI' ? 0 : Math.round(netOf(vol) * pct);
@@ -50,7 +50,7 @@ export function optionPrice(o: ProposalOption, discountPct: number, usage: Usage
 export function caseCommission(c: Case) {
   if (!c.agentId) return { gross: 0, discount: 0, net: 0 };
   const base = c.pkg ? c.pkg.premium : (c.quotedPremium ?? 0);
-  const cmi = c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? cmiPremium(c.vehicle.usage) ?? 0) : 0;
+  const cmi = c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? (c.vehicle && cmiPremium(c.vehicle.usage)) ?? 0) : 0;
   const gross = r2(netOf(base) * (c.pkg ? rateOf(c.pkg) : COMMISSION_RATE[c.coverage]) + netOf(cmi) * COMMISSION_RATE.CMI);
   const discount = c.discount ?? 0;
   return { gross, discount, net: r2(gross - discount) };

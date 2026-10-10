@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { subjectText } from '../data/travel';
+import { TravelKv } from './Travel';
 import type { Case, CoverageType, DocKey, Status } from '../types';
 import { STAFF, modelOfVehicle, staffById, vehicleText } from '../data/vehicles';
 import { COVERAGE_TYPES, estimateQuote } from '../data/packages';
@@ -72,7 +74,7 @@ export function BackOffice({
       .filter((c) => type === 'all' || c.coverage === type)
       .filter((c) => owner === 'all' || (owner === 'none' ? !c.assignee : c.assignee === owner))
       .filter((c) => channel === 'all' || (channel === 'direct' ? !c.agentId : channel === 'agent' ? !!c.agentId : c.agentId === channel))
-      .filter((c) => !needle || `${c.id} ${c.customer.firstName} ${c.customer.lastName} ${c.customer.plate}`.toLowerCase().includes(needle))
+      .filter((c) => !needle || `${c.id} ${c.customer.firstName} ${c.customer.lastName} ${c.customer.plate} ${c.policyNo ?? ''} ${c.customer.passport ?? ''}`.toLowerCase().includes(needle))
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [s.cases, status, type, owner, q, channel]);
 
@@ -179,7 +181,7 @@ export function BackOffice({
         </select>
         <select id="bo-type" aria-label={t('filterType')} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
-          {COVERAGE_TYPES.map((x) => (
+          {[...COVERAGE_TYPES, 'TRV' as const].map((x) => (
             <option key={x} value={x}>{COVERAGE_LABEL[lang][x]}</option>
           ))}
         </select>
@@ -216,7 +218,7 @@ export function BackOffice({
                       </div>
                       <div className="cr-mid">
                         <b>{c.customer.firstName} {c.customer.lastName}</b>
-                        <span className="muted">{vehicleText(c.vehicle)}</span>
+                        <span className="muted">{subjectText(c, lang)}</span>
                       </div>
                       <div className="cr-bot">
                         <TypeTag type={c.coverage} />
@@ -312,6 +314,8 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
     case 'lead':
       return t('nLead', { contact: String(n.params?.contact ?? '') });
     case 'self':
+      // A partner's travel sale is issued on payment too; say who sold it.
+      if (n.params?.agent) return t('nAgentIssued', { ref, type: COVERAGE_LABEL[lang][(n.params?.type as 'TRV') ?? 'TRV'], agent: agentById(String(n.params.agent))?.[lang] ?? String(n.params.agent) });
       return t('nSelf', { ref, type: COVERAGE_LABEL[lang][(n.params?.type as 'T2P') ?? 'T2P'] });
     case 'confirmed':
       return t('nConfirmed', { ref });
@@ -326,8 +330,7 @@ export function notifText(n: { kind: string; caseId: string; params?: Record<str
 
 function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; now: number; onClose: () => void }) {
   const { t, lang } = useT();
-  const model = modelOfVehicle(c.vehicle);
-  const suggested = estimateQuote(model, c.vehicle.usage, c.desiredSI ?? c.vehicle.sumInsured, c.coverage);
+  const suggested = c.vehicle ? estimateQuote(modelOfVehicle(c.vehicle), c.vehicle.usage, c.desiredSI ?? c.vehicle.sumInsured, c.coverage) : 0;
   const [price, setPrice] = useState<number>(c.quotedPremium ?? suggested);
   const [mode, setMode] = useState<null | 'cancel' | 'reupload'>(null);
   const [reason, setReason] = useState('');
@@ -347,7 +350,7 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             <StatusPill status={c.status} />
             <TypeTag type={c.coverage} />
             {c.addCmi && <span className="chip">{t('plusCmi')}</span>}
-            {c.vehicle.custom && <span className="pill tone-wait">{t('customCarTag')}</span>}
+            {c.vehicle?.custom && <span className="pill tone-wait">{t('customCarTag')}</span>}
             {c.callback && c.callback !== 'none' && <span className="pill tone-info">☎ {t('callbackChip', { slot: t(({ asap: 'cbAsap', morning: 'cbMorning', afternoon: 'cbAfternoon', evening: 'cbEvening' } as const)[c.callback]) })}</span>}
             {c.claims?.length ? <span className="pill tone-bad">{t('claimsLabel')} {c.claims.length}</span> : null}
           </div>
@@ -424,14 +427,15 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
       {c.agentId && <AgentBox c={c} staffId={staffId} now={now} />}
 
       <div className="cd-grid">
+        {c.vehicle ? (
         <section>
           <h4>{t('vehicleInfo')}</h4>
           <dl className="kv">
-            <dt>{t('car')}</dt><dd>{vehicleText(c.vehicle)}</dd>
-            <dt>{t('usageCode')}</dt><dd>{usageText(c.vehicle.usage, lang)}</dd>
+            <dt>{t('car')}</dt><dd>{vehicleText(c.vehicle!)}</dd>
+            <dt>{t('usageCode')}</dt><dd>{usageText(c.vehicle!.usage, lang)}</dd>
             <dt>{t('plate')}</dt><dd>{c.customer.plate} · {c.customer.province}</dd>
             <dt>{t('chassis')}</dt><dd className="num">{c.customer.chassis}</dd>
-            <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle.sumInsured, lang)}{c.vehicle.suggestedSI && <div className="hint">{t('siAdjusted', { pct: `${c.vehicle.sumInsured > c.vehicle.suggestedSI ? '+' : ''}${(((c.vehicle.sumInsured - c.vehicle.suggestedSI) / c.vehicle.suggestedSI) * 100).toFixed(1)}`, v: fmtBaht(c.vehicle.suggestedSI, lang) })}</div>}</dd>
+            <dt>{t('sumInsured')}</dt><dd className="num">{fmtBaht(c.desiredSI ?? c.vehicle!.sumInsured, lang)}{c.vehicle!.suggestedSI && <div className="hint">{t('siAdjusted', { pct: `${c.vehicle!.sumInsured > c.vehicle!.suggestedSI ? '+' : ''}${(((c.vehicle!.sumInsured - c.vehicle!.suggestedSI) / c.vehicle!.suggestedSI) * 100).toFixed(1)}`, v: fmtBaht(c.vehicle!.suggestedSI, lang) })}</div>}</dd>
             {c.pkg?.repair && (<><dt>{t('coverage')}</dt><dd>{t(c.pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage')} · {t('deductible')} {c.pkg.deductible ? fmtBaht(c.pkg.deductible, lang) : t('none')}</dd></>)}
             <dt>{t('premium')}</dt><dd className="num">{total !== undefined ? fmtBaht(total, lang) : t('waitingQuote')}</dd>
             <dt>{t('startDate')}</dt><dd>{c.customer.startDate}</dd>
@@ -440,6 +444,12 @@ function CaseDetail({ c, staffId, now, onClose }: { c: Case; staffId: string; no
             {c.delivery && (<><dt>{t('deliveryLabel')}</dt><dd>{c.delivery.method === 'paper' ? t('paidPaper', { no: c.delivery.trackingNo ?? '' }) : t('paidPdf', { email: c.delivery.email ?? '' })}</dd></>)}
           </dl>
         </section>
+        ) : (
+          <section>
+            <h4>{t('trInfo')}</h4>
+            <TravelKv c={c} />
+          </section>
+        )}
         <section>
           <h4>{t('customerInfo')}</h4>
           <dl className="kv">

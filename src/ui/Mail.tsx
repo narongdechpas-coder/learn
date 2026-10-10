@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { subjectText } from '../data/travel';
 import type { DocKey, Email } from '../types';
 import { vehicleText } from '../data/vehicles';
 import { COVERAGE_LABEL, DOC_LABEL, EMAIL_TEXT, SLA_LABEL, fmtBaht, fmtDate, fmtDateTime, translate, useT } from '../i18n';
@@ -20,12 +21,15 @@ export function Mail({ onOpenCase }: { onOpenCase: (id: string) => void }) {
     if (lead) p.car = vehicleText(lead.vehicle);
     if (typeof e.params.price === 'number') p.price = fmtBaht(e.params.price, lang);
     if (c) {
-      p.car = vehicleText(c.vehicle);
+      p.car = subjectText(c, lang);
       p.type = COVERAGE_LABEL[lang][c.coverage];
       p.source = translate(lang, c.source === 'package' ? 'srcPackage' : c.source === 'self' ? 'srcSelf' : 'srcQuote');
     }
     if (typeof e.params.premium === 'number') p.premium = fmtBaht(e.params.premium, lang);
-    if (offer) p.car = vehicleText(offer.vehicle);
+    if (offer) {
+      p.car = subjectText(offer, lang);
+      p.what = offer.vehicle ? (lang === 'th' ? `ประกันรถ ${p.car}` : `car insurance for ${p.car}`) : p.car;
+    }
     if (typeof e.params.expiry === 'number') p.expiry = fmtDate(e.params.expiry, lang, { day: 'numeric', month: 'short', year: 'numeric' });
     if (e.params.agent) p.agent = s.agents.find((a) => a.id === e.params.agent)?.[lang] ?? String(e.params.agent);
     if (e.params.sla) p.sla = SLA_LABEL[lang][e.params.sla as 'accept'];

@@ -32,6 +32,7 @@ console.log('  fonts embedded and sample data loaded');
 const customer = await ctx.newPage();
 customer.on('pageerror', (e) => errors.push(e.message));
 await customer.goto(file + '#customer');
+await customer.locator('.line-card.line-motor').click();
 await customer.getByRole('radio', { name: /^110/ }).click();
 await customer.getByRole('radio', { name: 'Honda' }).click();
 await customer.locator('#car-model').selectOption('honda-city');
@@ -42,6 +43,21 @@ await customer.locator('.pkg-card').first().getByRole('button', { name: 'เล�
 await customer.getByRole('button', { name: 'ยืนยันและแจ้งงาน' }).click();
 const ref = (await customer.locator('.ref-big').innerText()).trim();
 console.log(`  customer submitted ${ref} offline`);
+
+// Travel works offline too: buy a plan and get the policy straight away.
+const trip = await ctx.newPage();
+trip.on('pageerror', (e) => errors.push(e.message));
+await trip.goto(file + '#customer');
+await trip.locator('.line-card.line-travel').click();
+await trip.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await trip.locator('.tr-plan').first().getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await trip.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await trip.locator('#tf-declare').check();
+await trip.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await trip.locator('.pay-btn').click();
+const trNo = (await trip.locator('.ref-big').innerText()).trim();
+assert.match(trNo, /^TR/, 'travel policy issued offline');
+console.log(`  travel policy ${trNo} issued offline`);
 
 await office.bringToFront();
 await office.locator('.toast', { hasText: ref }).waitFor({ timeout: 5000 });

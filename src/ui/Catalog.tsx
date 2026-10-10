@@ -9,6 +9,7 @@ import { getFile } from '../files';
 import { TypeTag } from './common';
 import { EXTRA_KEY, productName } from './Products';
 import { riderRows } from './riders';
+import { travelCommission, travelOnSale, travelPriceRange } from '../data/travel';
 
 const pick = (p: Product, lang: 'th' | 'en', th: keyof Product, en: keyof Product) => ((lang === 'en' && (p[en] as string)) || (p[th] as string) || '') as string;
 const pickList = (p: Product, lang: 'th' | 'en', th: 'highlightsTh' | 'exclusionsTh', en: 'highlightsEn' | 'exclusionsEn') => (lang === 'en' && p[en].length ? p[en] : p[th]);
@@ -18,6 +19,7 @@ const pickList = (p: Product, lang: 'th' | 'en', th: 'highlightsTh' | 'exclusion
  * their commission). "Check your price" leads into the usual car → package flow.
  */
 export function ProductCatalog({ channel, agentId, onCheck }: { channel: 'self' | 'partner'; agentId?: string; onCheck: (type: CoverageType) => void }) {
+  const travel = useStore().travelProducts.filter((p) => travelOnSale(p, channel, agentId));
   const { t, lang } = useT();
   const s = useStore();
   const [type, setType] = useState<CoverageType | 'all'>('all');
@@ -80,6 +82,35 @@ export function ProductCatalog({ channel, agentId, onCheck }: { channel: 'self' 
             );
           })}
         </div>
+      )}
+      {travel.length > 0 && (
+        <>
+          <h3 className="ct-line-h">✈️ {t('lineTravel')}</h3>
+          <div className="catalog-grid">
+            {travel.map((p) => {
+              const range = travelPriceRange(p);
+              const hl = lang === 'en' && p.highlightsEn.length ? p.highlightsEn : p.highlightsTh;
+              return (
+                <article key={p.id} className="ct-card type-TRV">
+                  <header>
+                    <TypeTag type="TRV" />
+                    {p.badge && <span className={`mini-badge badge-${p.badge}`}>{t(p.badge === 'new' ? 'pdBadgeNew' : 'pdBadgeRec')}</span>}
+                    {channel === 'partner' && <span className="chip ct-com">{t('ctCom', { pct: +(travelCommission(p, agentId) * 100).toFixed(1) })}</span>}
+                  </header>
+                  <h3>{lang === 'en' ? p.nameEn || p.nameTh : p.nameTh}</h3>
+                  <p className="ct-tag">{lang === 'en' ? p.tagEn || p.tagTh : p.tagTh}</p>
+                  {hl.length > 0 && <ul className="ct-hl">{hl.map((h) => <li key={h}>{h}</li>)}</ul>}
+                  <div className="ct-foot">
+                    <div>{range && <div className="ct-price"><small>{t('ctFrom')}</small> <b className="num">{fmtBaht(range[0], lang)}</b></div>}</div>
+                    <div className="ct-actions">
+                      <button type="button" className="btn primary small" onClick={() => onCheck('TRV')}>{t('ctCheck')}</button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
       )}
       {open && <ProductDetail p={open} channel={channel} agentId={agentId} onClose={() => setOpen(null)} onCheck={() => onCheck(open.type)} />}
     </section>

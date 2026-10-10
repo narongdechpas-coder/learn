@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { optionPrice } from '../data/agents';
 import { installmentPlan } from '../data/packages';
 import { vehicleText } from '../data/vehicles';
+import { COVER_KEYS, subjectText, tripRange } from '../data/travel';
+import { COVER_LABEL, TravelCertificate, coverValue } from './Travel';
 import { fmtBaht, fmtDate, fmtDateTime, useT } from '../i18n';
 import { acceptProposal, declineProposal, markProposalSent, payByLink, totalPremium, useStore, viewProposal } from '../store';
 import { StatusPill, TypeTag } from './common';
@@ -25,7 +27,7 @@ export const offerLink = (id: string) => {
 
 /** Ways to send a quotation: copy the link, print to PDF, or LINE (simulated). */
 export function ShareBox({ id }: { id: string }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const s = useStore();
   const pr = s.proposals.find((p) => p.id === id);
   const ag = s.agents.find((a) => a.id === pr?.agentId);
@@ -33,7 +35,7 @@ export function ShareBox({ id }: { id: string }) {
   const [line, setLine] = useState(false);
   if (!pr) return null;
   const link = offerLink(id);
-  const msg = t('lineMsg', { name: pr.customer.firstName, car: vehicleText(pr.vehicle), n: pr.options.length, link, agent: ag?.th ?? '' });
+  const msg = t('lineMsg', { name: pr.customer.firstName, car: subjectText(pr, lang), n: pr.options.length, link, agent: ag?.th ?? '' });
   const sent = (v: 'link' | 'pdf' | 'line') => pr.sentVia.includes(v);
   return (
     <div className="share-box">
@@ -77,6 +79,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
   const [otp, setOtp] = useState<'' | 'sent'>('');
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
+  const [cert, setCert] = useState(false);
 
   useEffect(() => {
     if (pr && !asAgent) viewProposal(pr.id);
@@ -96,6 +99,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
     );
   }
   const now = Date.now();
+  const isTravel = pr.options.every((o) => o.pkg.type === 'TRV');
   const expired = pr.status === 'open' && now > pr.expiresAt;
   const c = pr.caseId ? s.cases.find((x) => x.id === pr.caseId) : undefined;
   const open = pr.status === 'open' && !expired;
@@ -122,7 +126,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             </span>
             <div>
               <b>{t('appName')}</b>
-              <div className="muted">{t('offerTitle')}</div>
+              <div className="muted">{t(isTravel ? 'trOfferTitle' : 'offerTitle')}</div>
             </div>
           </div>
           <div className="offer-ref">
@@ -136,7 +140,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
           <div>
             <div className="eyebrow">{t('offerFor')}</div>
             <b>{t('offerDear', { name: `${pr.customer.firstName} ${pr.customer.lastName}` })}</b>
-            <div className="muted">{vehicleText(pr.vehicle)} · {t('sumInsured')} {fmtBaht(pr.vehicle.sumInsured, lang)}</div>
+            <div className="muted">{pr.vehicle ? `${vehicleText(pr.vehicle)} · ${t('sumInsured')} ${fmtBaht(pr.vehicle.sumInsured, lang)}` : `${subjectText(pr, lang)}${pr.options[0]?.pkg.travel ? ` · ${tripRange(pr.options[0].pkg.travel.trip, lang)}` : ''}`}</div>
           </div>
           <div className="offer-agent">
             <div className="eyebrow">{t('offerAgent')}</div>
@@ -151,7 +155,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
         </div>
 
         <CoverTable pr={pr} picked={pr.status === 'accepted' ? pr.chosen : choice} onPick={open ? setChoice : undefined} />
-        <p className="hint">{t('offerNote')}</p>
+        <p className="hint">{t(isTravel ? 'trOfferNote' : 'offerNote')}</p>
 
         {expired && <p className="callout tone-bad">{t('offerExpired')}</p>}
         {pr.status === 'declined' && <p className="callout">{t('offerDeclined')}</p>}
@@ -185,7 +189,7 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
                   <button type="button" className="link" onClick={() => setCode('428531')}>{t('otpFill')}</button>
                 </div>
                 {err && <p className="error" role="alert">{err}</p>}
-                <button type="button" className="btn primary" onClick={accept}>{t('offerConfirm', { p: fmtBaht(optionPrice(pr.options[choice], pr.discountPct, pr.vehicle.usage).price, lang) })}</button>
+                <button type="button" className="btn primary" onClick={accept}>{t('offerConfirm', { p: fmtBaht(optionPrice(pr.options[choice], pr.discountPct, pr.vehicle?.usage).price, lang) })}</button>
               </div>
             )}
           </div>
@@ -198,7 +202,20 @@ export function OfferPage({ id, asAgent, print, onBack }: { id: string; asAgent:
             {c.collect === 'link' && !c.paidAt && c.status !== 'CANCELLED' && <PayBox caseId={c.id} amount={totalPremium(c) ?? 0} />}
             {c.collect === 'link' && c.paidAt && <p className="ok-note">✓ {t('offerPaid', { d: fmtDateTime(c.paidAt, lang) })}</p>}
             {c.collect === 'agent' && <p className="hint">{t('offerPayAgent', { agent: ag[lang] })}</p>}
-            {c.renewalOf ? <p className="hint">↻ {t('renewNoDocs')}</p> : <Uploads c={c} by={asAgent ? ag.id : 'customer'} />}
+            {c.status === 'ISSUED' && c.policyNo && (
+              <div className="ok-note">
+                ✓ {t('policyIssued', { no: c.policyNo })}{' '}
+                {c.coverage === 'TRV' && <button type="button" className="btn small" onClick={() => setCert((v) => !v)}>{t(cert ? 'trHideCert' : 'trViewCert')}</button>}
+              </div>
+            )}
+            {cert && c.coverage === 'TRV' && <TravelCertificate c={c} />}
+            {c.coverage === 'TRV' ? (
+              <p className="hint">✈️ {t('trInstant')}</p>
+            ) : c.renewalOf ? (
+              <p className="hint">↻ {t('renewNoDocs')}</p>
+            ) : (
+              <Uploads c={c} by={asAgent ? ag.id : 'customer'} />
+            )}
           </div>
         )}
       </article>
@@ -240,13 +257,28 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
   const cmiMed = cmiStd?.medical ?? 80_000;
   const cmiDeath = cmiStd?.pa ?? 500_000;
   const money = (n: number) => (n ? fmtBaht(n, lang) : t('ofNo'));
-  const prices = pr.options.map((o) => optionPrice(o, pr.discountPct, pr.vehicle.usage));
+  const prices = pr.options.map((o) => optionPrice(o, pr.discountPct, pr.vehicle?.usage));
   const seats = pr.options.find((o) => o.pkg.passengers !== undefined)?.pkg.passengers ?? 0;
   type Row = { label: string; cell: (i: number) => string; strong?: boolean; render?: (i: number, v: string) => React.ReactNode };
   const opt = (i: number) => pr.options[i];
   const vol = (i: number, fn: () => string) => (opt(i).pkg.type === 'CMI' ? '—' : fn());
   const hasCmi = (i: number) => opt(i).pkg.type === 'CMI' || opt(i).addCmi;
-  const groups: [string, Row[]][] = [
+  const travel = pr.options.every((o) => o.pkg.type === 'TRV');
+  const priceGroup: [string, Row[]] = [t(travel ? 'trOfGroupPrice' : 'ofGroupPrice'), [
+    { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang), render: (i, v) => (prices[i].discount ? <s>{v}</s> : v) },
+    ...(prices.some((p) => p.discount > 0)
+      ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? t('offerSave', { v: fmtBaht(prices[i].discount, lang) }) : '—'), render: (i: number, v: string) => (prices[i].discount ? <span className="pill tone-good">{v}</span> : v) }]
+      : []),
+    { label: t('ofPay'), cell: (i) => fmtBaht(prices[i].price, lang), strong: true },
+    { label: t('ofInst'), cell: (i) => { const pl = installmentPlan(prices[i].price); return pl ? `${fmtBaht(pl.monthly, lang)} × ${pl.months}` : '—'; } },
+  ]];
+  const groups: [string, Row[]][] = travel ? [
+    [t('ofGroupTravel'), [
+      ...COVER_KEYS.map((k) => ({ label: t(COVER_LABEL[k]), cell: (i: number) => { const v = coverValue(opt(i).pkg.travel?.cover[k] ?? 0, t, lang); return v === t('trNotCovered') ? t('ofNo') : v; } })),
+      { label: t('trSchengen'), cell: (i) => (opt(i).pkg.travel?.schengen ? t('trYes') : t('ofNo')) },
+    ]],
+    priceGroup,
+  ] : [
     [t('ofGroupCar'), [
       { label: t('repairType'), cell: (i) => vol(i, () => (opt(i).pkg.repair ? t(opt(i).pkg.repair === 'dealer' ? 'repairDealer' : 'repairGarage') : '—')) },
       { label: t('ownDamage'), cell: (i) => vol(i, () => money(opt(i).pkg.ownDamage)) },
@@ -277,14 +309,7 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
       { label: t('ofCmiMedical'), cell: (i) => (hasCmi(i) ? fmtBaht(cmiMed, lang) : '—') },
       { label: t('ofCmiDeath'), cell: (i) => (hasCmi(i) ? fmtBaht(cmiDeath, lang) : '—') },
     ]],
-    [t('ofGroupPrice'), [
-      { label: t('ofFull'), cell: (i) => fmtBaht(prices[i].full, lang), render: (i, v) => (prices[i].discount ? <s>{v}</s> : v) },
-      ...(prices.some((p) => p.discount > 0)
-        ? [{ label: t('ofDiscount'), cell: (i: number) => (prices[i].discount ? t('offerSave', { v: fmtBaht(prices[i].discount, lang) }) : '—'), render: (i: number, v: string) => (prices[i].discount ? <span className="pill tone-good">{v}</span> : v) }]
-        : []),
-      { label: t('ofPay'), cell: (i) => fmtBaht(prices[i].price, lang), strong: true },
-      { label: t('ofInst'), cell: (i) => { const pl = installmentPlan(prices[i].price); return pl ? `${fmtBaht(pl.monthly, lang)} × ${pl.months}` : '—'; } },
-    ]],
+    priceGroup,
   ];
   return (
     <section className="offer-cover">
@@ -300,7 +325,7 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
               {pr.options.map((o, i) => (
                 <th key={i} scope="col" className={`oc-opt${picked === i ? ' pick' : ''}`} aria-selected={picked === i}>
                   <div className="oc-no">{t('ofOption', { n: i + 1 })}</div>
-                  <TypeTag type={o.pkg.type} />
+                  {o.pkg.type !== 'TRV' && <TypeTag type={o.pkg.type} />}
                   {o.pkg.nameTh && <div className="oc-name">{productName(o.pkg, lang)}</div>}
                   {onPick ? (
                     <label className={`oc-pick no-print${picked === i ? ' on' : ''}`}>
