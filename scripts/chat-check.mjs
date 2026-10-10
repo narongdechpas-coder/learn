@@ -36,8 +36,12 @@ await handler(post({ ...ok, lang: 'en' }, '2.2.2.2'));
 assert.equal(sent.body.model, 'claude-sonnet-5-5', 'CHAT_MODEL overrides the model');
 assert.match(sent.body.system[0].text, /Reply in English/);
 
-globalThis.fetch = async () => new Response('{}', { status: 529 });
-assert.equal((await handler(post(ok, '3.3.3.3'))).status, 502, 'API error passed on as 502');
+globalThis.fetch = async () => new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), { status: 401 });
+const bad = await handler(post(ok, '3.3.3.3'));
+assert.equal(bad.status, 502, 'API error passed on as 502');
+assert.deepEqual(await bad.json(), { error: 'upstream', status: 401, type: 'authentication_error', detail: 'invalid x-api-key' }, 'with the reason');
+globalThis.fetch = async () => { throw new Error('offline'); };
+assert.equal((await (await handler(post(ok, '4.4.4.4'))).json()).detail, 'network');
 
 globalThis.fetch = async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }), { status: 200 });
 let last;
