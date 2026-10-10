@@ -71,7 +71,7 @@ export function ChatBot() {
         body: JSON.stringify({ messages: convo.map(({ role, content }) => ({ role, content })), knowledge: buildKnowledge(), lang }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && typeof data.text === 'string') setMsgs((m) => [...m, { role: 'assistant', content: data.text }]);
+      if (res.ok && typeof data.text === 'string') setMsgs((m) => [...m, { role: 'assistant', content: data.truncated ? `${data.text}…` : data.text }, ...(data.truncated ? [{ role: 'assistant' as const, content: t('cbTruncated'), local: true }] : [])]);
       else if (data.error === 'upstream' && (data.status || data.detail)) {
         // Say why the API refused (wrong key, no credit, model not available) so it can be fixed.
         const why = data.status === 401 ? t('cbErrKey') : /credit/i.test(data.detail ?? '') ? t('cbErrCredit') : data.status === 404 ? t('cbErrModel') : '';

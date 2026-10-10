@@ -27,6 +27,7 @@ assert.equal((await res.json()).text, 'PA 300,000 ขั้น 1 ราคา 1,
 assert.equal(sent.url, 'https://api.anthropic.com/v1/messages');
 assert.equal(sent.init.headers['x-api-key'], 'test-key');
 assert.equal(sent.body.model, 'claude-haiku-5-5', 'default model');
+assert.equal(sent.body.max_tokens, 2000, 'room for a whole Thai answer');
 assert.deepEqual(sent.body.messages, ok.messages);
 assert.match(sent.body.system[0].text, /น้องแจ็คกี้/);
 assert.match(sent.body.system[1].text, /<knowledge>[\s\S]*PA 300,000/);
@@ -43,6 +44,9 @@ assert.deepEqual(await bad.json(), { error: 'upstream', status: 401, type: 'auth
 globalThis.fetch = async () => { throw new Error('offline'); };
 assert.equal((await (await handler(post(ok, '4.4.4.4'))).json()).detail, 'network');
 
+globalThis.fetch = async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }), { status: 200 });
+globalThis.fetch = async () => new Response(JSON.stringify({ stop_reason: 'max_tokens', content: [{ type: 'text', text: 'ยาว' }] }), { status: 200 });
+assert.equal((await (await handler(post(ok, '5.5.5.5'))).json()).truncated, true, 'cut-off answers are flagged');
 globalThis.fetch = async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }), { status: 200 });
 let last;
 for (let i = 0; i < 31; i++) last = await handler(post(ok, '9.9.9.9'));
