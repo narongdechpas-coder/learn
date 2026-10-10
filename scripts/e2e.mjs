@@ -262,6 +262,8 @@ await office.locator('.inline-confirm').getByText('สำเนาบัตร�
 await office.locator('.inline-confirm').getByRole('button', { name: /ส่ง/ }).click();
 await office.locator('.case-detail .pill', { hasText: 'รอเอกสาร' }).waitFor();
 await customer.bringToFront();
+// Act only once the customer's tab shows the request (tabs sync asynchronously, like a person would see it).
+await customer.waitForFunction(() => !document.querySelectorAll('.uploads .doc-tile')[5]?.classList.contains('has'));
 await customer.locator('.uploads .doc-tile').nth(5).locator('input[type=file]').setInputFiles(jpg('id-again.jpg'));
 await customer.getByRole('button', { name: 'ยืนยันการส่งข้อมูล' }).click();
 await customer.getByRole('dialog', { name: 'ยืนยันการส่งข้อมูล' }).getByRole('button', { name: 'ตกลง' }).click();
@@ -632,6 +634,7 @@ await office.getByRole('button', { name: 'รับเรื่อง', exact: t
 await office.getByRole('button', { name: 'อนุมัติและออกกรมธรรม์', exact: true }).click();
 await office.locator('.case-detail .pill', { hasText: 'ออกกรมธรรม์' }).waitFor();
 await agent.bringToFront();
+await agent.locator('dt', { hasText: 'เลขกรมธรรม์' }).waitFor();
 await agent.getByRole('button', { name: 'แจ้งว่านำส่งเบี้ยแล้ว' }).click();
 await office.bringToFront();
 await office.locator('.toast', { hasText: /แจ้งนำส่งเบี้ยงาน/ }).first().waitFor({ timeout: 5000 });

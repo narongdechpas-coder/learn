@@ -1837,3 +1837,14 @@ table.data.pd-partner-com th { text-transform: none; letter-spacing: 0; }
   .vr-page:last-child { break-after: auto; }
   .vr-kpi, .vr-topics, .vr-last, .vr-table tr { break-inside: avoid; }
 }
+@media print {
+  /* Paper is always light: pin the light palette even when the screen is in dark mode. */
+  .vr-page { --surface: #ffffff; --ink: #17251f; --ink-2: #485953; --muted: #5f6f69; --line: #d3ddd8; --accent: #0d7a59; --accent-ink: #ffffff; --good: #0a7d36; --good-bg: #dff3e5; --warn: #8a5a00; --warn-bg: #fdf0cf; --bad: #b42323; --bad-bg: #fbe1df; }
+}
+/* Keeps the visually hidden header label inside the scrolling table frame on phones. */
+.vs-wrap { position: relative; }
+@media print {
+  /* Paper margins use the page canvas, which follows color-scheme: keep it light when printing. */
+  :root, :root[data-theme='dark'] { color-scheme: light !important; }
+  body.vr-open .main, body.vr-open .abc-full .abc-shell, body.vr-open .abc-main { background: #fff !important; }
+}

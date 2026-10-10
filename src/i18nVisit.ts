@@ -83,6 +83,7 @@ export const visitTh = {
   vfSave: 'บันทึก',
   vfCancel: 'ยกเลิก',
   vfNeedOutcome: 'กรุณากรอกผลการคุย',
+  vfNextBefore: 'วันนัดต้องไม่ก่อนวันที่เยี่ยม',
   vfSaved: 'บันทึกการเยี่ยม {name} แล้ว',
   // VP
   vpVisitCol: 'การเยี่ยม',
@@ -172,6 +173,7 @@ export const visitEn: typeof visitTh = {
   vfSave: 'Save',
   vfCancel: 'Cancel',
   vfNeedOutcome: 'Please enter the outcome',
+  vfNextBefore: 'The appointment cannot be before the visit',
   vfSaved: 'Visit to {name} recorded',
   vpVisitCol: 'Visits',
   vpVisits: 'Latest partner visits',

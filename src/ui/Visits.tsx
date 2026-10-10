@@ -21,11 +21,10 @@ const fromDateInput = (v: string) => {
 
 /** Latest visit and the next appointment for a partner. */
 export function visitInfo(visits: Visit[], agentId: string) {
-  const mine = visits.filter((v) => v.agentId === agentId);
+  const mine = visits.filter((v) => v.agentId === agentId).sort((x, y) => y.at - x.at);
   const last = mine[0];
-  const next = mine.find((v) => v.nextAt !== undefined)?.nextAt;
-  // A next appointment only counts until a later visit has been recorded.
-  return { last, next: next !== undefined && (!last || next > last.at) ? next : undefined, count: mine.length };
+  // The appointment made at the latest visit; a later visit without one means none is booked.
+  return { last, next: last?.nextAt, count: mine.length };
 }
 
 export function NextVisit({ at, now }: { at?: number; now: number }) {
@@ -46,7 +45,7 @@ export function VisitTab({ agents, mktId }: { agents: Agent[]; mktId: string }) 
   const { t, lang } = useT();
   const s = useStore();
   const now = useNow(60000);
-  const [report, setReport] = useState<Agent | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
   const [record, setRecord] = useState<{ a: Agent; topics: string } | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [topics, setTopics] = useState<Record<string, string>>({});
@@ -54,6 +53,8 @@ export function VisitTab({ agents, mktId }: { agents: Agent[]; mktId: string }) 
   const thisMonth = monthKey(now);
   const ids = new Set(agents.map((a) => a.id));
   const history = s.visits.filter((v) => ids.has(v.agentId));
+  // Look the partner up on every render so a target changed elsewhere shows straight away.
+  const report = reportId ? s.agents.find((a) => a.id === reportId) ?? null : null;
 
   if (report)
     return (
@@ -63,10 +64,10 @@ export function VisitTab({ agents, mktId }: { agents: Agent[]; mktId: string }) 
           mktId={mktId}
           topics={topics[report.id] ?? ''}
           setTopics={(v) => setTopics((x) => ({ ...x, [report.id]: v }))}
-          onBack={() => setReport(null)}
+          onBack={() => setReportId(null)}
           onRecord={() => setRecord({ a: report, topics: topics[report.id] ?? '' })}
         />
-        {record && <VisitForm a={record.a} mktId={mktId} topics={record.topics} onClose={() => setRecord(null)} onSaved={(name) => { setRecord(null); setReport(null); setFlash(t('vfSaved', { name })); }} />}
+        {record && <VisitForm a={record.a} mktId={mktId} topics={record.topics} onClose={() => setRecord(null)} onSaved={(name) => { setRecord(null); setReportId(null); setFlash(t('vfSaved', { name })); }} />}
       </>
     );
 
@@ -76,7 +77,7 @@ export function VisitTab({ agents, mktId }: { agents: Agent[]; mktId: string }) 
       <section className="card">
         <h3>{t('mktTabVisit')}</h3>
         <p className="hint">{t('vsLead')}</p>
-        <div className="table-wrap">
+        <div className="table-wrap vs-wrap">
           <table className="data vs-table">
             <thead>
               <tr>
@@ -108,10 +109,10 @@ export function VisitTab({ agents, mktId }: { agents: Agent[]; mktId: string }) 
                       )}
                     </td>
                     <td><NextVisit at={vi.next} now={now} /></td>
-                    <td className={`r num${ach(r) < 0.8 ? ' bad-text' : ''}`}>{fmtNum(ach(r) * 100, lang, 0)}%</td>
+                    <td className={`r num${r.target && ach(r) < 0.8 ? ' bad-text' : ''}`}>{r.target ? `${fmtNum(ach(r) * 100, lang, 0)}%` : '—'}</td>
                     <td>
                       <div className="vs-actions">
-                        <button type="button" className="btn small primary" onClick={() => setReport(a)}>📄 {t('vsOpenReport')}</button>
+                        <button type="button" className="btn small primary" onClick={() => setReportId(a.id)}>📄 {t('vsOpenReport')}</button>
                         <button type="button" className="btn small" onClick={() => setRecord({ a, topics: topics[a.id] ?? '' })}>{t('vsRecord')}</button>
                       </div>
                     </td>
@@ -170,7 +171,7 @@ function VisitForm({ a, mktId, topics, onClose, onSaved }: { a: Agent; mktId: st
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   const save = () => {
-    if (!outcome.trim()) return setErr(true);
+    if (!outcome.trim() || !date || (next && next < date)) return setErr(true);
     addVisit({ agentId: a.id, mktId: mktId === 'all' ? a.mktId : mktId, at: fromDateInput(date), topics: lines(tp), outcome: outcome.trim(), nextAt: next ? fromDateInput(next) - 2 * 3600_000 : undefined });
     onSaved(a[lang]);
   };
@@ -193,8 +194,8 @@ function VisitForm({ a, mktId, topics, onClose, onSaved }: { a: Agent; mktId: st
           </div>
           <label htmlFor="vf-next">{t('vfNext')}</label>
           <div>
-            <input id="vf-next" type="date" value={next} min={date} onChange={(e) => setNext(e.target.value)} />
-            <div className="hint">{t('vfNextHint')}</div>
+            <input id="vf-next" type="date" value={next} min={date} aria-invalid={err && !!next && next < date} onChange={(e) => setNext(e.target.value)} />
+            {err && next && next < date ? <div className="vs-err" role="alert">{t('vfNextBefore')}</div> : <div className="hint">{t('vfNextHint')}</div>}
           </div>
         </div>
         <div className="vs-form-foot">
@@ -323,8 +324,8 @@ function VisitReport({ a, mktId, topics, setTopics, onBack, onRecord }: { a: Age
             <div className="eyebrow">{t('vrKpiGwp')}</div>
             <div className="vr-kpi-v num">{fmtBaht(Math.round(month.gwp), lang)}</div>
             <div className="vr-meter" aria-hidden="true"><span className={ach(month) >= 1 ? 'good' : ''} style={{ width: `${Math.min(100, ach(month) * 100)}%` }} /></div>
-            <div className="hint">{t('vrKpiGwpFoot', { pct: fmtNum(ach(month) * 100, lang, 0) })}</div>
-            <div className="hint">{gap ? t('vrKpiGap', { v: fmtBaht(Math.round(gap), lang) }) : t('vrKpiHit')}</div>
+            <div className="hint">{month.target ? t('vrKpiGwpFoot', { pct: fmtNum(ach(month) * 100, lang, 0) }) : '—'}</div>
+            {a.target > 0 && <div className="hint">{gap ? t('vrKpiGap', { v: fmtBaht(Math.round(gap), lang) }) : t('vrKpiHit')}</div>}
           </div>
           <div className="vr-kpi">
             <div className="eyebrow">{t('vrKpiPolicies')}</div>
@@ -360,7 +361,7 @@ function VisitReport({ a, mktId, topics, setTopics, onBack, onRecord }: { a: Age
             <tbody>
               <tr><th>{t('vrTarget')}</th>{cols.map((c) => <td key={c.key} className="r num">{fmtBaht(c.r.target, lang)}</td>)}</tr>
               <tr><th>{t('vrActual')}</th>{cols.map((c) => <td key={c.key} className="r num"><b>{fmtBaht(Math.round(c.r.gwp), lang)}</b></td>)}</tr>
-              <tr><th>{t('vrAch')}</th>{cols.map((c) => <td key={c.key} className={`r num${ach(c.r) < 0.8 ? ' bad-text' : ''}`}><b>{pct(ach(c.r))}</b></td>)}</tr>
+              <tr><th>{t('vrAch')}</th>{cols.map((c) => <td key={c.key} className={`r num${c.r.target && ach(c.r) < 0.8 ? ' bad-text' : ''}`}><b>{c.r.target ? pct(ach(c.r)) : '—'}</b></td>)}</tr>
               <tr><th>{t('vrPolicies')}</th>{cols.map((c) => <td key={c.key} className="r num">{fmtNum(c.r.policies, lang)}</td>)}</tr>
               <tr><th>{t('vrRenew')}</th>{cols.map((c) => <td key={c.key} className="r num">{c.r.renewDue ? `${pct(renewRate(c.r))} (${c.r.renewed}/${c.r.renewDue})` : '—'}</td>)}</tr>
               <tr><th>{t('vrRenewGwp')}</th>{cols.map((c) => <td key={c.key} className="r num">{fmtBaht(Math.round(c.r.renewGwp), lang)}</td>)}</tr>
