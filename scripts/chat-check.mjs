@@ -8,7 +8,7 @@ const ok = { messages: [{ role: 'user', content: 'PA ราคาเท่าไ
 
 delete process.env.ANTHROPIC_API_KEY;
 assert.equal((await handler(post(ok))).status, 503, 'no key: not configured');
-process.env.ANTHROPIC_API_KEY = 'test-key';
+process.env.ANTHROPIC_API_KEY = ' "test-key"\n';
 assert.equal((await handler(new Request('http://x/api/chat'))).status, 405, 'GET refused');
 assert.equal((await handler(post('{bad'))).status, 400, 'bad JSON');
 assert.equal((await handler(post({ ...ok, messages: [{ role: 'assistant', content: 'hi' }] }))).status, 400, 'must start with the user');

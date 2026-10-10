@@ -63,7 +63,8 @@ export function parse(body) {
 
 export default async (req, context) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
-  const key = process.env.ANTHROPIC_API_KEY;
+  // A key pasted with a stray space, line break or quotes is still the key.
+  const key = (process.env.ANTHROPIC_API_KEY ?? '').trim().replace(/^["']|["']$/g, '').trim();
   if (!key) return json({ error: 'not_configured' }, 503);
   const ip = context?.ip ?? req.headers.get('x-nf-client-connection-ip') ?? 'unknown';
   if (tooMany(ip)) return json({ error: 'rate_limited' }, 429);
