@@ -22,6 +22,7 @@ import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS
 import { packagesFor } from '../data/products';
 import { subjectText, tripRange } from '../data/travel';
 import { ProductHome, TravelBuy, TravelCertificate } from './Travel';
+import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { EXTRA_KEY, productName } from './Products';
 import { riderRows } from './riders';
 import { COVERAGE_LABEL, DOC_LABEL, STAGE_LABEL, USAGE_HINT, USAGE_LABEL, fmtBaht, fmtDate, fmtDateTime, fmtSize, usageText, useT, type TKey } from '../i18n';
@@ -324,9 +325,9 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
       <div className="line-back">
         <button type="button" className="link" onClick={onHome}>← {t('homeBack')}</button>
       </div>
+      {step === 'car' && <Hero />}
       <Steps step={step} self={self} />
 
-      {step === 'car' && <Hero />}
       {step === 'car' && (
         <section className="panel wide car-panel">
           <h2>{t('carTitle')}</h2>
@@ -983,23 +984,14 @@ function Hero() {
   const { t } = useT();
   const items: TKey[] = ['trustGarages', 'trustClaim', 'trustRating', 'trustLicense'];
   return (
-    <section className="hero">
-      <div className="hero-text">
-        <h1>{t('heroTitle')}</h1>
-        <p>{t('heroLead')}</p>
-      </div>
-      <div className="hero-illus" aria-hidden="true">
-        <span className="hero-sun" />
-        <CarArt kind="sedan" className="hero-car" />
-        <span className="hero-road" />
-      </div>
+    <HeroBanner img={HERO_IMG.motor} title={t('heroTitle')} lead={t('heroLead')} className="hero-motor">
       <ul className="trust">
         {items.map((k) => (
           <li key={k}><span className="trust-dot" aria-hidden="true">✓</span>{t(k)}</li>
         ))}
       </ul>
       <p className="trust-note">{t('trustNote')}</p>
-    </section>
+    </HeroBanner>
   );
 }
 

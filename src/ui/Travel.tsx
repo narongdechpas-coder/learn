@@ -7,6 +7,7 @@ import { optionPrice, rateOf } from '../data/agents';
 import { dayKey } from '../lib/time';
 import { Field, Segmented } from './common';
 import { productName } from './Products';
+import { HERO_IMG, HeroBanner } from './HeroBanner';
 
 type T = ReturnType<typeof useT>['t'];
 
@@ -34,13 +35,14 @@ const LINES: { line: Line; icon: string; title: TKey; desc: TKey; live: boolean 
 export function ProductHome({ onPick }: { onPick: (l: Line) => void }) {
   const { t } = useT();
   return (
+    <>
+    <HeroBanner img={HERO_IMG.home} title={t('homeTitle')} lead={t('homeLead')} className="hero-home" />
     <section className="panel wide line-home">
-      <h2>{t('homeTitle')}</h2>
-      <p className="lead">{t('homeLead')}</p>
       <div className="line-grid">
         {LINES.map((x) =>
           x.live ? (
             <button key={x.line} type="button" className={`line-card line-${x.line}`} onClick={() => onPick(x.line)}>
+              <img className="line-thumb" src={HERO_IMG[x.line]} alt="" loading="lazy" />
               <span className="line-icon" aria-hidden="true">{x.icon}</span>
               <b>{t(x.title)}</b>
               <span className="line-desc">{t(x.desc)}</span>
@@ -48,6 +50,7 @@ export function ProductHome({ onPick }: { onPick: (l: Line) => void }) {
             </button>
           ) : (
             <div key={x.line} className={`line-card line-${x.line} soon`} aria-disabled="true">
+              <img className="line-thumb" src={HERO_IMG[x.line]} alt="" loading="lazy" />
               <span className="line-icon" aria-hidden="true">{x.icon}</span>
               <b>{t(x.title)}</b>
               <span className="line-desc">{t(x.desc)}</span>
@@ -57,6 +60,7 @@ export function ProductHome({ onPick }: { onPick: (l: Line) => void }) {
         )}
       </div>
     </section>
+    </>
   );
 }
 
@@ -440,12 +444,12 @@ export function TravelBuy({ onHome, renderCheckout }: { onHome: () => void; rend
       <div className="line-back">
         <button type="button" className="link" onClick={onHome}>← {t('homeBack')}</button>
       </div>
+      {step === 'trip' && <HeroBanner img={HERO_IMG.travel} title={t('trTitle')} lead={t('trLead')} className="hero-travel" />}
       <TravelSteps step={step} />
 
       {step === 'trip' && (
         <section className="panel wide tr-panel">
-          <h2>✈️ {t('trTitle')}</h2>
-          <p className="lead">{t('trLead')}</p>
+          <h2>{t('trInfo')}</h2>
           <TripFields f={f} set={set} errors={errors} />
           <div className="tr-next">
             {chk.trip && pkgs.length > 0 && <span className="teaser-price num">{t('trFrom', { price: fmtBaht(Math.min(...pkgs.map((p) => p.premium)), lang) })}</span>}

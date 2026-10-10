@@ -1906,3 +1906,39 @@ button.line-card:focus-visible { outline: 3px solid var(--accent); outline-offse
   .tr-next .btn { flex: 1; }
 }
 .ct-line-h { margin: 22px 0 10px; font-size: 1.05rem; }
+
+/* ---------- Hero banners (21:9 art, headline on the clear left side) ---------- */
+.hero-banner { position: relative; overflow: hidden; border-radius: var(--r); margin-bottom: 16px; aspect-ratio: 21 / 8; min-height: 260px; max-height: 440px; background: #eef6f2; box-shadow: var(--shadow); isolation: isolate; }
+.hb-media { position: absolute; inset: 0; z-index: -1; }
+.hb-media img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; display: block; }
+/* The art is always light, so the copy keeps dark ink in both themes. */
+.hb-copy { position: absolute; left: 0; top: 0; bottom: 0; width: min(48%, 560px); display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 24px 32px; color: #17251f; }
+.hb-copy h1 { margin: 0; font-family: var(--f-display); font-weight: 500; font-size: clamp(1.45rem, 2.8vw, 2.2rem); line-height: 1.22; color: #12302a; }
+.hb-copy > p { margin: 0; color: #3c4f48; max-width: 44ch; font-size: 1rem; }
+.hb-copy .trust { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; color: #2f4640; }
+.hb-copy .trust li { font-size: 0.86rem; }
+.hb-copy .trust-note { margin: 0; color: #5f6f69; font-size: 0.72rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .hero-banner { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); } }
+@media (max-width: 760px) {
+  .hero-banner { aspect-ratio: auto; min-height: 0; max-height: none; display: grid; background: var(--surface); }
+  .hb-media { position: static; z-index: auto; aspect-ratio: 16 / 9; }
+  .hb-media img { object-position: 82% 50%; }
+  .hb-copy { position: static; width: auto; padding: 16px 18px 18px; color: var(--ink); }
+  .hb-copy h1 { color: var(--ink); font-size: 1.35rem; }
+  .hb-copy > p, .hb-copy .trust { color: var(--ink-2); }
+  .hb-copy .trust-note { color: var(--muted); }
+}
+
+/* Home cards carry a crop of each line's art. */
+.line-card { padding-top: 0; }
+.line-thumb { display: block; width: calc(100% + 36px); margin: 0 -18px 4px; height: 118px; object-fit: cover; object-position: 78% 50%; border-bottom: 1px solid var(--line); }
+.line-card .line-icon { display: none; }
+.line-home { padding-top: 18px; }
+/* Cards sit directly under the hero; the "Coming soon" band crosses the picture, not the name. */
+.line-home { background: none; box-shadow: none; padding: 0; border: 0; }
+.line-home .line-grid { margin-top: 0; }
+.line-card.soon > :not(.soon-mark) { opacity: 1; filter: none; }
+.line-card.soon .line-thumb { filter: grayscale(0.65) opacity(0.7); }
+.line-card.soon b, .line-card.soon .line-desc { opacity: 0.6; }
+.line-card.soon .soon-mark { top: 59px; inset-inline: -20%; }
+.hero-banner { width: 100%; box-sizing: border-box; }
