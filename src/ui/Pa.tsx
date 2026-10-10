@@ -72,7 +72,7 @@ export function PaCoverTable({ pkgs, chosen, onChoose }: { pkgs: Package[]; chos
 export function referralReasons(c: { pkg?: Package }, t: T): string[] {
   const a = c.pkg?.accident;
   if (!a?.referral) return [];
-  return [...(a.occClass === 3 ? [t('paWhyClass3')] : []), ...a.health.flatMap((yes, i) => (yes ? [t('paWhyHealth', { q: t(HEALTH_KEYS[i]) })] : []))];
+  return [...(a.occClass === 3 ? [t('paWhyClass3')] : []), ...(occupationById(a.occupation)?.other ? [t('paWhyOther', { job: a.occupationText ?? '' })] : []), ...a.health.flatMap((yes, i) => (yes ? [t('paWhyHealth', { q: t(HEALTH_KEYS[i]) })] : []))];
 }
 
 /** Insured person, occupation and cover of a PA case (back office, partner, customer). */
@@ -95,7 +95,7 @@ export function PaKv({ c }: { c: Case }) {
         <dt>{t('trPlan')}</dt>
         <dd>{paName(c.pkg!, lang)}{c.pkg?.ver ? <span className="muted"> · v{c.pkg.ver}</span> : null}</dd>
         <dt>{t('paOccupation')}</dt>
-        <dd>{occName(a.occupation, lang)} <span className="muted">· {t(CLASS_KEY[a.occClass])}</span></dd>
+        <dd>{occName(a.occupation, lang, a.occupationText)} <span className="muted">· {t(CLASS_KEY[a.occClass])}</span></dd>
         <dt>{t('paMotorcycle')}</dt>
         <dd>{a.motorcycle ? `✓ ${t('paMotorcycleOn')}` : t('paMotorcycleOff')}</dd>
         <dt>{t('trPeriod')}</dt>
@@ -135,7 +135,7 @@ export function PaCertificate({ c }: { c: Case }) {
         <div><dt>{t('insured')}</dt><dd>{c.customer.firstName} {c.customer.lastName}</dd></div>
         <div><dt>{t('idCard')}</dt><dd className="num">{c.customer.idCard}</dd></div>
         <div><dt>{t('paBirth')}</dt><dd className="num">{c.customer.birthDate ?? '—'}</dd></div>
-        <div><dt>{t('paOccupation')}</dt><dd>{occName(a.occupation, lang)} ({t(CLASS_KEY[a.occClass])})</dd></div>
+        <div><dt>{t('paOccupation')}</dt><dd>{occName(a.occupation, lang, a.occupationText)} ({t(CLASS_KEY[a.occClass])})</dd></div>
         <div><dt>{t('trBeneficiary')}</dt><dd>{c.customer.beneficiary || '—'}</dd></div>
         <div><dt>{t('trPlan')}</dt><dd>{paName(c.pkg!, lang)}</dd></div>
         <div><dt>{t('trPeriod')}</dt><dd>{periodText(a.start, a.end, lang)}</dd></div>
@@ -183,24 +183,26 @@ export interface PaForm {
   birth: string;
   start: string;
   occupation: string;
+  /** Description when the occupation is "other". */
+  occOther: string;
   motorcycle: boolean;
   health: (boolean | null)[];
 }
 
-const addDays = (d: string, n: number) => dayKey(new Date(`${d}T12:00:00+07:00`).getTime() + n * 86_400_000);
-export const defaultPaForm = (): PaForm => ({ birth: '1990-05-15', start: addDays(dayKey(Date.now()), 1), occupation: 'office', motorcycle: false, health: Array(HEALTH_QUESTIONS).fill(null) });
+export const defaultPaForm = (): PaForm => ({ birth: '1990-05-15', start: dayKey(Date.now()), occupation: 'office', occOther: '', motorcycle: false, health: Array(HEALTH_QUESTIONS).fill(null) });
 
 /** Validate the applicant; the result is what the plans are priced on. */
 export function checkPa(f: PaForm, t: T, renewal = false) {
   const errors: Partial<Record<'birth' | 'start' | 'occupation' | 'health', string>> = {};
-  if (!f.start || f.start < dayKey(Date.now())) errors.start = t('trErrStart');
+  if (!f.start || f.start < dayKey(Date.now())) errors.start = t('paErrStart');
   const age = f.birth && f.start ? ageOn(f.birth, f.start) : NaN;
   if (!Number.isFinite(age) || age < 0) errors.birth = t('trErrBirth');
   const occ = occupationById(f.occupation);
   if (!occ) errors.occupation = t('errRequired');
   else if (occ.cls === 4) errors.occupation = t('paErrOccupation');
+  else if (occ.other && !f.occOther.trim()) errors.occupation = t('paErrOther');
   if (!renewal && f.health.some((x) => x === null)) errors.health = t('paErrHealth');
-  const applicant: PaApplicant = { birth: f.birth, start: f.start, occupation: f.occupation, motorcycle: f.motorcycle, health: f.health.map(Boolean), renewal };
+  const applicant: PaApplicant = { birth: f.birth, start: f.start, occupation: f.occupation, occupationText: f.occOther, motorcycle: f.motorcycle, health: f.health.map(Boolean), renewal };
   return { applicant, age, occ, errors };
 }
 
@@ -226,15 +228,21 @@ export function PaFields({ f, set, errors, idPrefix = 'pa', renewal = false }: {
           <Field htmlFor={`${idPrefix}-start`} label={t('paStart')} error={errors.start} hint={f.start ? t('paCoverTo', { date: fmtDate(new Date(`${paEnd(f.start)}T12:00:00+07:00`).getTime(), lang, { day: 'numeric', month: 'short', year: 'numeric' }) }) : undefined}>
             <input id={`${idPrefix}-start`} type="date" value={f.start} min={dayKey(Date.now())} onChange={(e) => set({ start: e.target.value })} aria-invalid={!!errors.start} />
           </Field>
-          <Field htmlFor={`${idPrefix}-occ`} label={t('paOccupation')} error={errors.occupation} hint={occ ? t(CLASS_KEY[occ.cls]) : undefined}>
+          <Field htmlFor={`${idPrefix}-occ`} label={t('paOccupation')} error={errors.occupation} hint={occ ? (occ.other ? t('paOtherHint') : t(CLASS_KEY[occ.cls])) : undefined}>
             <select id={`${idPrefix}-occ`} value={f.occupation} onChange={(e) => set({ occupation: e.target.value })} aria-invalid={!!errors.occupation}>
               {([1, 2, 3, 4] as const).map((cls) => (
                 <optgroup key={cls} label={t(CLASS_KEY[cls])}>
-                  {OCCUPATIONS.filter((o) => o.cls === cls).map((o) => <option key={o.id} value={o.id}>{o[lang]}</option>)}
+                  {OCCUPATIONS.filter((o) => o.cls === cls && !o.other).map((o) => <option key={o.id} value={o.id}>{o[lang]}</option>)}
                 </optgroup>
               ))}
+              {OCCUPATIONS.filter((o) => o.other).map((o) => <option key={o.id} value={o.id}>{o[lang]}</option>)}
             </select>
           </Field>
+          {occ?.other && (
+            <Field htmlFor={`${idPrefix}-occ-other`} label={t('paOtherLabel')}>
+              <input id={`${idPrefix}-occ-other`} value={f.occOther} placeholder={t('paOtherPh')} onChange={(e) => set({ occOther: e.target.value })} aria-invalid={!!errors.occupation && !f.occOther.trim()} />
+            </Field>
+          )}
         </div>
       </div>
       {mcPct > 0 && (
@@ -471,7 +479,7 @@ export function PaBuy({ renderCheckout, onTrack }: { renderCheckout: (id: string
           <div className="panel-head">
             <div>
               <h2>{t('paPlanTitle')}</h2>
-              <p className="lead">{occName(f.occupation, lang)} · {chk.occ ? t(CLASS_KEY[chk.occ.cls]) : ''} · {t('trAge', { n: chk.age })}{f.motorcycle ? ` · 🏍️ ${t('paMotorcycleOn')}` : ''}</p>
+              <p className="lead">{occName(f.occupation, lang, f.occOther)} · {chk.occ ? t(CLASS_KEY[chk.occ.cls]) : ''} · {t('trAge', { n: chk.age })}{f.motorcycle ? ` · 🏍️ ${t('paMotorcycleOn')}` : ''}</p>
             </div>
             <button type="button" className="btn ghost small" onClick={() => setStep('about')}>{t('trChange')}</button>
           </div>
@@ -542,7 +550,7 @@ export const paPrefillFrom = (r: RenewalItem): PaPrefill | null => {
   return {
     renewalOf: r.id,
     productId: r.pa.productId,
-    form: { birth: r.pa.birthDate, start: dayKey(Math.max(Date.now() + 86_400_000, r.expiry + 86_400_000)), occupation: r.pa.occupation, motorcycle: r.pa.motorcycle },
+    form: { birth: r.pa.birthDate, start: dayKey(Math.max(Date.now() + 86_400_000, r.expiry + 86_400_000)), occupation: r.pa.occupation, occOther: r.pa.occupationText ?? '', motorcycle: r.pa.motorcycle },
     customer: { firstName, lastName: ln.join(' '), phone: r.phone, idCard: r.pa.idCard, email: r.pa.email, beneficiary: 'ทายาทโดยธรรม' },
   };
 };

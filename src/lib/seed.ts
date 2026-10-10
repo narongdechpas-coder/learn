@@ -654,7 +654,7 @@ export function seedPa(now: number, startSeq: number): { cases: Case[]; proposal
     for (const [v, w] of items) if ((r -= w) <= 0) return v;
     return items[items.length - 1][0];
   };
-  const occs = OCCUPATIONS.filter((o) => o.cls !== 4);
+  const occs = OCCUPATIONS.filter((o) => o.cls !== 4 && !o.other);
   const plans = getPaProducts();
   const cases: Case[] = [];
   const proposals: Proposal[] = [];
@@ -780,7 +780,7 @@ export function seedPa(now: number, startSeq: number): { cases: Case[]; proposal
 export function seedPaRenewals(now: number): RenewalItem[] {
   const rnd = mulberry32(6161);
   const agents = AGENTS.map((a) => a.id);
-  const occs = OCCUPATIONS.filter((o) => o.cls !== 4);
+  const occs = OCCUPATIONS.filter((o) => o.cls !== 4 && !o.other);
   const plans = getPaProducts();
   const out: RenewalItem[] = [];
   for (let i = 0; i < 60; i++) {

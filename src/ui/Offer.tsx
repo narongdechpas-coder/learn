@@ -283,7 +283,7 @@ function CoverTable({ pr, picked, onPick }: { pr: Proposal; picked?: number; onP
     [t('ofGroupPa'), [
       ...PA_COVER_KEYS.map((k) => ({ label: t(PA_COVER_LABEL[k]), cell: (i: number) => { const v = opt(i).pkg.accident?.cover[k] ?? 0; return v ? `${fmtBaht(v, lang)}${k === 'hospitalDaily' ? ` ${t('paPerDay')}` : ''}` : t('ofNo'); } })),
       { label: t('paMotorcycle'), cell: (i) => (opt(i).pkg.accident?.motorcycle ? t('covered') : t('ofNo')) },
-      { label: t('paOccupation'), cell: (i) => { const a = opt(i).pkg.accident; return a ? `${occName(a.occupation, lang)} (${a.occClass})` : '—'; } },
+      { label: t('paOccupation'), cell: (i) => { const a = opt(i).pkg.accident; return a ? `${occName(a.occupation, lang, a.occupationText)} (${a.occClass})` : '—'; } },
     ]],
     priceGroup,
   ] : travel ? [

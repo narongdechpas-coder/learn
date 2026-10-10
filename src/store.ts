@@ -7,7 +7,7 @@ import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { defaultProducts, setCatalog } from './data/products';
 import { defaultTravelProducts, defaultZones, setTravelCatalog } from './data/travel';
-import { defaultPaProducts, setPaCatalog } from './data/pa';
+import { defaultPaProducts, paEnd, setPaCatalog } from './data/pa';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
@@ -223,6 +223,26 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
 const POLICY_PREFIX: Partial<Record<CoverageType, string>> = { TRV: 'TR', PA: 'PA' };
 const policyNoFor = (c: Case, s: State) => `${POLICY_PREFIX[c.coverage] ?? 'P'}${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
 
+/**
+ * Travel and PA cover never starts in the past. A quotation accepted, or a policy paid or approved,
+ * after its start date moves the cover to start today: same trip length, one year for PA.
+ */
+function keepStartCurrent(c: Pick<Case, 'pkg' | 'customer'>) {
+  const today = dayKey(Date.now());
+  const plus = (d: string, n: number) => dayKey(new Date(`${d}T12:00:00+07:00`).getTime() + n * 86_400_000);
+  const tr = c.pkg?.travel;
+  const pa = c.pkg?.accident;
+  if (tr && tr.trip.start < today) {
+    const end = tr.trip.type === 'annual' ? paEnd(today) : plus(today, tr.trip.days - 1);
+    c.pkg = { ...c.pkg!, travel: { ...tr, trip: { ...tr.trip, start: today, end } } };
+    c.customer = { ...c.customer, startDate: today };
+  }
+  if (pa && pa.start < today) {
+    c.pkg = { ...c.pkg!, accident: { ...pa, start: today, end: paEnd(today) } };
+    c.customer = { ...c.customer, startDate: today };
+  }
+}
+
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
@@ -278,6 +298,7 @@ export function submitCase(input: SubmitInput, mine = true): string {
     docs: {},
     log: [{ at: now, by: input.agentId ?? 'customer', action: self ? 'selfStart' : input.source === 'package' ? 'submitPackage' : 'submitQuote' }],
   };
+  keepStartCurrent(c);
   const s: State = { ...base, seq, cases: [c, ...base.cases], mine: mine ? [id, ...base.mine] : base.mine };
   // A lead that comes back and submits counts as converted.
   const phone = input.customer.phone.replace(/\D/g, '');
@@ -399,6 +420,7 @@ export function submitPayIssue(id: string, delivery: Delivery, payment: { method
     c.stamps.paid = now;
     c.stamps.issued = now;
     c.status = 'ISSUED';
+    keepStartCurrent(c);
     c.payment = { ...payment, at: now };
     c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
     c.premium = totalPremium(c);
@@ -438,6 +460,7 @@ export function issuePolicy(id: string, staffId: string) {
     const now = Date.now();
     c.stamps.issued = now;
     c.status = 'ISSUED';
+    keepStartCurrent(c);
     c.premium = totalPremium(c);
     c.policyNo = policyNoFor(c, s);
     c.log.push({ at: now, by: staffId, action: 'issue' });
@@ -453,6 +476,7 @@ export function payAndIssue(id: string, delivery: Delivery, payment: { method: '
     c.stamps.paid = now;
     c.stamps.issued = now;
     c.status = 'ISSUED';
+    keepStartCurrent(c);
     c.payment = { ...payment, at: now };
     c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
     c.premium = totalPremium(c);
@@ -704,6 +728,7 @@ function issueRenewal(c: Case, s: State, now: number): Partial<State> {
   c.stamps.paid = now;
   c.stamps.issued = now;
   c.status = 'ISSUED';
+  keepStartCurrent(c);
   c.premium = totalPremium(c);
   c.policyNo = policyNoFor(c, s);
   c.delivery = { method: 'pdf', email: c.customer.email };

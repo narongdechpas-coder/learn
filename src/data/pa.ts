@@ -15,6 +15,8 @@ export interface Occupation {
   th: string;
   en: string;
   cls: OccClass | 4;
+  /** "Other (please specify)": priced as class 2 for now, the back office reviews it before issue. */
+  other?: boolean;
 }
 
 export const OCCUPATIONS: Occupation[] = [
@@ -40,10 +42,12 @@ export const OCCUPATIONS: Occupation[] = [
   { id: 'explosives', th: 'งานเกี่ยวกับวัตถุระเบิด', en: 'Explosives handler', cls: 4 },
   { id: 'stunt', th: 'สตันท์แมน / นักแสดงผาดโผน', en: 'Stunt performer', cls: 4 },
   { id: 'boxer', th: 'นักมวย / นักกีฬาต่อสู้อาชีพ', en: 'Professional boxer / fighter', cls: 4 },
+  { id: 'other', th: 'อื่นๆ (ระบุ)', en: 'Other (please specify)', cls: 2, other: true },
 ];
 export const occupationById = (id: string) => OCCUPATIONS.find((o) => o.id === id);
-export const occName = (id: string, lang: Lang) => {
+export const occName = (id: string, lang: Lang, text?: string) => {
   const o = occupationById(id);
+  if (o?.other && text?.trim()) return `${lang === 'th' ? 'อื่นๆ' : 'Other'}: ${text.trim()}`;
   return o ? o[lang] : id;
 };
 
@@ -124,6 +128,8 @@ export interface PaApplicant {
   birth: string;
   start: string;
   occupation: string;
+  /** Description of an "other" occupation. */
+  occupationText?: string;
   motorcycle: boolean;
   health: boolean[];
   /** A renewal may run up to the plan's renewal age and skips the entry checks. */
@@ -147,10 +153,12 @@ export const paPremium = (p: PaProduct, cls: OccClass, motorcycle: boolean) => (
 /** A plan priced for one person, as a package (type PA) the usual sales flow can carry. */
 export function paPackage(p: PaProduct, a: PaApplicant, agentId?: string): Package | null {
   if (paRefusal(p, a)) return null;
-  const occClass = occupationById(a.occupation)!.cls as OccClass;
+  const occ = occupationById(a.occupation)!;
+  const occClass = occ.cls as OccClass;
   const motorcycle = a.motorcycle && p.motorcyclePct > 0;
-  // A renewal continues the cover it already has; new business with a "yes" or heavy manual work is checked first.
-  const referral = !a.renewal && (occClass === 3 || a.health.some(Boolean));
+  // A renewal continues the cover it already has; new business with a "yes", heavy manual work or an
+  // occupation not on the list is checked first.
+  const referral = !a.renewal && (occClass === 3 || !!occ.other || a.health.some(Boolean));
   return {
     id: p.id,
     type: 'PA',
@@ -176,7 +184,7 @@ export function paPackage(p: PaProduct, a: PaApplicant, agentId?: string): Packa
     docs: [],
     ...(p.badge ? { badge: p.badge } : {}),
     comRate: paCommission(p, agentId),
-    accident: { productId: p.id, occClass, occupation: a.occupation, motorcycle, cover: { ...p.cover }, health: [...a.health], referral, start: a.start, end: paEnd(a.start) },
+    accident: { productId: p.id, occClass, occupation: a.occupation, ...(occ.other && a.occupationText?.trim() ? { occupationText: a.occupationText.trim() } : {}), motorcycle, cover: { ...p.cover }, health: [...a.health], referral, start: a.start, end: paEnd(a.start) },
   };
 }
 
@@ -201,8 +209,8 @@ export function paPriceRange(p: PaProduct): [number, number] | null {
 }
 
 /** What a renewal is for: the car, or the PA plan and the insured's occupation. */
-export function renewalText(r: { vehicle?: import('../types').Vehicle; pa?: { productId: string; occupation: string } }, lang: Lang) {
+export function renewalText(r: { vehicle?: import('../types').Vehicle; pa?: { productId: string; occupation: string; occupationText?: string } }, lang: Lang) {
   if (r.vehicle) return vehicleText(r.vehicle);
   const p = r.pa ? products.find((x) => x.id === r.pa!.productId) : undefined;
-  return `${lang === 'th' ? 'ประกันอุบัติเหตุ' : 'Personal accident'}${p ? ` · ${lang === 'th' ? p.nameTh : p.nameEn || p.nameTh}` : ''}${r.pa ? ` · ${occName(r.pa.occupation, lang)}` : ''}`;
+  return `${lang === 'th' ? 'ประกันอุบัติเหตุ' : 'Personal accident'}${p ? ` · ${lang === 'th' ? p.nameTh : p.nameEn || p.nameTh}` : ''}${r.pa ? ` · ${occName(r.pa.occupation, lang, r.pa.occupationText)}` : ''}`;
 }

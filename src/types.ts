@@ -135,6 +135,8 @@ export interface PaOffer {
   occClass: OccClass;
   /** Occupation id from the occupation list. */
   occupation: string;
+  /** "Other" occupation, as the customer described it (always reviewed before issue). */
+  occupationText?: string;
   /** Riding or riding pillion on a motorcycle covered (extra premium). */
   motorcycle: boolean;
   cover: PaCover;
@@ -527,7 +529,7 @@ export interface RenewalItem {
   phone: string;
   /** Motor renewals; PA renewals carry the insured person instead. */
   vehicle?: Vehicle;
-  pa?: { productId: string; occupation: string; motorcycle: boolean; birthDate: string; idCard: string; email: string };
+  pa?: { productId: string; occupation: string; occupationText?: string; motorcycle: boolean; birthDate: string; idCard: string; email: string };
   coverage: CoverageType;
   premium: number;
   expiry: number;
