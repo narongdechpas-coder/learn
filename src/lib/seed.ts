@@ -5,6 +5,7 @@ import { estimateQuote, cmiPremium, REQUIRED_DOCS, SELF_SERVICE_TYPES } from '..
 import { addBizMinutes, bkkParts, bkkTime, DAY_MS, startOfBkkDay, dayKey } from './time';
 import { SLA_KEYS, slaFor } from './sla';
 import { AGENTS, PAY_DAYS, PROPOSAL_DAYS, optionPrice } from '../data/agents';
+import { makeTrip, travelPackages } from '../data/travel';
 
 function mulberry32(seed: number) {
   return () => {
@@ -268,14 +269,14 @@ export function seedCases(now: number): SeedResult {
 export function seedLeads(cases: Case[], now: number): Lead[] {
   const rnd = mulberry32(777);
   const leads: Lead[] = [];
-  const fromPrice = (v: Case['vehicle']) => {
+  const fromPrice = (v: NonNullable<Case['vehicle']>) => {
     const md = MODELS.find((m) => m.id === v.modelId);
     if (!md) return 0;
     const p = packagesFor(md, v.usage, v.year, v.sumInsured).filter((x) => x.type !== 'CMI');
     return p.length ? Math.min(...p.map((x) => x.premium)) : 0;
   };
   for (const c of cases) {
-    if (c.source === 'quote' || rnd() > 0.45) continue;
+    if (!c.vehicle || c.source === 'quote' || rnd() > 0.45) continue;
     leads.push({
       id: `L-S${leads.length}`,
       at: c.createdAt - (20 + rnd() * 600) * 60_000,
@@ -300,7 +301,7 @@ export function seedLeads(cases: Case[], now: number): Lead[] {
       contact: email ? `lead${i}@example.com` : `08${Math.floor(1e7 + rnd() * 9e7)}`,
       channel: email ? 'email' : 'phone',
       vehicle,
-      fromPrice: fromPrice({ ...vehicle } as Case['vehicle']),
+      fromPrice: fromPrice({ ...vehicle }),
       contacted: now - at > 2 * DAY_MS && rnd() < 0.7 ? at + (1 + rnd() * 20) * 3600_000 : undefined,
     });
   }
@@ -376,14 +377,15 @@ export function seedAgentWork(cases: Case[], now: number): Proposal[] {
       continue;
     }
 
-    const md = MODELS.find((m) => m.id === c.vehicle.modelId)!;
-    const pkgs = packagesFor(md, c.vehicle.usage, c.vehicle.year, c.vehicle.sumInsured).filter((p) => p.type !== 'CMI' || c.coverage === 'CMI');
+    const v = c.vehicle!;
+    const md = MODELS.find((m) => m.id === v.modelId)!;
+    const pkgs = packagesFor(md, v.usage, v.year, v.sumInsured).filter((p) => p.type !== 'CMI' || c.coverage === 'CMI');
     const others = pkgs.filter((p) => p.id !== c.pkg!.id);
     const options: ProposalOption[] = [{ pkg: c.pkg!, addCmi: c.addCmi }];
     const extra = Math.floor(rnd() * 3);
     for (let i = 0; i < extra && others.length; i++) options.push({ pkg: others.splice(Math.floor(rnd() * others.length), 1)[0], addCmi: c.addCmi });
     const discountPct = c.coverage === 'CMI' ? 0 : discountChoices[Math.floor(rnd() * discountChoices.length)];
-    const price = optionPrice(options[0], discountPct, c.vehicle.usage);
+    const price = optionPrice(options[0], discountPct, v.usage);
     c.discount = price.discount || undefined;
     if (c.premium !== undefined) c.premium = Math.round((c.premium - (c.discount ?? 0)) * 100) / 100;
 
@@ -506,4 +508,128 @@ export function seedVisits(now: number): Visit[] {
     const [outcome, topics] = notes[i % notes.length];
     return { id: `v-seed-${a.id}`, agentId: a.id, mktId: a.mktId, at, topics, outcome, nextAt: i % 3 === 2 ? undefined : startOfBkkDay(now + (5 + i * 4) * DAY_MS) + 10 * 3600_000, recordedAt: at };
   }).sort((x, y) => y.at - x.at);
+}
+
+/**
+ * Three months of travel policies: bought online, or sold by a partner from an accepted quotation.
+ * Travel is issued the moment it is paid, so every seeded one is already issued.
+ */
+export function seedTravel(now: number, startSeq: number): { cases: Case[]; proposals: Proposal[]; seq: number } {
+  const rnd = mulberry32(8080);
+  const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
+  const weighted = <T,>(items: [T, number][]) => {
+    const total = items.reduce((x, [, w]) => x + w, 0);
+    let r = rnd() * total;
+    for (const [v, w] of items) if ((r -= w) <= 0) return v;
+    return items[items.length - 1][0];
+  };
+  const agentWeights: [string, number][] = [['a1', 20], ['a2', 25], ['a3', 15], ['a4', 8], ['a5', 22], ['a6', 10]];
+  const cases: Case[] = [];
+  const proposals: Proposal[] = [];
+  let seq = startSeq;
+  let qn = 500;
+  const startDay = startOfBkkDay(now) - 91 * DAY_MS;
+  for (let day = startDay; day <= startOfBkkDay(now); day += DAY_MS) {
+    const n = rnd() < 0.55 ? 1 : rnd() < 0.3 ? 2 : 0;
+    for (let i = 0; i < n; i++) {
+      const p = bkkParts(day);
+      const submitted = bkkTime(p.y, p.mo, p.d, 0, Math.floor(8 * 60 + rnd() * 780));
+      if (submitted > now - 30 * 60_000) continue;
+      const annual = rnd() < 0.18;
+      const zoneId = weighted<string>([['asia', 58], ['world', 32], ['worldUs', 10]]);
+      const start = dayKey(submitted + (2 + Math.floor(rnd() * 28)) * DAY_MS);
+      const len = pick([3, 4, 5, 5, 6, 7, 7, 8, 10, 12, 14, 21, 30]);
+      const end = dayKey(new Date(`${start}T12:00:00+07:00`).getTime() + (len - 1) * DAY_MS);
+      const dest = zoneId === 'asia' ? pick(['ญี่ปุ่น', 'เกาหลีใต้', 'ไต้หวัน', 'เวียดนาม', 'สิงคโปร์', 'ฮ่องกง']) : zoneId === 'world' ? pick(['ฝรั่งเศส', 'อิตาลี', 'สวิตเซอร์แลนด์', 'สหราชอาณาจักร', 'ออสเตรเลีย']) : pick(['สหรัฐอเมริกา', 'แคนาดา']);
+      const trip = makeTrip(annual ? 'annual' : 'single', zoneId, start, end, dest);
+      if (!trip) continue;
+      const age = Math.round(22 + rnd() * 48);
+      const pkgs = travelPackages(trip, age);
+      if (!pkgs.length) continue;
+      const want = weighted<string>([['TRV-BASIC', 40], ['TRV-PLUS', 45], ['TRV-MAX', 15]]);
+      const pkg = pkgs.find((x) => x.id === want) ?? pkgs[0];
+      seq++;
+      const sp = bkkParts(submitted);
+      const id = `JKY-${String(sp.y).slice(2)}${String(sp.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+      const birth = `${bkkParts(now).y - age}-${String(1 + Math.floor(rnd() * 12)).padStart(2, '0')}-${String(1 + Math.floor(rnd() * 28)).padStart(2, '0')}`;
+      const customer: Customer = {
+        firstName: pick(FIRST),
+        lastName: pick(LAST),
+        idCard: `1${Math.floor(1e11 + rnd() * 9e11)}`,
+        phone: `08${Math.floor(1e7 + rnd() * 9e7)}`,
+        email: `traveller${seq}@example.com`,
+        address: '',
+        plate: '',
+        province: '',
+        chassis: '',
+        startDate: trip.start,
+        driver1: '',
+        driver2: '',
+        passport: `A${Math.floor(1e7 + rnd() * 9e7)}`,
+        birthDate: birth,
+      };
+      const viaAgent = rnd() < 0.4;
+      const issued = submitted + (3 + rnd() * 40) * 60_000;
+      const c: Case = {
+        id,
+        source: viaAgent ? 'package' : 'self',
+        createdAt: submitted,
+        coverage: 'TRV',
+        pkg,
+        addCmi: false,
+        customer,
+        status: 'ISSUED',
+        stamps: { submitted, quoted: submitted, confirmed: submitted, accepted: submitted, docsComplete: submitted, paid: issued, issued },
+        docs: {},
+        log: [],
+        policyNo: `TR${CURRENT_YEAR % 100}-${String(100000 + seq).slice(1)}`,
+        premium: pkg.premium,
+        delivery: { method: 'pdf', email: customer.email },
+        seeded: true,
+      };
+      if (!viaAgent) {
+        c.payment = { method: rnd() < 0.6 ? 'qr' : 'card', at: issued };
+      } else {
+        const agentId = weighted(agentWeights);
+        c.agentId = agentId;
+        c.collect = rnd() < 0.7 ? 'link' : 'agent';
+        const discountPct = pick([0, 0, 0, 3, 5]);
+        const others = pkgs.filter((x) => x.id !== pkg.id).slice(0, Math.floor(rnd() * 3));
+        const options: ProposalOption[] = [{ pkg, addCmi: false }, ...others.map((o) => ({ pkg: o, addCmi: false }))];
+        const price = optionPrice(options[0], discountPct);
+        c.discount = price.discount || undefined;
+        c.premium = Math.round((pkg.premium - (c.discount ?? 0)) * 100) / 100;
+        c.paidAt = issued;
+        if (c.collect === 'link') c.payment = { method: 'qr', at: issued };
+        else {
+          const remittedAt = issued + (1 + rnd() * 14) * DAY_MS;
+          if (remittedAt < now) c.remittedAt = remittedAt;
+        }
+        const createdAt = submitted - (0.5 + rnd() * 30) * 3600_000;
+        qn++;
+        const qp = bkkParts(createdAt);
+        const pr: Proposal = {
+          id: `Q-${String(qp.y).slice(2)}${String(qp.mo + 1).padStart(2, '0')}-T${String(qn).padStart(4, '0')}`,
+          agentId,
+          createdAt,
+          expiresAt: createdAt + PROPOSAL_DAYS * DAY_MS,
+          customer,
+          options,
+          discountPct,
+          sentVia: ['link', 'line'],
+          viewedAt: createdAt + 3600_000,
+          status: 'accepted',
+          acceptedAt: submitted,
+          acceptedBy: c.collect === 'agent' ? 'agent' : 'customer',
+          chosen: 0,
+          caseId: id,
+          seeded: true,
+        };
+        c.proposalId = pr.id;
+        proposals.push(pr);
+      }
+      cases.push(c);
+    }
+  }
+  return { cases, proposals, seq };
 }

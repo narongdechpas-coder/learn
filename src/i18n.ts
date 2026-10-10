@@ -4,6 +4,7 @@ import type { SlaKey, SlaState } from './lib/sla';
 import { agentEn, agentTh } from './i18nAgent';
 import { productEn, productTh } from './i18nProduct';
 import { visitEn, visitTh } from './i18nVisit';
+import { travelEn, travelTh } from './i18nTravel';
 
 const thBase = {
   callbackTitle: 'ให้เจ้าหน้าที่โทรกลับช่วงไหนดี',
@@ -200,14 +201,14 @@ const thBase = {
   results: 'ผลการค้นหา {n} รายการ',
   clearSearch: 'ล้างการค้นหา',
   appName: 'Jacky ประกันภัย',
-  appSub: 'ระบบจำลองประกันรถยนต์',
+  appSub: 'ระบบจำลองประกันภัย',
   navCustomer: 'หน้าลูกค้า',
   navAbc: 'ระบบ Jacky',
   navGroupOps: 'ปฏิบัติการ',
   navGroupProduct: 'ผลิตภัณฑ์',
   navGroupPartner: 'ช่องทาง Partner',
   navGroupReport: 'รายงาน',
-  navPackages: 'แพ็กเกจ',
+  navPackages: 'ประกันรถยนต์',
   navTools: 'เครื่องมือเดโม',
   navShowMenu: 'แสดงเมนู',
   navHideMenu: 'ซ่อนเมนู',
@@ -483,13 +484,14 @@ const thBase = {
   openCase: 'เปิดงาน',
 } as const;
 
-const th = { ...thBase, ...agentTh, ...productTh, ...visitTh };
+const th = { ...thBase, ...agentTh, ...productTh, ...visitTh, ...travelTh };
 type Dict = { [K in keyof typeof th]: string };
 
 const en: Dict = {
   ...agentEn,
   ...productEn,
   ...visitEn,
+  ...travelEn,
   callbackTitle: 'When should an agent call you back?',
   cbNone: "Don't call, email only",
   cbAsap: 'As soon as possible',
@@ -684,14 +686,14 @@ const en: Dict = {
   results: '{n} results',
   clearSearch: 'Clear search',
   appName: 'Jacky Insurance',
-  appSub: 'Motor insurance demo',
+  appSub: 'Insurance demo',
   navCustomer: 'Customer',
   navAbc: 'Jacky system',
   navGroupOps: 'Operations',
   navGroupProduct: 'Products',
   navGroupPartner: 'Partner channel',
   navGroupReport: 'Reports',
-  navPackages: 'Packages',
+  navPackages: 'Car insurance',
   navTools: 'Demo tools',
   navShowMenu: 'Show menu',
   navHideMenu: 'Hide menu',
@@ -973,8 +975,8 @@ export function translate(lang: Lang, key: TKey, params?: Record<string, string 
 }
 
 export const COVERAGE_LABEL: Record<Lang, Record<CoverageType, string>> = {
-  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.' },
-  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI' },
+  th: { T1: 'ชั้น 1', T2P: 'ชั้น 2+', T3P: 'ชั้น 3+', T2: 'ชั้น 2', T3: 'ชั้น 3', CMI: 'พ.ร.บ.', TRV: 'ประกันเดินทาง' },
+  en: { T1: 'Class 1', T2P: 'Class 2+', T3P: 'Class 3+', T2: 'Class 2', T3: 'Class 3', CMI: 'CMI', TRV: 'Travel' },
 };
 
 export const STATUS_LABEL: Record<Lang, Record<Status, string>> = {
@@ -1055,7 +1057,7 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[ลูกค้ายืนยัน] {ref}', body: 'คุณ{name} ยืนยันใบเสนอราคา {ref} แล้ว กำลังรอเอกสาร' },
     staffDocsComplete: { subject: '[เอกสารครบ] {ref}', body: 'คุณ{name} แนบเอกสารครบสำหรับ {ref} กรุณาตรวจและออกกรมธรรม์ภายใน 1 วันทำการ' },
     staffSla: { subject: '[เกิน SLA] {ref} ({sla})', body: 'งาน {ref} ของคุณ{name} เกิน SLA ขั้น{sla}แล้ว กรุณาดำเนินการด่วน' },
-    custOffer: { subject: 'ใบเสนอราคาประกันรถ {car} ({ref})', body: 'เรียนคุณ{name}\n\n{agent} ตัวแทนของ Jacky ประกันภัย ส่งใบเสนอราคาประกันรถ {car} ให้คุณ {n} แบบ\nเปิดลิงก์เพื่อดูรายละเอียด เลือกแบบที่ต้องการ และยืนยันได้ทันที ใบเสนอราคานี้ใช้ได้ถึง {expiry}' },
+    custOffer: { subject: 'ใบเสนอราคา{what} ({ref})', body: 'เรียนคุณ{name}\n\n{agent} ตัวแทนของ Jacky ประกันภัย ส่งใบเสนอราคา{what} ให้คุณ {n} แบบ\nเปิดลิงก์เพื่อดูรายละเอียด เลือกแบบที่ต้องการ และยืนยันได้ทันที ใบเสนอราคานี้ใช้ได้ถึง {expiry}' },
     agentNudge: { subject: '[ต่ออายุ] {policyNo} ของ{customer} ครบกำหนด {expiry}', body: 'เรียน{name}\n\nกรมธรรม์ {policyNo} ของลูกค้า{customer} จะครบกำหนด {expiry} ยังไม่ได้เสนอราคาต่ออายุ\nกรุณาติดต่อลูกค้าและออกใบเสนอราคาต่ออายุจากหน้า "ผลงานของฉัน"\n\n{mkt} (Marketing Jacky)' },
     agentRemit: { subject: '[นำส่งเบี้ย] {ref} เกินกำหนด', body: 'เรียน{name}\n\nเบี้ยประกัน {premium} ของลูกค้า{customer} (งาน {ref}) ยังไม่ได้นำส่ง Jacky และเกินกำหนดแล้ว\nกรุณานำส่งและแจ้งในหน้า "งานของฉัน"\n\n{mkt} (Marketing Jacky)' },
   },
@@ -1074,7 +1076,7 @@ export const EMAIL_TEXT: Record<Lang, Record<EmailTemplate, MailText>> = {
     staffConfirmed: { subject: '[Quote accepted] {ref}', body: '{name} accepted quote {ref}. Waiting for documents.' },
     staffDocsComplete: { subject: '[Documents complete] {ref}', body: '{name} attached all documents for {ref}. Please check and issue within 1 business day.' },
     staffSla: { subject: '[SLA breached] {ref} ({sla})', body: 'Case {ref} for {name} is past its {sla} SLA. Please act now.' },
-    custOffer: { subject: 'Your motor insurance quotation for {car} ({ref})', body: 'Dear {name},\n\n{agent}, an Jacky Insurance agent, sent you {n} options for {car}.\nOpen the link to see the details, pick one and confirm. This quotation is valid until {expiry}.' },
+    custOffer: { subject: 'Your quotation: {what} ({ref})', body: 'Dear {name},\n\n{agent}, a Jacky Insurance agent, sent you {n} options: {what}.\nOpen the link to see the details, pick one and confirm. This quotation is valid until {expiry}.' },
     agentNudge: { subject: '[Renewal] {policyNo} for {customer} due {expiry}', body: 'Dear {name},\n\nPolicy {policyNo} for {customer} expires on {expiry} and has no renewal quotation yet.\nPlease contact the customer and send a renewal quotation from “My performance”.\n\n{mkt} (Jacky Marketing)' },
     agentRemit: { subject: '[Remittance] {ref} overdue', body: 'Dear {name},\n\nThe premium {premium} you collected from {customer} (case {ref}) has not reached Jacky and is overdue.\nPlease transfer it and confirm under “My cases”.\n\n{mkt} (Jacky Marketing)' },
   },

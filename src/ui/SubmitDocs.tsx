@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { subjectText } from '../data/travel';
 import type { Case } from '../types';
 import { installmentPlan } from '../data/packages';
-import { vehicleText } from '../data/vehicles';
 import { fmtBaht, fmtDateTime, useT } from '../i18n';
 import { submitDocs, submitPayIssue, totalPremium, useStore } from '../store';
 import { TypeTag } from './common';
@@ -65,7 +65,7 @@ export function SubmitDocsModal({ caseId, by, onClose }: { caseId: string; by?: 
 
         <div className="sd-summary">
           <TypeTag type={c.coverage} />
-          <span>{vehicleText(c.vehicle)}{c.addCmi ? ` · ${t('plusCmi')}` : ''}</span>
+          <span>{subjectText(c, lang)}{c.addCmi ? ` · ${t('plusCmi')}` : ''}</span>
           <b className="num">{fmtBaht(total, lang)}</b>
         </div>
 

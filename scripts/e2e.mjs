@@ -44,6 +44,12 @@ const tools = async (p, item) => {
   await p.getByRole('menuitem', { name: item }).click();
 };
 
+// The customer home lists the lines of business; motor starts from its card.
+const motor = async (p) => {
+  await p.locator('.line-card.line-motor').click();
+  await p.getByRole('radio', { name: /^110/ }).waitFor();
+};
+
 const customer = await ctx.newPage();
 watch(customer);
 await customer.goto(url + '#customer');
@@ -58,6 +64,10 @@ await customer.getByRole('button', { name: 'ปิด', exact: true }).click();
 
 // ---- Path A: choose a package (Class 1) ----
 await customer.bringToFront();
+assert.equal(await customer.locator('.line-card').count(), 4, 'home shows four lines of business');
+assert.equal(await customer.locator('.line-card.soon').count(), 2, 'personal accident and fire are marked coming soon');
+await customer.locator('.line-card.soon .soon-mark', { hasText: 'Coming soon' }).first().waitFor();
+await motor(customer);
 const seeBtn = customer.getByRole('button', { name: /ดูแพ็กเกจ/ });
 assert.equal(await seeBtn.isDisabled(), true, 'packages locked until car is chosen');
 assert.equal(await customer.locator('.si-value').count(), 0, 'no sum insured before brand/model/year');
@@ -806,6 +816,7 @@ const shop = await ctx.newPage();
 watch(shop);
 await shop.goto(url + '?s=1#customer');
 await thai(shop);
+await motor(shop);
 await shop.getByRole('radio', { name: /^110/ }).click();
 await shop.getByRole('radio', { name: 'Toyota' }).click();
 await shop.locator('#car-model').selectOption('toyota-yaris-ativ');
@@ -854,6 +865,7 @@ assert.equal(await agent.locator('.ct-card', { hasText: 'ชั้น 1 EV Plus'
 assert.equal(await agent.locator('.ct-card', { hasText: 'ทุน 100,000' }).count(), 0, 'product closed to partners');
 assert.equal(await shop.getByRole('tab', { name: 'ผลิตภัณฑ์' }).count(), 0, 'no products tab on the customer site');
 await shop.reload();
+await motor(shop);
 await shop.getByRole('radio', { name: /^110/ }).click();
 await shop.getByRole('radio', { name: 'BYD' }).click();
 await shop.locator('#car-model').selectOption('byd-atto3');
@@ -962,12 +974,115 @@ await abc(office, 'dashboard');
 assert.ok((await office.locator('.dash-products tbody tr').count()) > 3, 'dashboard sales by product');
 log('dashboard shows sales by product with partner share, commission and win rate');
 
+// ---- Travel insurance (v3.3): customer buys online, partner quotes, back office sets plans ----
+const traveller = await ctx.newPage();
+watch(traveller);
+await traveller.goto(url + '?t=1#customer');
+await thai(traveller);
+await traveller.locator('.line-card.line-travel').click();
+await traveller.locator('#tr-start').waitFor();
+const isoIn = (days) => new Date(Date.now() + 7 * 3600_000 + days * 86_400_000).toISOString().slice(0, 10);
+await traveller.locator('#tr-start').fill(isoIn(20));
+await traveller.locator('#tr-end').fill(isoIn(10));
+await traveller.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+await traveller.getByText('วันกลับต้องไม่ก่อนวันออกเดินทาง').waitFor();
+await traveller.locator('#tr-end').fill(isoIn(26));
+await traveller.getByRole('radio', { name: /ทั่วโลก \(ยกเว้นอเมริกา\)/ }).click();
+await traveller.getByRole('button', { name: /ดูแผนและราคา/ }).click();
+assert.equal(await traveller.locator('.tr-plan').count(), 3, 'three travel plans');
+await traveller.getByText('ทั่วโลก (ยกเว้นอเมริกา) · 7 วัน').waitFor();
+const plusPrice = await traveller.locator('.tr-plan', { hasText: 'เดินทาง Plus' }).locator('.tr-plan-price').innerText();
+assert.match(plusPrice, /฿920/, 'Plus, worldwide, 7 days');
+await traveller.locator('.tr-plan', { hasText: 'เดินทาง Plus' }).getByRole('button', { name: 'เลือกแผนนี้' }).click();
+await traveller.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await traveller.getByText('กรุณายืนยันคำแถลงก่อนชำระเงิน').waitFor();
+await traveller.getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await traveller.locator('#tf-declare').check();
+await traveller.getByRole('button', { name: /ไปชำระเงิน/ }).click();
+await traveller.getByRole('heading', { name: 'ชำระเงินและรับกรมธรรม์' }).waitFor();
+assert.equal(await traveller.locator('.uploads').count(), 0, 'travel needs no documents');
+await traveller.locator('.pay-btn').click();
+const trNo = (await traveller.locator('.ref-big').innerText()).trim();
+assert.match(trNo, /^TR\d{2}-\d{5}$/, 'travel policy number issued on payment');
+await traveller.getByText(/ไม่น้อยกว่า 30,000 ยูโร/).waitFor();
+let st2 = await state(traveller);
+const trCase = st2.cases.find((c) => c.policyNo === trNo);
+assert.equal(trCase.status, 'ISSUED');
+assert.equal(trCase.coverage, 'TRV');
+assert.equal(trCase.premium, 920);
+log(`customer bought travel Plus (worldwide, 7 days) online: no documents, policy ${trNo} and Schengen certificate issued on payment`);
+
+// Partner: travel quotation with two plans and a discount; the customer accepts and pays through the link.
+await agent.bringToFront();
+await agent.getByRole('tab', { name: 'ขาย / เสนอราคา' }).click();
+await agent.locator('#ag-line').getByRole('radio', { name: /ประกันเดินทาง/ }).click();
+await agent.locator('#ag-tr-start').fill(isoIn(30));
+await agent.locator('#ag-tr-end').fill(isoIn(33));
+await agent.locator('#ag-tr-mode').getByRole('radio', { name: 'ออกใบเสนอราคา' }).click();
+await agent.locator('.tr-ag-table tbody tr', { hasText: 'เดินทาง Basic' }).click();
+await agent.locator('.tr-ag-table tbody tr', { hasText: 'เดินทาง Max' }).click();
+await agent.locator('.tr-sell').getByRole('button', { name: 'ใช้ข้อมูลจำลอง' }).click();
+await agent.locator('#ag-tr-disc').fill('5');
+await agent.locator('.tr-sell').getByRole('button', { name: /ออกใบเสนอราคา 2/ }).click();
+const trQuote = (await agent.locator('.ag-made h3').innerText()).match(/Q-[\w-]+/)[0];
+const tbuyer = await ctx.newPage();
+watch(tbuyer);
+await tbuyer.goto(url + `?tb=1#offer/${trQuote}`);
+await tbuyer.getByText('ใบเสนอราคาประกันเดินทาง').waitFor();
+await tbuyer.getByText('ความคุ้มครองการเดินทาง').waitFor();
+await tbuyer.locator('.oc-pick').nth(1).click();
+await tbuyer.getByRole('button', { name: 'เลือกแบบนี้และยืนยัน' }).click();
+await tbuyer.getByRole('button', { name: 'ใส่รหัสตัวอย่าง' }).click();
+await tbuyer.getByRole('button', { name: /ยืนยันซื้อ/ }).click();
+await tbuyer.getByRole('button', { name: 'ชำระเงิน (จำลอง)' }).click();
+await tbuyer.getByText(/ออกกรมธรรม์แล้ว เลขที่ TR/).waitFor();
+st2 = await state(tbuyer);
+const qCase = st2.cases.find((c) => c.proposalId === trQuote);
+assert.equal(qCase.status, 'ISSUED', 'partner travel sale issued on payment');
+assert.equal(qCase.pkg.id, 'TRV-MAX');
+assert.ok(qCase.discount > 0, 'partner discount applied');
+assert.equal(qCase.agentId, 'a3');
+log('partner quoted two travel plans with a 5% discount; the customer picked Max by link, paid, and the policy was issued at once');
+
+// Back office: travel plans menu, new price version, travel filter in the inbox and the dashboard.
+await office.bringToFront();
+await abc(office, 'travel');
+await office.getByRole('heading', { name: /ประกันเดินทาง/ }).waitFor();
+assert.equal(await office.locator('.ta-table tbody tr').count(), 3, 'three travel plans');
+await office.locator('.ta-table tbody tr', { hasText: 'เดินทาง Plus' }).getByRole('button', { name: 'แก้ไข' }).click();
+await office.locator('#ta-r1-world').fill('990');
+await office.locator('#ta-note').fill('ปรับเบี้ยทั่วโลก');
+await office.locator('.pd-savebar').getByRole('button', { name: 'บันทึกเป็นเวอร์ชันใหม่' }).click();
+await office.getByText('บันทึกแล้ว (v2)').waitFor();
+st2 = await state(office);
+assert.equal(st2.travelProducts.find((p) => p.id === 'TRV-PLUS').single[1].prices.world, 990);
+assert.equal(st2.cases.find((c) => c.policyNo === trNo).premium, 920, 'issued policy keeps its price');
+await office.getByRole('button', { name: /กลับ/ }).first().click();
+await office.getByRole('button', { name: /โซนการเดินทาง/ }).click();
+assert.equal(await office.locator('.ta-zones tbody tr').count(), 3, 'three zones');
+await abc(office, 'backoffice');
+await office.locator('#bo-status').selectOption('all');
+await office.locator('#bo-type').selectOption('TRV');
+await office.locator('#bo-q').fill(trNo);
+await office.locator('.case-row').first().click();
+await office.locator('.case-detail').getByText('ข้อมูลการเดินทาง').waitFor();
+await office.locator('#bo-q').fill('');
+await office.locator('#bo-type').selectOption('all');
+await office.locator('#bo-status').selectOption('open');
+await abc(office, 'dashboard');
+await office.getByRole('heading', { name: 'ยอดตามประเภทประกัน' }).waitFor();
+await office.locator('#d-line').selectOption('travel');
+assert.equal(await office.getByRole('heading', { name: 'ยอดตามประเภทประกัน' }).count(), 0, 'line breakdown hidden when one line is picked');
+await office.locator('#d-line').selectOption('all');
+log('back office: travel plan price saved as v2 (policies keep their price), zones listed, travel filter in the inbox and the dashboard');
+
 if (shots) {
   await office.emulateMedia({ colorScheme: 'dark' });
   await abc(office, 'dashboard');
   await office.screenshot({ path: `${shots}/5-dashboard-dark.png`, fullPage: true });
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await phone.goto(url + '#customer');
+  await motor(phone);
   await phone.getByRole('radio', { name: /^110/ }).click();
   await phone.getByRole('radio', { name: 'Honda' }).click();
   await phone.locator('#car-model').selectOption('honda-city');

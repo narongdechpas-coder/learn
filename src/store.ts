@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, Vehicle, Visit } from './types';
-import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic, seedVisits } from './lib/seed';
+import type { Agent, AgentMonth, Product, ProductVersion, CallbackSlot, Case, Claim, Customer, CoverageType, Delivery, DocKey, Email, EmailTemplate, Lead, Notification, Package, Proposal, ProposalOption, RenewalItem, Source, TrafficDay, TravelProduct, TravelProductVersion, TravelZone, Vehicle, Visit } from './types';
+import { seedAgentWork, seedCases, seedLeads, seedRenewals, seedTraffic, seedTravel, seedVisits } from './lib/seed';
 import { AGENTS, PROPOSAL_DAYS, optionPrice } from './data/agents';
 import { seedMonthly } from './lib/history';
 import { SLA_KEYS, slaFor } from './lib/sla';
 import { cmiPremium, REQUIRED_DOCS } from './data/packages';
 import { defaultProducts, setCatalog } from './data/products';
+import { defaultTravelProducts, defaultZones, setTravelCatalog } from './data/travel';
 import { CURRENT_YEAR } from './data/vehicles';
 import { bkkParts, dayKey } from './lib/time';
 import { clearFiles, deleteFile, putFile } from './files';
@@ -34,18 +35,29 @@ export interface State {
   productLog: ProductVersion[];
   /** Marketing visits to partners, newest first. */
   visits: Visit[];
+  /** Travel plans (current version of each), every saved version, and the destination zones. */
+  travelProducts: TravelProduct[];
+  travelLog: TravelProductVersion[];
+  travelZones: TravelZone[];
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 11;
+const VERSION = 12;
 
 function fresh(): State {
   const now = Date.now();
   // Seeding prices cars from the catalogue, so it has to be in place first.
   const products = defaultProducts(now);
   setCatalog(products);
-  const { cases, seq } = seedCases(now);
-  const proposals = seedAgentWork(cases, now);
+  const travelProducts = defaultTravelProducts(now);
+  const travelZones = defaultZones();
+  setTravelCatalog(travelProducts, travelZones);
+  const motor = seedCases(now);
+  const motorProposals = seedAgentWork(motor.cases, now);
+  const travel = seedTravel(now, motor.seq);
+  const cases = [...motor.cases, ...travel.cases].sort((a, b) => a.createdAt - b.createdAt);
+  const proposals = [...motorProposals, ...travel.proposals];
+  const seq = travel.seq;
   return {
     version: VERSION,
     seededAt: now,
@@ -63,7 +75,16 @@ function fresh(): State {
     products,
     productLog: products.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
     visits: seedVisits(now),
+    travelProducts,
+    travelLog: travelProducts.map((p) => ({ id: p.id, ver: p.ver, at: p.updatedAt, by: p.updatedBy, note: 'init', changes: [], snapshot: p })),
+    travelZones,
   };
+}
+
+/** Both catalogues follow whichever copy of the state is current. */
+function applyCatalogs(s: State) {
+  setCatalog(s.products);
+  setTravelCatalog(s.travelProducts, s.travelZones);
 }
 
 function load(): State | null {
@@ -72,7 +93,7 @@ function load(): State | null {
     if (!raw) return null;
     const s = JSON.parse(raw) as State;
     if (s.version !== VERSION) return null;
-    setCatalog(s.products);
+    applyCatalogs(s);
     return s;
   } catch {
     return null;
@@ -100,7 +121,7 @@ const emit = () => listeners.forEach((l) => l());
 function adopt(s: State | null) {
   if (!s || s.version !== VERSION || rev(s) <= rev(state)) return;
   state = s;
-  setCatalog(s.products);
+  applyCatalogs(s);
   emit();
 }
 
@@ -112,7 +133,7 @@ function adopt(s: State | null) {
 function latest(): State {
   const s = load();
   if (s && rev(s) >= rev(state)) return s;
-  setCatalog(state.products);
+  applyCatalogs(state);
   return state;
 }
 
@@ -134,7 +155,7 @@ try {
 
 function commit(next: State) {
   state = { ...next, rev: Math.max(rev(next), rev(state)) + 1 };
-  setCatalog(state.products);
+  applyCatalogs(state);
   save(state);
   emit();
   try {
@@ -188,10 +209,13 @@ function update(id: string, fn: (c: Case, s: State) => Partial<State> | void) {
   commit({ ...s, ...extra, cases });
 }
 
+/** Policy number: P (motor) or TR (travel), year, running number. */
+const policyNoFor = (c: Case, s: State) => `${c.coverage === 'TRV' ? 'TR' : 'P'}${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+
 export const totalPremium = (c: Case) => {
   const base = c.pkg ? c.pkg.premium : c.quotedPremium;
   if (base === undefined) return undefined;
-  return Math.round((base + (c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? cmiPremium(c.vehicle.usage) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
+  return Math.round((base + (c.addCmi && c.coverage !== 'CMI' ? (c.pkg?.cmi ?? (c.vehicle && cmiPremium(c.vehicle.usage)) ?? 0) : 0) - (c.discount ?? 0)) * 100) / 100;
 };
 
 /** Documents a case needs; a renewal with ABC needs none (they are on file). */
@@ -206,7 +230,7 @@ export const canUpload = (c: Case) =>
 
 export interface SubmitInput {
   source: Source;
-  vehicle: Vehicle;
+  vehicle?: Vehicle;
   coverage: CoverageType;
   pkg?: Package;
   addCmi: boolean;
@@ -227,7 +251,8 @@ export function submitCase(input: SubmitInput, mine = true): string {
   const p = bkkParts(now);
   const id = `JKY-${String(p.y).slice(2)}${String(p.mo + 1).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
   const self = input.source === 'self';
-  const renewal = !!input.renewalOf;
+  // Renewals and travel need no documents or checking: they are issued once paid.
+  const renewal = !!input.renewalOf || input.coverage === 'TRV';
   const c: Case = {
     id,
     ...input,
@@ -364,7 +389,7 @@ export function submitPayIssue(id: string, delivery: Delivery, payment: { method
     c.payment = { ...payment, at: now };
     c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
     c.premium = totalPremium(c);
-    c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+    c.policyNo = policyNoFor(c, s);
     c.log.push({ at: now, by: 'customer', action: 'paid', text: payment.method });
     s.emails = mail(s, 'custSelfIssued', c, {
       policyNo: c.policyNo,
@@ -401,7 +426,7 @@ export function issuePolicy(id: string, staffId: string) {
     c.stamps.issued = now;
     c.status = 'ISSUED';
     c.premium = totalPremium(c);
-    c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+    c.policyNo = policyNoFor(c, s);
     c.log.push({ at: now, by: staffId, action: 'issue' });
     return { emails: mail(s, 'custIssued', c, { policyNo: c.policyNo, premium: c.premium ?? 0 }) };
   });
@@ -418,7 +443,7 @@ export function payAndIssue(id: string, delivery: Delivery, payment: { method: '
     c.payment = { ...payment, at: now };
     c.delivery = delivery.method === 'paper' ? { ...delivery, trackingNo: `EB${String(Math.floor(1e8 + Math.random() * 9e8))}TH` } : delivery;
     c.premium = totalPremium(c);
-    c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+    c.policyNo = policyNoFor(c, s);
     c.log.push({ at: now, by: 'customer', action: 'paid', text: payment.method });
     s.emails = mail(s, 'custSelfIssued', c, {
       policyNo: c.policyNo,
@@ -560,7 +585,7 @@ const nextProposalId = (base: State) => {
 
 export interface ProposalInput {
   agentId: string;
-  vehicle: Vehicle;
+  vehicle?: Vehicle;
   customer: Customer;
   options: ProposalOption[];
   discountPct: number;
@@ -615,7 +640,7 @@ export function acceptProposal(id: string, choice: number, by: 'customer' | 'age
   const pr = base.proposals.find((p) => p.id === id);
   if (!pr || pr.status !== 'open' || Date.now() > pr.expiresAt) return null;
   const o = pr.options[choice];
-  const price = optionPrice(o, pr.discountPct, pr.vehicle.usage);
+  const price = optionPrice(o, pr.discountPct, pr.vehicle?.usage);
   const caseId = submitCase(
     {
       source: 'package',
@@ -650,9 +675,12 @@ export function payByLink(id: string, method: 'qr' | 'card', last4?: string, mon
     c.paidAt = now;
     c.payment = { method, at: now, last4, months };
     c.log.push({ at: now, by: 'customer', action: 'paid', text: method });
-    if (c.renewalOf) return issueRenewal(c, s, now);
+    if (issuesOnPayment(c)) return issueRenewal(c, s, now);
   });
 }
+
+/** Renewals and travel policies are issued the moment they are paid (or the partner has the money). */
+export const issuesOnPayment = (c: Pick<Case, 'renewalOf' | 'coverage'>) => !!c.renewalOf || c.coverage === 'TRV';
 
 /** A renewal is issued the moment it is paid (or the partner has the money): nothing to check. */
 function issueRenewal(c: Case, s: State, now: number): Partial<State> {
@@ -660,11 +688,11 @@ function issueRenewal(c: Case, s: State, now: number): Partial<State> {
   c.stamps.issued = now;
   c.status = 'ISSUED';
   c.premium = totalPremium(c);
-  c.policyNo = `P${CURRENT_YEAR % 100}-${String(100000 + s.seq + Math.floor(Math.random() * 900)).slice(1)}`;
+  c.policyNo = policyNoFor(c, s);
   c.delivery = { method: 'pdf', email: c.customer.email };
   c.log.push({ at: now, by: 'system', action: 'issue' });
   s.emails = mail(s, 'custIssued', c, { policyNo: c.policyNo, premium: c.premium ?? 0 });
-  return { emails: s.emails, notifications: notify(s, 'renewed', c.id, { agent: c.agentId ?? '' }) };
+  return { emails: s.emails, notifications: notify(s, c.renewalOf ? 'renewed' : 'self', c.id, c.renewalOf ? { agent: c.agentId ?? '' } : { type: c.coverage, ...(c.agentId ? { agent: c.agentId } : {}) }) };
 }
 
 /** Agent took the customer's money; it still has to be remitted to ABC. */
@@ -674,7 +702,7 @@ export function agentCollected(id: string) {
     const now = Date.now();
     c.paidAt = now;
     c.log.push({ at: now, by: c.agentId ?? 'agent', action: 'collected' });
-    if (c.renewalOf) return issueRenewal(c, s, now);
+    if (issuesOnPayment(c)) return issueRenewal(c, s, now);
   });
 }
 
@@ -786,4 +814,39 @@ export function rollbackProduct(id: string, ver: number, by: string) {
   const old = base.productLog.find((v) => v.id === id && v.ver === ver);
   if (!old) return;
   saveProduct({ ...old.snapshot }, by, `rollback:${ver}`);
+}
+
+// ---- Travel plans ----
+export function travelChanges(a: TravelProduct | undefined, b: TravelProduct): string[] {
+  if (!a) return ['created'];
+  const skip = new Set(['ver', 'updatedAt', 'updatedBy']);
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].filter((k) => !skip.has(k) && JSON.stringify((a as never)[k]) !== JSON.stringify((b as never)[k])).sort();
+}
+
+/** Save a travel plan as a new version. Quotations and policies keep the version they were priced on. */
+export function saveTravelProduct(p: TravelProduct, by: string, note = ''): boolean {
+  const base = latest();
+  const prev = base.travelProducts.find((x) => x.id === p.id);
+  const changes = travelChanges(prev, p);
+  if (!changes.length) return false;
+  const now = Date.now();
+  const next: TravelProduct = { ...p, ver: (prev?.ver ?? 0) + 1, updatedAt: now, updatedBy: by };
+  commit({
+    ...base,
+    travelProducts: prev ? base.travelProducts.map((x) => (x.id === p.id ? next : x)) : [...base.travelProducts, next],
+    travelLog: [{ id: p.id, ver: next.ver, at: now, by, note, changes, snapshot: next }, ...base.travelLog],
+  });
+  return true;
+}
+
+export function rollbackTravelProduct(id: string, ver: number, by: string) {
+  const old = latest().travelLog.find((v) => v.id === id && v.ver === ver);
+  if (old) saveTravelProduct({ ...old.snapshot }, by, `rollback:${ver}`);
+}
+
+/** Replace the destination zones (names, countries, Schengen). Plans keep their prices by zone id. */
+export function saveTravelZones(zones: TravelZone[]) {
+  const base = latest();
+  commit({ ...base, travelZones: zones });
 }

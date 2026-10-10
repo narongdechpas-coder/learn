@@ -14,7 +14,7 @@ export function expectedPremium(r: RenewalItem, proposals: Proposal[]) {
   const pr = r.proposalId ? proposals.find((p) => p.id === r.proposalId) : undefined;
   if (pr) {
     const same = pr.options.find((o) => o.pkg.type === r.coverage) ?? pr.options[0];
-    return { value: optionPrice(same, pr.discountPct, pr.vehicle.usage).price, quoted: true };
+    return { value: optionPrice(same, pr.discountPct, pr.vehicle?.usage).price, quoted: true };
   }
   return { value: Math.round(r.premium * RENEWAL_FACTOR), quoted: false };
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { subjectText } from '../data/travel';
 import type { Case, CoverageType, Source, Stage } from '../types';
-import { BRANDS, STAFF, staffById, vehicleText } from '../data/vehicles';
+import { BRANDS, STAFF, staffById } from '../data/vehicles';
 import { COVERAGE_TYPES } from '../data/packages';
 import { COVERAGE_LABEL, SLA_LABEL, STAGE_LABEL, fmtBaht, fmtCompactBaht, fmtDate, fmtDateTime, fmtMinutes, fmtNum, useT } from '../i18n';
 import { useStore } from '../store';
@@ -32,6 +33,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const [table, setTable] = useState(false);
   const [channel, setChannel] = useState<'all' | 'direct' | 'agent'>('all');
   const [mkt, setMkt] = useState('all');
+  const [line, setLine] = useState<'all' | 'motor' | 'travel'>('all');
   const mktAgents = s.agents.filter((a) => mkt === 'all' || a.mktId === mkt);
   const inChannel = (agentId?: string) =>
     mkt !== 'all' ? !!agentId && mktAgents.some((a) => a.id === agentId) : channel === 'all' || (channel === 'agent' ? !!agentId : !agentId);
@@ -49,9 +51,9 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
   const base = useMemo(
     () =>
       s.cases.filter(
-        (c) => (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle.brandId === brand) && (staff === 'all' || c.assignee === staff) && inChannel(c.agentId),
+        (c) => (line === 'all' || (line === 'travel') === (c.coverage === 'TRV')) && (type === 'all' || c.coverage === type) && (brand === 'all' || c.vehicle?.brandId === brand) && (staff === 'all' || c.assignee === staff) && inChannel(c.agentId),
       ),
-    [s.cases, type, brand, staff, channel, mkt, s.agents],
+    [s.cases, line, type, brand, staff, channel, mkt, s.agents],
   );
   const inRange = (x: number | undefined, a = from, b = to) => x !== undefined && x >= a && x <= b;
 
@@ -97,7 +99,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
 
   const byType = COVERAGE_TYPES.map((k) => ({ key: k, label: COVERAGE_LABEL[lang][k], value: value(issued.filter((c) => c.coverage === k)) }));
   // Every breakdown shows six rows so the three columns end level: top five brands + the rest.
-  const brandRows = BRANDS.map((b) => ({ key: b.id, label: b.name, value: value(issued.filter((c) => c.vehicle.brandId === b.id)) }))
+  const brandRows = BRANDS.map((b) => ({ key: b.id, label: b.name, value: value(issued.filter((c) => c.vehicle?.brandId === b.id)) }))
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value);
   const byBrand = brandRows.length > 6
@@ -150,6 +152,11 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
           { value: '90', label: t('r90') },
           { value: 'month', label: t('rMonth') },
         ]} />
+        <select id="d-line" aria-label={t('agLine')} value={line} onChange={(e) => { const v = e.target.value as typeof line; setLine(v); if (v === 'travel') { setType('all'); setBrand('all'); } }}>
+          <option value="all">{t('agLine')}: {t('filterAll')}</option>
+          <option value="motor">{t('lineMotor')}</option>
+          <option value="travel">{t('lineTravel')}</option>
+        </select>
         <select id="d-type" aria-label={t('filterType')} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="all">{t('filterType')}: {t('filterAll')}</option>
           {COVERAGE_TYPES.map((k) => (
@@ -187,6 +194,20 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
         <Kpi label={t('kConv')} value={`${fmtNum(conv * 100, lang, 1)}%`} delta={cohortPrev.length ? (conv - convPrev) * 100 : null} deltaUnit="pt" note={t('kConvNote')} />
         <Kpi label={t('kSla')} value={slaAll.n ? `${fmtNum((slaAll.met / slaAll.n) * 100, lang, 1)}%` : '—'} delta={slaAll.n && slaPrevAll.n ? ((slaAll.met / slaAll.n) - (slaPrevAll.met / slaPrevAll.n)) * 100 : null} deltaUnit="pt" note={t('kSlaNote')} />
       </div>
+
+      {line === 'all' && (
+        <section className="card dash-lines">
+          <h3>{t('dashByLine')}</h3>
+          <HBars
+            rows={([['motor', 'lineMotor'], ['travel', 'lineTravel']] as const).map(([k, label]) => {
+              const cs = issued.filter((c) => (k === 'travel') === (c.coverage === 'TRV'));
+              return { key: k, label: t(label), value: value(cs), sub: metric === 'gwp' ? `${fmtNum(cs.length, lang)} ${t('mPolicies')}` : fmtBaht(Math.round(sum(cs.map((c) => c.premium ?? 0))), lang) };
+            })}
+            format={fmtVal}
+            empty={t('noData')}
+          />
+        </section>
+      )}
 
       <section className="card">
         <div className="card-head">
@@ -373,7 +394,7 @@ export function Dashboard({ onOpenCase }: { onOpenCase: (id: string) => void }) 
                 <li key={c.id}>
                   <button type="button" className="overdue-row" onClick={() => onOpenCase(c.id)}>
                     <span className="num ref">{c.id}</span>
-                    <span className="muted">{vehicleText(c.vehicle)}</span>
+                    <span className="muted">{subjectText(c, lang)}</span>
                     <span className="muted">{staffById(c.assignee)?.[lang] ?? '—'}</span>
                     <SlaChip r={r!} />
                   </button>
