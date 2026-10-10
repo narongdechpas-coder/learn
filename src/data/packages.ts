@@ -33,9 +33,15 @@ export const thirdParty = (big: boolean) => ({
   tpbiAccident: 10_000_000,
   tppd: big ? 2_500_000 : 1_000_000,
   pa: 100_000,
+  paPassenger: 100_000,
+  tempDriver: 0,
+  tempPassenger: 0,
   medical: 100_000,
   bail: 300_000,
 });
+
+/** Passengers the riders cover by vehicle code: seats less the driver. */
+export const PASSENGERS_BY_CODE: Partial<Record<UsageCode, number>> = { '110': 6, '210': 11, '320': 2 };
 
 /** Class 1 base premium; also used to price manual quotes. */
 /** Price adjustment by vehicle code: pickups (320) are cheaper, vans (210) dearer. */

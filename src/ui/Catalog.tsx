@@ -8,6 +8,7 @@ import { useStore } from '../store';
 import { getFile } from '../files';
 import { TypeTag } from './common';
 import { EXTRA_KEY, productName } from './Products';
+import { riderRows } from './riders';
 
 const pick = (p: Product, lang: 'th' | 'en', th: keyof Product, en: keyof Product) => ((lang === 'en' && (p[en] as string)) || (p[th] as string) || '') as string;
 const pickList = (p: Product, lang: 'th' | 'en', th: 'highlightsTh' | 'exclusionsTh', en: 'highlightsEn' | 'exclusionsEn') => (lang === 'en' && p[en].length ? p[en] : p[th]);
@@ -130,8 +131,7 @@ function ProductDetail({ p, channel, agentId, onClose, onCheck }: { p: Product; 
           [t('fireTheft'), ruleText(p.fireTheft, t, lang)],
           [t('tpbi'), `${fmtBaht(p.tpbiPerson, lang)}${t('perPerson')} / ${fmtBaht(p.tpbiAccident, lang)}`],
           [t('tppd'), money(p.tppd)],
-          [t('paMed'), `${fmtBaht(p.pa, lang)} / ${fmtBaht(p.medical, lang)}`],
-          [t('bail'), money(p.bail)],
+          ...riderRows(p, t, lang),
         ];
   const rules: string[] = [
     p.maxAge !== undefined ? t('ctMaxAge', { n: p.maxAge }) : t('ctAnyAge'),

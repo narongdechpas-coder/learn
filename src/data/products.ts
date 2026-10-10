@@ -1,5 +1,5 @@
 import type { CarModel, CoverRule, CoverageType, DocKey, Package, Product, ProductExtra, RateRow, UsageCode } from '../types';
-import { ADJ, CMI_STANDARD, COVERAGE_TYPES, REQUIRED_DOCS, class1Premium, cmiPremium, round10, setCmiTable, thirdParty } from './packages';
+import { ADJ, CMI_STANDARD, PASSENGERS_BY_CODE, COVERAGE_TYPES, REQUIRED_DOCS, class1Premium, cmiPremium, round10, setCmiTable, thirdParty } from './packages';
 import { COMMISSION_RATE } from './agents';
 import { CATALOGUE_CODES, CURRENT_YEAR } from './vehicles';
 
@@ -11,7 +11,7 @@ const DAY = 86_400_000;
 /** Standard cover for each class: what "fill in standard cover" puts in the editor. */
 export function standardCover(type: CoverageType): Pick<
   Product,
-  'repair' | 'deductible' | 'ownDamage' | 'fireTheft' | 'tpbiPerson' | 'tpbiAccident' | 'tppd' | 'pa' | 'medical' | 'bail' | 'extras' | 'docs'
+  'repair' | 'deductible' | 'ownDamage' | 'fireTheft' | 'tpbiPerson' | 'tpbiAccident' | 'tppd' | 'pa' | 'paPassenger' | 'tempDriver' | 'tempPassenger' | 'medical' | 'bail' | 'extras' | 'docs'
 > {
   const none: CoverRule = { mode: 'none', value: 0 };
   const docs = [...REQUIRED_DOCS[type]];
@@ -27,7 +27,7 @@ export function standardCover(type: CoverageType): Pick<
     case 'T3':
       return { ...thirdParty(false), repair: null, deductible: 0, ownDamage: none, fireTheft: none, extras: [], docs };
     default:
-      return { repair: null, deductible: 0, ownDamage: none, fireTheft: none, tpbiPerson: 80_000, tpbiAccident: 0, tppd: 0, pa: 500_000, medical: 80_000, bail: 0, extras: [], docs };
+      return { repair: null, deductible: 0, ownDamage: none, fireTheft: none, tpbiPerson: 80_000, tpbiAccident: 0, tppd: 0, pa: 500_000, paPassenger: 500_000, tempDriver: 0, tempPassenger: 0, medical: 80_000, bail: 0, extras: [], docs };
   }
 }
 
@@ -252,6 +252,10 @@ export function toPackage(p: Product, model: CarModel, code: UsageCode, si: numb
     tpbiAccident: p.tpbiAccident,
     tppd: p.tppd,
     pa: p.pa,
+    paPassenger: p.paPassenger,
+    tempDriver: p.tempDriver,
+    tempPassenger: p.tempPassenger,
+    passengers: p.passengers ?? PASSENGERS_BY_CODE[code] ?? 0,
     medical: p.medical,
     bail: p.bail,
     premium: loaded,

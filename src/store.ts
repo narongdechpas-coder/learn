@@ -33,7 +33,7 @@ export interface State {
 }
 
 const KEY = 'abc-motor-demo-v1';
-const VERSION = 9;
+const VERSION = 10;
 
 function fresh(): State {
   const now = Date.now();
