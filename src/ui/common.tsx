@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Case, CoverageType, Status } from '../types';
 import { COVERAGE_LABEL, SLA_LABEL, SLA_STATE_LABEL, STATUS_LABEL, fmtMinutes, useT } from '../i18n';
 import { activeSla, type SlaResult } from '../lib/sla';
@@ -189,5 +189,55 @@ export function NumberInput({
       }}
       onBlur={() => onBlur?.(parse(text.replace(/,/g, '')))}
     />
+  );
+}
+
+/** YYYY-MM-DD → dd/mm/yyyy (empty stays empty). */
+export const toDmy = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
+
+/** dd/mm/yyyy (or YYYY-MM-DD) → YYYY-MM-DD when it is a real date, else null. */
+export function fromDmy(text: string): string | null {
+  const t = text.trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const [y, mo, d] = m ? [m[1], m[2], m[3]] : (m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/)) ? [m[3], m[2].padStart(2, '0'), m[1].padStart(2, '0')] : [];
+  if (!y) return null;
+  const iso = `${y}-${mo}-${d}`;
+  const dt = new Date(`${iso}T00:00:00Z`);
+  return Number.isFinite(dt.getTime()) && dt.toISOString().slice(0, 10) === iso ? iso : null;
+}
+
+/**
+ * Date field that always reads dd/mm/yyyy, whatever the browser's language (the native date input
+ * follows the device locale). Typing adds the slashes; the calendar button opens the native picker.
+ * The value in and out is YYYY-MM-DD; '' while the text is not a whole, real date.
+ */
+export function DateInput({ id, value, onChange, min, max, invalid, 'aria-label': ariaLabel }: { id: string; value: string; onChange: (iso: string) => void; min?: string; max?: string; invalid?: boolean; 'aria-label'?: string }) {
+  const [text, setText] = useState(() => toDmy(value));
+  const picker = useRef<HTMLInputElement>(null);
+  // Follow the value when it changes from outside (sample data, reset), not while it matches what is typed.
+  useEffect(() => {
+    if (fromDmy(text) !== value && (value || fromDmy(text) !== null)) setText(toDmy(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const type = (raw: string) => {
+    let v = raw;
+    // Auto-insert the slashes while typing digits: 15 → 15/, 1505 → 15/05/.
+    if (/^\d{2}$/.test(raw) && raw.length > text.length) v = `${raw}/`;
+    else if (/^\d{2}\/\d{2}$/.test(raw) && raw.length > text.length) v = `${raw}/`;
+    else if (/^\d{8}$/.test(raw)) v = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4)}`;
+    setText(v);
+    const iso = fromDmy(v);
+    onChange(iso ?? '');
+  };
+  return (
+    <div className={`date-input${invalid ? ' invalid' : ''}`}>
+      <input id={id} type="text" inputMode="numeric" autoComplete="off" placeholder="dd/mm/yyyy" maxLength={10} value={text} aria-label={ariaLabel} aria-invalid={invalid || undefined}
+        onChange={(e) => type(e.target.value)}
+        onBlur={() => { const iso = fromDmy(text); if (iso) setText(toDmy(iso)); }} />
+      <button type="button" className="date-pick" aria-label="📅" tabIndex={-1} onClick={() => { const el = picker.current; if (!el) return; try { el.showPicker(); } catch { el.focus(); } }}>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2Zm12 8H5v9h14v-9ZM5 6v2h14V6H5Z" /></svg>
+      </button>
+      <input ref={picker} className="date-native" type="date" tabIndex={-1} aria-hidden="true" value={value} min={min} max={max} onChange={(e) => { setText(toDmy(e.target.value)); onChange(e.target.value); }} />
+    </div>
   );
 }

@@ -3,7 +3,7 @@ import type { TravelCover, TravelProduct, TravelRateRow, TravelZone } from '../t
 import { COVER_KEYS, SCHENGEN_MIN_MEDICAL, TRAVEL_COMMISSION, blankTravelProduct, travelExpired, travelPriceRange } from '../data/travel';
 import { fmtBaht, fmtDateTime, fmtNum, useT } from '../i18n';
 import { rollbackTravelProduct, saveTravelProduct, saveTravelZones, travelChanges, useStore } from '../store';
-import { NumberInput } from './common';
+import { NumberInput, DateInput, toDmy } from './common';
 import { COVER_LABEL } from './Travel';
 import { staffById } from '../data/vehicles';
 
@@ -71,7 +71,7 @@ export function TravelAdmin({ staffId }: { staffId: string }) {
                 <tr key={p.id}>
                   <td>
                     <b>{lang === 'en' ? p.nameEn || p.nameTh : p.nameTh}</b>
-                    <div className="hint num">{p.id} · v{p.ver}{p.saleUntil ? ` · ${t(expired ? 'pdEnded' : 'pdUntil', { date: p.saleUntil })}` : ''}</div>
+                    <div className="hint num">{p.id} · v{p.ver}{p.saleUntil ? ` · ${t(expired ? 'pdEnded' : 'pdUntil', { date: toDmy(p.saleUntil) })}` : ''}</div>
                   </td>
                   {(['self', 'partner'] as const).map((ch) => (
                     <td key={ch}>
@@ -242,7 +242,7 @@ function TravelEditor({ initial, isNew, staffId, zones, onClose }: { initial: Tr
             </div>
             <div className="field">
               <label htmlFor="ta-until">{t('pdSaleUntil')}</label>
-              <input id="ta-until" type="date" value={d.saleUntil ?? ''} onChange={(e) => set('saleUntil', e.target.value || undefined)} />
+              <DateInput id="ta-until" value={d.saleUntil ?? ''} onChange={(v) => set('saleUntil', v || undefined)} />
             </div>
           </div>
         </section>

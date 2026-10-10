@@ -6,7 +6,7 @@ import { acceptProposal, createProposal, docMeta, storeFiles, submitCase, totalP
 import { OCR_DOC, OCR_SAMPLE, OcrBox, fakeDocSync, type OcrKind } from './extras';
 import { optionPrice, rateOf } from '../data/agents';
 import { dayKey } from '../lib/time';
-import { Field, Segmented } from './common';
+import { Field, Segmented, DateInput, toDmy } from './common';
 import { productName } from './Products';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 
@@ -163,7 +163,7 @@ export function TravelKv({ c }: { c: Case }) {
       <dt>{t('trPeriod')}</dt>
       <dd>{tripRange(tr.trip, lang)} <span className="muted">({t('trDays', { n: tr.trip.days })})</span></dd>
       <dt>{t('trBirth')}</dt>
-      <dd>{c.customer.birthDate ?? '—'}{Number.isFinite(age) ? <span className="muted"> · {t('trAge', { n: age })}</span> : null}</dd>
+      <dd>{c.customer.birthDate ? toDmy(c.customer.birthDate) : '—'}{Number.isFinite(age) ? <span className="muted"> · {t('trAge', { n: age })}</span> : null}</dd>
       <dt>{t('trPassport')}</dt>
       <dd className="num">{c.customer.passport || '—'}</dd>
       {c.customer.beneficiary && (<><dt>{t('trBeneficiary')}</dt><dd>{c.customer.beneficiary}</dd></>)}
@@ -196,7 +196,7 @@ export function TravelCertificate({ c }: { c: Case }) {
       <dl>
         <div><dt>{t('insured')}</dt><dd>{c.customer.firstName} {c.customer.lastName}</dd></div>
         <div><dt>{t('trPassport')}</dt><dd className="num">{c.customer.passport || '—'}</dd></div>
-        <div><dt>{t('trBirth')}</dt><dd className="num">{c.customer.birthDate ?? '—'}</dd></div>
+        <div><dt>{t('trBirth')}</dt><dd className="num">{c.customer.birthDate ? toDmy(c.customer.birthDate) : '—'}</dd></div>
         <div><dt>{t('trPlan')}</dt><dd>{productName({ nameTh: c.pkg?.nameTh, nameEn: c.pkg?.nameEn, type: 'TRV' }, lang)} · {t(tr.trip.type === 'annual' ? 'trAnnual' : 'trSingle')}</dd></div>
         <div><dt>{t('trZone')}</dt><dd>{lang === 'th' ? tr.trip.zoneTh : tr.trip.zoneEn}{tr.trip.dest ? ` · ${tr.trip.dest}` : ''}</dd></div>
         <div><dt>{t('trPeriod')}</dt><dd>{tripRange(tr.trip, lang)} ({t('trDays', { n: tr.trip.days })})</dd></div>
@@ -279,11 +279,11 @@ export function TripFields({ f, set, errors, idPrefix = 'tr' }: { f: TripForm; s
         <div className="section-label"><span className="section-n">3</span>{t('trPeriod')}</div>
         <div className="tr-date-grid">
           <Field htmlFor={`${idPrefix}-start`} label={t('trStart')} error={errors.start}>
-            <input id={`${idPrefix}-start`} type="date" value={f.start} min={dayKey(Date.now())} onChange={(e) => set({ start: e.target.value })} aria-invalid={!!errors.start} />
+            <DateInput id={`${idPrefix}-start`} value={f.start} min={dayKey(Date.now())} onChange={(v) => set({ start: v })} invalid={!!errors.start} />
           </Field>
           {f.type === 'single' ? (
             <Field htmlFor={`${idPrefix}-end`} label={t('trEnd')} error={errors.dates} hint={trip ? t('trDays', { n: trip.days }) : undefined}>
-              <input id={`${idPrefix}-end`} type="date" value={f.end} min={f.start} onChange={(e) => set({ end: e.target.value })} aria-invalid={!!errors.dates} />
+              <DateInput id={`${idPrefix}-end`} value={f.end} min={f.start} onChange={(v) => set({ end: v })} invalid={!!errors.dates} />
             </Field>
           ) : (
             <div className="tr-annual-to">
@@ -295,7 +295,7 @@ export function TripFields({ f, set, errors, idPrefix = 'tr' }: { f: TripForm; s
             <input id={`${idPrefix}-dest`} value={f.dest} placeholder={t('trDestPh')} onChange={(e) => set({ dest: e.target.value })} />
           </Field>
           <Field htmlFor={`${idPrefix}-birth`} label={t('trBirth')} error={errors.birth} hint={f.birth && f.start && Number.isFinite(ageOn(f.birth, f.start)) ? t('trAge', { n: ageOn(f.birth, f.start) }) : undefined}>
-            <input id={`${idPrefix}-birth`} type="date" value={f.birth} max={dayKey(Date.now())} onChange={(e) => set({ birth: e.target.value })} aria-invalid={!!errors.birth} />
+            <DateInput id={`${idPrefix}-birth`} value={f.birth} max={dayKey(Date.now())} onChange={(v) => set({ birth: v })} invalid={!!errors.birth} />
           </Field>
         </div>
       </div>

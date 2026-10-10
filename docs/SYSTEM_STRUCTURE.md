@@ -563,6 +563,7 @@ src/
     BackOffice.tsx     หลังบ้าน
     Travel.tsx         ประกันเดินทาง: การ์ดหน้าแรก, ขั้นตอนซื้อ, ตารางความคุ้มครอง, หนังสือรับรอง, หน้าขายของ Partner
     TravelAdmin.tsx    เมนูผลิตภัณฑ์ → ประกันเดินทาง: รายการแผน, โซน, หน้าแก้ไข, เวอร์ชัน
+    ChatBot.tsx        แชทบอทลูกค้า "ถามน้องแจ็คกี้" (เรียก /api/chat, กันข้อมูลส่วนตัว, ช่องทางติดต่อเจ้าหน้าที่)
     Pa.tsx             ประกันอุบัติเหตุ: ขั้นตอนซื้อ, คำถามสุขภาพ, ตารางกรมธรรม์, เตือนต่ออายุ, หน้าขายของ Partner
     PaAdmin.tsx        เมนูผลิตภัณฑ์ → ประกันอุบัติเหตุ: รายการแผน, หน้าแก้ไข, เวอร์ชัน
     Visits.tsx         เยี่ยม Partner: รายการ, รายงาน A4 2 หน้า, บันทึกการเยี่ยม, ประวัติ (ใช้ในหน้า VP ด้วย)
@@ -601,6 +602,7 @@ npm run build                                          # dist/index.html, dist/f
 npm run package:offline                                # dist/abc-motor-insurance-demo-offline.zip
 CHROMIUM_PATH=/path/to/chromium npm test               # end-to-end 50 ขั้น
 CHROMIUM_PATH=/path/to/chromium npm run test:offline   # ฉบับ Offline ไม่มี network request
+npm run test:chat                                      # Netlify function ของแชทบอท (จำลอง API)
 ```
 
 การทดสอบ end-to-end ครอบคลุม:
