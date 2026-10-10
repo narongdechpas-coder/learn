@@ -67,6 +67,12 @@ await customer.bringToFront();
 assert.equal(await customer.locator('.line-card').count(), 4, 'home shows four lines of business');
 assert.equal(await customer.locator('.line-card.soon').count(), 2, 'personal accident and fire are marked coming soon');
 await customer.locator('.line-card.soon .soon-mark', { hasText: 'Coming soon' }).first().waitFor();
+// The line bar on top reaches every line from any step; lines not on sale are disabled.
+assert.deepEqual(await customer.locator('.line-nav .ln-item.soon').evaluateAll((els) => els.map((e) => e.disabled)), [true, true], 'coming-soon lines disabled in the bar');
+await customer.locator('.line-nav').getByRole('button', { name: /ประกันเดินทาง/ }).click();
+await customer.locator('#tr-start').waitFor();
+await customer.locator('.line-nav').getByRole('button', { name: /หน้าแรก/ }).click();
+assert.equal(await customer.locator('.line-card').count(), 4, 'bar goes back to the home page');
 await motor(customer);
 const seeBtn = customer.getByRole('button', { name: /ดูแพ็กเกจ/ });
 assert.equal(await seeBtn.isDisabled(), true, 'packages locked until car is chosen');
@@ -1014,7 +1020,13 @@ log(`customer bought travel Plus (worldwide, 7 days) online: no documents, polic
 
 // Partner: travel quotation with two plans and a discount; the customer accepts and pays through the link.
 await agent.bringToFront();
+// From the catalogue: "sell this plan" opens the travel sell screen with that plan picked.
+await agent.getByRole('tab', { name: 'ผลิตภัณฑ์' }).click();
+await agent.locator('.ct-card.type-TRV', { hasText: 'เดินทาง Plus' }).getByRole('button', { name: 'เลือกแผนนี้ไปขาย' }).click();
+await agent.locator('.tr-picked').getByText(/เดินทาง Plus/).waitFor();
+assert.equal(await agent.locator('.tr-ag-table tbody tr.on', { hasText: 'เดินทาง Plus' }).count(), 1, 'plan picked from the catalogue');
 await agent.getByRole('tab', { name: 'ขาย / เสนอราคา' }).click();
+await agent.locator('#ag-line').getByRole('radio', { name: /ประกันรถยนต์/ }).click();
 await agent.locator('#ag-line').getByRole('radio', { name: /ประกันเดินทาง/ }).click();
 await agent.locator('#ag-tr-start').fill(isoIn(30));
 await agent.locator('#ag-tr-end').fill(isoIn(33));

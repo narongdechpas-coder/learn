@@ -71,6 +71,8 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [focusCase, setFocusCase] = useState<string | null>(null);
   const [sellLine, setSellLine] = useState<'motor' | 'travel'>('motor');
+  // Plan picked in the catalogue: the travel sell screen opens with it selected.
+  const [travelPick, setTravelPick] = useState<string | null>(null);
   const agent = s.agents.find((a) => a.id === agentId) ?? s.agents[0];
   const mkt = mktById(agent.mktId);
   const myOffers = s.proposals.filter((p) => p.agentId === agent.id);
@@ -123,10 +125,10 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
         ))}
       </div>
 
-      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type) => { setSellLine(type === 'TRV' ? 'travel' : 'motor'); setTab('sell'); }} />}
+      {tab === 'products' && <ProductCatalog channel="partner" agentId={agent.id} onCheck={(type, productId) => { setSellLine(type === 'TRV' ? 'travel' : 'motor'); setTravelPick(type === 'TRV' ? productId ?? null : null); setTab('sell'); window.scrollTo({ top: 0 }); }} />}
       {tab === 'sell' && (
         <div className="ag-line">
-          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={setSellLine} options={[
+          <Segmented id="ag-line" label={t('agLine')} value={sellLine} onChange={(v) => { setSellLine(v); setTravelPick(null); }} options={[
             { value: 'motor', label: `🚗 ${t('lineMotor')}` },
             { value: 'travel', label: `✈️ ${t('lineTravel')}` },
           ]} />
@@ -134,7 +136,9 @@ export function AgentApp({ agentId, onLogout, onOpenOffer }: { agentId: string; 
       )}
       {tab === 'sell' && sellLine === 'travel' && (
         <TravelSell
+          key={travelPick ?? 'none'}
           agent={agent}
+          initialPick={travelPick ?? undefined}
           onCase={(id) => { setFocusCase(id); setTab('cases'); }}
           renderMade={(id, again) => <MadeCard id={id} onOpenOffer={onOpenOffer} again={again} />}
         />

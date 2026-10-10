@@ -21,7 +21,7 @@ import {
 import { COVERAGE_TYPES, MAX_UPLOAD_BYTES, QUOTE_TYPES, REQUIRED_DOCS, SCENARIOS, SCENARIO_COVER, SELF_SERVICE_TYPES, cmiPremium, installmentPlan, packageBadges, type Scenario } from '../data/packages';
 import { packagesFor } from '../data/products';
 import { subjectText, tripRange } from '../data/travel';
-import { ProductHome, TravelBuy, TravelCertificate } from './Travel';
+import { LineNav, ProductHome, TravelBuy, TravelCertificate } from './Travel';
 import { HERO_IMG, HeroBanner } from './HeroBanner';
 import { EXTRA_KEY, productName } from './Products';
 import { riderRows } from './riders';
@@ -64,7 +64,9 @@ const normPlate = (s: string) => s.replace(/[\s-]/g, '').toLowerCase();
 
 type Step = 'car' | 'pkg' | 'quote' | 'form' | 'done' | 'checkout';
 
-export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partnerId, openLogin = false }: {
+export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partnerId, openLogin = false, homeSignal = 0 }: {
+  /** Goes up when the top bar's customer item is pressed again: back to the home page. */
+  homeSignal?: number;
   onOpenCase?: (id: string) => void;
   trackId: string | null;
   setTrackId: (id: string | null) => void;
@@ -77,12 +79,20 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
   const { t } = useT();
   const [tab, setTab] = useState<'buy' | 'track'>('buy');
   const [line, setLine] = useState<Line | null>(null);
+  // Picking a line from the bar always starts that line from its first step.
+  const [flow, setFlow] = useState(0);
   const [login, setLogin] = useState(openLogin);
+  useEffect(() => {
+    if (!homeSignal) return;
+    setLine(null);
+    setTab('buy');
+  }, [homeSignal]);
   useEffect(() => {
     if (trackId) setTab('track');
   }, [trackId]);
   return (
     <div className="customer">
+      <LineNav line={tab === 'buy' ? line : null} onPick={(l) => { setLine(l); setTab('buy'); setFlow((n) => n + 1); }} />
       <div className="cust-top">
         <div className="subtabs" role="tablist">
           <button role="tab" aria-selected={tab === 'buy'} className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>{t('buyTab')}</button>
@@ -97,9 +107,9 @@ export function CustomerApp({ onOpenCase, trackId, setTrackId, onPartner, partne
       {login && onPartner && <PartnerLogin onClose={() => setLogin(false)} onDone={(id) => { setLogin(false); onPartner(id); }} />}
       {tab === 'buy' ? (
         line === 'motor' ? (
-          <Buy onTrack={(id) => { setTrackId(id); setTab('track'); }} onHome={() => setLine(null)} />
+          <Buy key={flow} onTrack={(id) => { setTrackId(id); setTab('track'); }} onHome={() => setLine(null)} />
         ) : line === 'travel' ? (
-          <TravelBuy onHome={() => setLine(null)} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
+          <TravelBuy key={flow} onHome={() => setLine(null)} renderCheckout={(id, restart) => <CheckoutById id={id} onRestart={restart} />} />
         ) : (
           <ProductHome onPick={setLine} />
         )
@@ -322,9 +332,6 @@ function Buy({ onTrack, onHome }: { onTrack: (id: string) => void; onHome: () =>
 
   return (
     <div className="buy">
-      <div className="line-back">
-        <button type="button" className="link" onClick={onHome}>← {t('homeBack')}</button>
-      </div>
       {step === 'car' && <Hero />}
       <Steps step={step} self={self} />
 
